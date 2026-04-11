@@ -1,0 +1,59 @@
+# Environment and secrets (anywhere in the repo)
+.env
+.env.*
+!.env.example
+!.env*.example
+*.pem
+
+# Dependencies
+node_modules/
+
+# Frontend build output (Vite / React)
+dist/
+dist-ssr/
+*.local
+
+# .NET build outputs (repo-wide; Backend/.gitignore also applies under Backend/)
+**/[Bb]in/
+**/[Oo]bj/
+**/out/
+**/.vs/
+*.user
+*.suo
+*.cache
+artifacts/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+*.coverage
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editors (keep shared VS Code recommendations if you use them)
+.idea/
+*.swp
+*.swo
+*~
+
+# Tooling
+.turbo/
+.vercel/
+*.tsbuildinfo
+
+# Misc
+*.tmp
+*.temp
+.cache/
