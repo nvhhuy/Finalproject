@@ -13,7 +13,7 @@ dist/
 dist-ssr/
 *.local
 
-# .NET build outputs (repo-wide; Backend/.gitignore also applies under Backend/)
+# .NET build outputs (repo-wide; src/Backend/.gitignore also applies under that tree)
 **/[Bb]in/
 **/[Oo]bj/
 **/out/

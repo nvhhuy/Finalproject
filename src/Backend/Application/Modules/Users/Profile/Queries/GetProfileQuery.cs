@@ -1,0 +1,42 @@
+using Application.Contracts.Modules.Users.Persistence.Read;
+using Domains.UserAggregate;
+using MediatR;
+using Shared.Common;
+using Shared.Errors;
+using Shared.Errors.General;
+
+namespace Application.Modules.Users.Profile.Queries;
+
+public sealed record GetProfileQuery(Guid UserId) : IRequest<Result<UserProfileDto, Error>>;
+
+public sealed record UserProfileDto(
+    Guid Id,
+    string UserName,
+    string Email,
+    string FirstName,
+    string LastName,
+    string Role,
+    bool TwoFactorEnabled);
+
+public sealed class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, Result<UserProfileDto, Error>>
+{
+    private readonly IUserReadRepository _users;
+
+    public GetProfileQueryHandler(IUserReadRepository users) => _users = users;
+
+    public async Task<Result<UserProfileDto, Error>> Handle(GetProfileQuery request, CancellationToken cancellationToken)
+    {
+        User? user = await _users.GetByIdAsync(request.UserId, cancellationToken: cancellationToken);
+        if (user is null)
+            return new NotFoundError("User was not found.");
+
+        return new UserProfileDto(
+            user.Id.Value,
+            user.UserName,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.Role,
+            user.TwoFactorEnabled);
+    }
+}
