@@ -2,6 +2,7 @@ using Application.Common;
 using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Modules.Users.Administration.Queries;
 using Domains.UserAggregate;
 using Infrastructure.Extensions;
 using Infrastructure.Persistence.Repositories.Base;
@@ -55,5 +56,44 @@ public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepo
         ExistsAsync(_read.Users, u => u.UserName == userName, cancellationToken);
 
     public Task<PagedList<User>> GetUsersPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default) =>
-        _read.Users.AsNoTracking().OrderBy(u => u.UserName).ToPagedListAsync(page, pageSize, cancellationToken);
+        GetUsersAdminPageAsync(
+            new AdminUserListQueryParams(page, pageSize, null, null, null, null, null, false),
+            cancellationToken);
+
+    public async Task<PagedList<User>> GetUsersAdminPageAsync(AdminUserListQueryParams p, CancellationToken cancellationToken = default)
+    {
+        IQueryable<User> query = _read.Users.AsNoTracking().Where(u => u.DeletedAtUtc == null);
+
+        if (!string.IsNullOrWhiteSpace(p.EmailContains))
+        {
+            string term = p.EmailContains.Trim().ToLowerInvariant();
+            query = query.Where(u => u.Email.ToLower().Contains(term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(p.UserNameContains))
+        {
+            string term = p.UserNameContains.Trim().ToLowerInvariant();
+            query = query.Where(u => u.UserName.ToLower().Contains(term));
+        }
+
+        if (p.IsLocked is not null)
+            query = query.Where(u => u.IsLocked == p.IsLocked.Value);
+
+        if (!string.IsNullOrWhiteSpace(p.Role))
+            query = query.Where(u => u.Role == p.Role);
+
+        string sort = string.IsNullOrWhiteSpace(p.SortBy) ? "username" : p.SortBy.Trim().ToLowerInvariant();
+        if (sort is not ("username" or "email" or "registeredat" or "role"))
+            sort = "username";
+
+        query = sort switch
+        {
+            "email" => p.SortDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
+            "registeredat" => p.SortDescending ? query.OrderByDescending(u => u.RegisteredAtUtc) : query.OrderBy(u => u.RegisteredAtUtc),
+            "role" => p.SortDescending ? query.OrderByDescending(u => u.Role) : query.OrderBy(u => u.Role),
+            _ => p.SortDescending ? query.OrderByDescending(u => u.UserName) : query.OrderBy(u => u.UserName)
+        };
+
+        return await query.ToPagedListAsync(p.Page, p.PageSize, cancellationToken);
+    }
 }

@@ -1,3 +1,4 @@
+using Domains.Administration;
 using Domains.UserAggregate;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,4 +10,5 @@ public interface IApplicationReadDbContext
     DbSet<User> Users { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<ExternalUserLogin> ExternalLogins { get; }
+    DbSet<AdminAuditLog> AdminAuditLogs { get; }
 }

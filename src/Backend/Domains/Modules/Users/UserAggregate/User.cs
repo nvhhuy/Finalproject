@@ -20,6 +20,10 @@ namespace Domains.UserAggregate
         /// <summary>Base32 TOTP secret (protect at rest in production, e.g. field-level encryption).</summary>
         public string? TwoFactorSecret { get; private set; }
         public DateTime? LastLoginAtUtc { get; private set; }
+        /// <summary>When the email address was confirmed (self-service link or admin).</summary>
+        public DateTime? EmailVerifiedAtUtc { get; private set; }
+        /// <summary>Account creation time (used for admin metrics).</summary>
+        public DateTime? RegisteredAtUtc { get; private set; }
 
         public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
         public ICollection<ExternalUserLogin> ExternalLogins { get; private set; } = new List<ExternalUserLogin>();
@@ -73,6 +77,10 @@ namespace Domains.UserAggregate
         public void CloseAccount() => AccountClosedAtUtc = DateTime.UtcNow;
 
         public void RecordLogin() => LastLoginAtUtc = DateTime.UtcNow;
+
+        public void MarkRegisteredAt(DateTime utc) => RegisteredAtUtc = utc;
+
+        public void MarkEmailVerified(DateTime verifiedAtUtc) => EmailVerifiedAtUtc = verifiedAtUtc;
 
         public void SetTwoFactorPendingSecret(string base32Secret)
         {

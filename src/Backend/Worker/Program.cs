@@ -1,6 +1,7 @@
 using Application;
 using Application.Contracts.Scheduling;
 using Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Observability;
 using Serilog;
@@ -16,6 +17,10 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<ICronJob, SampleCronJob>();
 builder.Services.AddCronScheduling();
 builder.Services.AddHostedService<SampleQueueConsumerService>();
+
+IConfigurationSection workerSection = builder.Configuration.GetSection(WorkerSchedulingOptions.SectionName);
+if (workerSection.GetValue("EnableSampleBackgroundLoop", false))
+    builder.Services.AddHostedService<SampleBackgroundService>();
 
 IHost app = builder.Build();
 await app.RunAsync();

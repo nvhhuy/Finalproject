@@ -11,4 +11,6 @@ public interface IUserWriteRepository
     Task<RefreshToken?> GetRefreshTokenByHashForUpdateAsync(string tokenHash, CancellationToken cancellationToken = default);
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task InvalidateUserCacheAsync(Guid userId, string? email = null, string? userName = null, CancellationToken cancellationToken = default);
+
+    Task<int> RevokeAllRefreshTokensForUserAsync(Guid userId, DateTime revokedAtUtc, CancellationToken cancellationToken = default);
 }

@@ -2,6 +2,8 @@
 
 This document explains how to use the shared infrastructure in this solution: layers, persistence, transactions, domain events, auth, admin operations, app settings, media, caching, messaging hooks, scheduling, and typical controller patterns.
 
+For onboarding topics (JWT vs policies, DTO mapping choices, Worker triggers, observability, testing strategy), see **`DEVELOPER_GUIDE.md`**.
+
 ---
 
 ## 1. Solution layout
@@ -121,18 +123,22 @@ catch
 ## 6. Authentication and authorization
 
 - JWT is configured in `Infrastructure/DependencyInjection.cs` (`AddAuth`).
-- **`[JwtAuthorize]`** (`Api/Authorization/JwtAuthorizeAttribute.cs`) pins the **JWT bearer** authentication scheme on a controller or action. Combine with **`[Authorize]`** or **`[Authorize(Policy = ...)]`**.
+- **`[JwtAuthorize]`** (`Api/Authorization/JwtAuthorizeAttribute.cs`) pins the **JWT bearer** authentication scheme (`AuthenticationSchemes`). It is **optional** while JWT is the only default scheme—**`[Authorize]`** / **`[Authorize(Policy = ...)]`** is enough. Use `[JwtAuthorize]` when you add multiple auth schemes or want an explicit JWT-only marker; combine with **`[Authorize]`** or **`[Authorize(Policy = ...)]`** for who may access the resource. See **`DEVELOPER_GUIDE.md`** §2 (auth) and **§9** (admin platform: audit, email, metrics, sessions).
 - Admin-only policy: **`AuthorizationPolicies.AdminOnly`** (requires role `UserRoles.Admin`).
 
 **Controllers (partial classes, CQRS-friendly routes)**
 
 - **`AdminUsersController`** — `AdminUsersController.cs` + `.Read.cs` + `.Write.cs`  
-  - `GET api/admin/users` — paged list (read)  
-  - `POST api/admin/users/{id}/lock|unlock|impersonate` — commands (`[Transactional]` on each write action)
+  - `GET api/admin/users` — paged list with optional filters (`emailContains`, `userNameContains`, `isLocked`, `role`, `sortBy`, `sortDescending`)  
+  - `POST api/admin/users` — create user; `PUT/DELETE .../{id}` — update / soft-delete  
+  - `POST .../{id}/lock|unlock|impersonate|2fa/reset|password/reset` — mutating commands (`[Transactional]`)  
+  - `POST .../{id}/email/verify` — admin marks email verified; `POST .../{id}/email/resend-verification` — sends verification link (cache + `IEmailSender`); `POST .../{id}/sessions/revoke` — revokes all refresh tokens for that user  
+- **`AdminMetricsController`** — `GET api/admin/metrics/dashboard` — total active users + daily registration counts (last 14 days, uses `RegisteredAtUtc`)  
+- **`AdminAuditLogsController`** — `GET api/admin/audit-logs` — paged audit trail (`targetUserId` optional filter)  
 - **`UsersController`** — `.Read.cs` (e.g. `GET api/users/profile`), `.Write.cs` (`PUT api/users/profile` + `[Transactional]`)
 - **`SamplesController`** — transaction demos under `api/samples/transactions/...`
 - **`AuthController`** — unauthenticated and auth flows; register uses `[Transactional]`; responses use **`ApiResponse<T>`** except **HTTP 202** login challenge, which returns **`ApiResponse<TwoFactorChallengeDto>`** in an `Accepted` body.
-  - Includes `POST api/auth/forgot-password` and `POST api/auth/reset-password` (token via cache + email abstraction).
+  - Includes `POST api/auth/forgot-password` and `POST api/auth/reset-password` (token via cache + email abstraction), and **`POST api/auth/verify-email`** (`[AllowAnonymous]`, body `tokenId` + `token` from the email link).
 - **`AdminSettingsController`** — runtime app toggles (`GET/PUT api/admin/settings/allow-public-register`).
 
 ---
@@ -173,6 +179,8 @@ catch
 
 | Section | Purpose |
 |---------|---------|
+| `Database:ApplyPendingMigrations` | When `true`, Api runs **`Database.MigrateAsync()`** at startup (in addition to **Development**, which always migrates). Default `false` in base `appsettings.json`. |
+| `Seed:Admin:*` | Bootstrap admin: **`Enabled`**, **`Email`**, **`UserName`**, **`Password`**, **`FirstName`**, **`LastName`**. Seeding runs in **Development** by default, or when **`Seed:Admin:Enabled`** is `true`. Idempotent (skips if email or username already exists). |
 | `ConnectionStrings:DatabaseConnectionString` | Write PostgreSQL. |
 | `ConnectionStrings:DatabaseReadConnectionString` | Read PostgreSQL (optional). |
 | `JwtSettings` | Signing, issuer, audience, token lifetimes. |
@@ -190,7 +198,7 @@ catch
 1. **Domain** — entity/value object changes; optional domain events (`AddDomainEvent`).
 2. **Application** — command/query + handler; validator if needed; use **read repo** for queries and **write / `ForUpdate`** for mutations.
 3. **Infrastructure** — only if new persistence, integrations, or interceptors are required.
-4. **Api** — partial controller + **`Api/Models`** request types; **`[JwtAuthorize]` + `[Authorize]`** as needed; **`[Transactional]`** on commands that must be atomic with other writes in the same request.
+4. **Api** — partial controller + **`Api/Models`** request types; **`[Authorize]`** / **`[Authorize(Policy = …)]`** as needed; optional **`[JwtAuthorize]`** to pin JWT when multiple schemes exist; **`[Transactional]`** on commands that must be atomic with other writes in the same request.
 5. **Events** — choose **`ITransactionalDomainEvent`** vs **`IAfterCommitDomainEvent`** based on whether work must see committed data or outbox semantics.
 
 ---
@@ -201,7 +209,7 @@ catch
 |--------|--------|--------|
 | GET | `api/users/profile` | Current user profile (`ApiResponse<UserProfileDto>`). |
 | PUT | `api/users/profile` | Update profile (transactional). |
-| GET | `api/admin/users` | Admin paged list (`page`, `pageSize`). |
+| GET | `api/admin/users` | Admin paged list: `page`, `pageSize`, optional `emailContains`, `userNameContains`, `isLocked`, `role`, `sortBy`, `sortDescending`. |
 | POST | `api/admin/users` | Admin create user. |
 | PUT | `api/admin/users/{userId}` | Admin edit user profile/role. |
 | DELETE | `api/admin/users/{userId}` | Admin soft-delete user. |
@@ -209,19 +217,29 @@ catch
 | POST | `api/admin/users/{userId}/unlock` | Admin unlock user. |
 | POST | `api/admin/users/{userId}/impersonate` | Admin issue token pair for target user. |
 | POST | `api/admin/users/{userId}/2fa/reset` | Admin reset target 2FA. |
-| POST | `api/admin/users/{userId}/password/reset` | Admin reset target password. |
+| POST | `api/admin/users/{userId}/password/reset` | Admin reset target password (also revokes refresh tokens). |
+| POST | `api/admin/users/{userId}/email/verify` | Admin marks email verified. |
+| POST | `api/admin/users/{userId}/email/resend-verification` | Admin sends email verification link (cache + mail). |
+| POST | `api/admin/users/{userId}/sessions/revoke` | Revoke all refresh tokens for target user. |
+| GET | `api/admin/metrics/dashboard` | Read-only totals + daily registrations (14 days). |
+| GET | `api/admin/audit-logs` | Paged audit log; optional `targetUserId`. |
 | GET | `api/admin/settings/allow-public-register` | Read register toggle. |
 | PUT | `api/admin/settings/allow-public-register` | Set register toggle. |
 | POST | `api/auth/forgot-password` | Send password reset token via email abstraction. |
 | POST | `api/auth/reset-password` | Reset password using token id + token. |
+| POST | `api/auth/verify-email` | Confirm email using token id + token (`[AllowAnonymous]`). |
 | POST | `api/samples/transactions/manual-lock/{userId}` | Manual UoW example (admin). |
+
+For behaviour and configuration details (audit writer, migration backfill, verification email), see **`DEVELOPER_GUIDE.md`** §9.
 
 Swagger is enabled in **Development** in `Api/Program.cs`.
 
 ---
 
-## 14. EF migrations, local stack, and Docker
+## 14. EF migrations, local stack, Docker, and startup behaviour
 
+- **Pending migrations:** In **Development**, the Api host always applies **`MigrateAsync()`** on startup. In other environments, set **`Database:ApplyPendingMigrations`** to `true` if you want the same behaviour (typical for a single-node deploy; for multi-instance production, prefer running migrations as an explicit release job).
+- **Admin seed:** In **Development**, the Api seeds a default admin (see **`Seed:Admin`** in `appsettings.Development.json`) unless a user with that email or username already exists. For staging/production, set **`Seed:Admin:Enabled`** to `true` and supply a strong **`Password`** via secrets or environment variables—never commit production credentials.
 - Run migrations against the **write** database (same schema should be applied to a physical read replica when used).
 - **From repo root:** `./tools/backend/migrate.sh` (see `tools/README.md`). This script lives outside `src/Backend/` source.
 - **Easy local dependencies (Postgres read/write URLs, Redis, MinIO, OpenSearch):** use repo root **`local/`** — `docker compose -f local/docker-compose.yml up -d` and copy `local/.env.example` into `src/Backend/Api` or merge values into `appsettings.Development.json`.

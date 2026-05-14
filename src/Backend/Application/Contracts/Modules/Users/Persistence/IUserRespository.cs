@@ -18,4 +18,6 @@ public interface IUserRespository
 
     /// <summary>Clears read-side cache entries for this user (safe after insert or update).</summary>
     Task InvalidateUserCacheAsync(Guid userId, string? email = null, string? userName = null, CancellationToken cancellationToken = default);
+
+    Task<int> RevokeAllRefreshTokensForUserAsync(Guid userId, DateTime revokedAtUtc, CancellationToken cancellationToken = default);
 }

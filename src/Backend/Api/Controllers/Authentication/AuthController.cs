@@ -5,6 +5,7 @@ using Application.Modules.Users.Authentication.Commands.CompleteTwoFactorLogin;
 using Application.Modules.Users.Authentication.Commands.ForgotPassword;
 using Application.Modules.Users.Authentication.Commands.GoogleSignIn;
 using Application.Modules.Users.Authentication.Commands.RefreshSession;
+using Application.Modules.Users.Authentication.Commands.VerifyEmail;
 using Application.Modules.Users.Authentication.Commands.Register;
 using Application.Modules.Users.Authentication.Common;
 using Application.Modules.Users.Authentication.Queries;
@@ -87,6 +88,15 @@ public sealed class AuthController : ApiControllerBase
     {
         Result<bool, Error> result =
             await Sender.Send(new ResetPasswordCommand(body.TokenId, body.Token, body.NewPassword), cancellationToken);
+        return MatchApiEmpty(result);
+    }
+
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest body, CancellationToken cancellationToken)
+    {
+        Result<bool, Error> result = await Sender.Send(new VerifyEmailCommand(body.TokenId, body.Token), cancellationToken);
         return MatchApiEmpty(result);
     }
 

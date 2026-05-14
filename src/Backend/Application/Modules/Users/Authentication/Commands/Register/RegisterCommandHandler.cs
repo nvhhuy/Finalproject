@@ -2,8 +2,8 @@ using Application.Modules.Users.Authentication.Common;
 using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Services;
-using Application.Contracts.Settings;
 using Application.Extensions;
+using Application.Contracts.Settings;
 using Application.Modules.SystemSettings;
 using Application.Modules.Users.Profile.DomainEvents;
 using Domains.UserAggregate;
@@ -21,19 +21,22 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IAuthenticationTokenIssuer _tokens;
     private readonly IAppSettingsService _settings;
+    private readonly IDateTimeProvider _clock;
 
     public RegisterCommandHandler(
         IUserReadRepository userRead,
         IUserRespository users,
         IPasswordHasher<User> passwordHasher,
         IAuthenticationTokenIssuer tokens,
-        IAppSettingsService settings)
+        IAppSettingsService settings,
+        IDateTimeProvider clock)
     {
         _userRead = userRead;
         _users = users;
         _passwordHasher = passwordHasher;
         _tokens = tokens;
         _settings = settings;
+        _clock = clock;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -55,6 +58,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         User user = User.CreateNew(request.FirstName, request.LastName, request.UserName, request.Email, request.Password);
         string hashedPassword = _passwordHasher.HashPassword(user, request.Password);
         user.UpdatePassword(hashedPassword);
+        user.MarkRegisteredAt(_clock.Now);
 
         user.AddDomainEvent(new UserRegisteredInTransactionEvent(user.Id.Value, user.Email));
         user.AddDomainEvent(new UserRegisteredAfterCommitEvent(user.Id.Value));

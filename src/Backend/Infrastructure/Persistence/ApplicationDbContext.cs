@@ -1,3 +1,4 @@
+using Domains.Administration;
 using Domains.UserAggregate;
 using Domains.SystemSettings;
 using Infrastructure.Persistence.Interceptors;
@@ -15,6 +16,7 @@ namespace Infrastructure.Persistence
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
         public DbSet<ExternalUserLogin> ExternalLogins { get; set; } = null!;
         public DbSet<AppSetting> AppSettings { get; set; } = null!;
+        public DbSet<AdminAuditLog> AdminAuditLogs { get; set; } = null!;
 
         public ApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options,

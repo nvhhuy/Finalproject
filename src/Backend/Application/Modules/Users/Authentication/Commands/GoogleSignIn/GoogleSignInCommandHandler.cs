@@ -16,17 +16,20 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
     private readonly IApplicationReadDbContext _read;
     private readonly IUserRespository _users;
     private readonly IAuthenticationTokenIssuer _tokens;
+    private readonly IDateTimeProvider _clock;
 
     public GoogleSignInCommandHandler(
         IGoogleIdTokenValidator google,
         IApplicationReadDbContext read,
         IUserRespository users,
-        IAuthenticationTokenIssuer tokens)
+        IAuthenticationTokenIssuer tokens,
+        IDateTimeProvider clock)
     {
         _google = google;
         _read = read;
         _users = users;
         _tokens = tokens;
+        _clock = clock;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(GoogleSignInCommand request, CancellationToken cancellationToken)
@@ -56,6 +59,8 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
                 string first = info.GivenName ?? info.Name ?? "User";
                 string last = info.FamilyName ?? string.Empty;
                 user = User.CreateForExternal(first, last, userName, info.Email);
+                user.MarkRegisteredAt(_clock.Now);
+                user.MarkEmailVerified(_clock.Now);
                 _users.AddUser(user);
                 _users.AddExternalLogin(ExternalUserLogin.Create(user.Id, ExternalLoginProviders.Google, info.Subject));
                 await _users.SaveChangesAsync(cancellationToken);

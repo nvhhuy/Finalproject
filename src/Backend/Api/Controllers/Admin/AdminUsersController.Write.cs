@@ -13,6 +13,8 @@ namespace Api.Controllers.Admin;
 /// <summary>Admin commands (write database). Each mutating action runs in its own EF transaction.</summary>
 public sealed partial class AdminUsersController
 {
+    private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
+
     [HttpPost]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
@@ -26,7 +28,8 @@ public sealed partial class AdminUsersController
                 body.UserName,
                 body.Email,
                 body.Password,
-                body.Role),
+                body.Role,
+                ClientIp),
             cancellationToken);
         return MatchApi(result);
     }
@@ -43,7 +46,8 @@ public sealed partial class AdminUsersController
                 body.LastName,
                 body.UserName,
                 body.Email,
-                body.Role),
+                body.Role,
+                ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);
     }
@@ -52,7 +56,7 @@ public sealed partial class AdminUsersController
     [Transactional]
     public async Task<IActionResult> DeleteUser(Guid userId, CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(new AdminDeleteUserCommand(CurrentAdminId, userId), cancellationToken);
+        Result<bool, Error> result = await Sender.Send(new AdminDeleteUserCommand(CurrentAdminId, userId, ClientIp), cancellationToken);
         return MatchApiEmpty(result);
     }
 
@@ -61,7 +65,7 @@ public sealed partial class AdminUsersController
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> LockUser(Guid userId, [FromBody] LockUserRequest? body, CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(new AdminLockUserCommand(userId, body?.Reason, CurrentAdminId), cancellationToken);
+        Result<bool, Error> result = await Sender.Send(new AdminLockUserCommand(userId, body?.Reason, CurrentAdminId, ClientIp), cancellationToken);
         return MatchApiEmpty(result);
     }
 
@@ -69,7 +73,7 @@ public sealed partial class AdminUsersController
     [Transactional]
     public async Task<IActionResult> UnlockUser(Guid userId, CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(new AdminUnlockUserCommand(userId, CurrentAdminId), cancellationToken);
+        Result<bool, Error> result = await Sender.Send(new AdminUnlockUserCommand(userId, CurrentAdminId, ClientIp), cancellationToken);
         return MatchApiEmpty(result);
     }
 
@@ -78,9 +82,8 @@ public sealed partial class AdminUsersController
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ImpersonateUser(Guid userId, CancellationToken cancellationToken)
     {
-        string? ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         Result<AuthenticationResponse, Error> result =
-            await Sender.Send(new ImpersonateUserCommand(userId, CurrentAdminId, ip), cancellationToken);
+            await Sender.Send(new ImpersonateUserCommand(userId, CurrentAdminId, ClientIp), cancellationToken);
         return MatchApi(result, r => OkApi(AuthResponseDto.From(r)));
     }
 
@@ -88,7 +91,7 @@ public sealed partial class AdminUsersController
     [Transactional]
     public async Task<IActionResult> ResetTwoFactor(Guid userId, CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(new AdminResetTwoFactorCommand(CurrentAdminId, userId), cancellationToken);
+        Result<bool, Error> result = await Sender.Send(new AdminResetTwoFactorCommand(CurrentAdminId, userId, ClientIp), cancellationToken);
         return MatchApiEmpty(result);
     }
 
@@ -97,7 +100,31 @@ public sealed partial class AdminUsersController
     public async Task<IActionResult> ResetPassword(Guid userId, [FromBody] AdminResetPasswordRequest body, CancellationToken cancellationToken)
     {
         Result<bool, Error> result =
-            await Sender.Send(new AdminResetPasswordCommand(CurrentAdminId, userId, body.NewPassword), cancellationToken);
+            await Sender.Send(new AdminResetPasswordCommand(CurrentAdminId, userId, body.NewPassword, ClientIp), cancellationToken);
+        return MatchApiEmpty(result);
+    }
+
+    [HttpPost("{userId:guid}/email/verify")]
+    [Transactional]
+    public async Task<IActionResult> MarkEmailVerified(Guid userId, CancellationToken cancellationToken)
+    {
+        Result<bool, Error> result = await Sender.Send(new AdminMarkEmailVerifiedCommand(CurrentAdminId, userId, ClientIp), cancellationToken);
+        return MatchApiEmpty(result);
+    }
+
+    [HttpPost("{userId:guid}/email/resend-verification")]
+    [Transactional]
+    public async Task<IActionResult> ResendEmailVerification(Guid userId, CancellationToken cancellationToken)
+    {
+        Result<bool, Error> result = await Sender.Send(new AdminResendEmailVerificationCommand(CurrentAdminId, userId, ClientIp), cancellationToken);
+        return MatchApiEmpty(result);
+    }
+
+    [HttpPost("{userId:guid}/sessions/revoke")]
+    [Transactional]
+    public async Task<IActionResult> RevokeSessions(Guid userId, CancellationToken cancellationToken)
+    {
+        Result<bool, Error> result = await Sender.Send(new AdminRevokeUserSessionsCommand(CurrentAdminId, userId, ClientIp), cancellationToken);
         return MatchApiEmpty(result);
     }
 }

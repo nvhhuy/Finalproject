@@ -1,6 +1,7 @@
-using Application.Modules.Users.Authentication.Common;
+using Application.Contracts.Administration;
 using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Services;
+using Application.Modules.Users.Authentication.Common;
 using Domains.UserAggregate;
 using MediatR;
 using Shared.Common;
@@ -16,11 +17,13 @@ public sealed class ImpersonateUserCommandHandler : IRequestHandler<ImpersonateU
 {
     private readonly IUserRespository _users;
     private readonly IAuthenticationTokenIssuer _tokens;
+    private readonly IAdminAuditLogWriter _audit;
 
-    public ImpersonateUserCommandHandler(IUserRespository users, IAuthenticationTokenIssuer tokens)
+    public ImpersonateUserCommandHandler(IUserRespository users, IAuthenticationTokenIssuer tokens, IAdminAuditLogWriter audit)
     {
         _users = users;
         _tokens = tokens;
+        _audit = audit;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(ImpersonateUserCommand request, CancellationToken cancellationToken)
@@ -41,6 +44,9 @@ public sealed class ImpersonateUserCommandHandler : IRequestHandler<ImpersonateU
 
         if (pair.IsFailure)
             return pair.Error;
+
+        _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserImpersonated, request.TargetUserId, request.RemoteIpAddress, null);
+        await _users.SaveChangesAsync(cancellationToken);
 
         return new AuthenticationResponse(
             target,

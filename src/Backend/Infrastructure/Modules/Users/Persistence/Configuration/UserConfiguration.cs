@@ -21,6 +21,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.Role).HasMaxLength(64).IsRequired();
         builder.Property(e => e.LockReason).HasMaxLength(512);
         builder.Property(e => e.TwoFactorSecret).HasMaxLength(512);
+        builder.Property(e => e.EmailVerifiedAtUtc).HasColumnType("timestamp with time zone");
+        builder.Property(e => e.RegisteredAtUtc).HasColumnType("timestamp with time zone");
         builder.HasIndex(e => e.Email).IsUnique();
         builder.HasIndex(e => e.UserName).IsUnique();
     }

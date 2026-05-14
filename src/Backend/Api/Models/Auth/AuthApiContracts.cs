@@ -7,6 +7,8 @@ public sealed record RefreshSessionRequest(string RefreshToken);
 public sealed record ForgotPasswordRequest(string Email);
 public sealed record ResetPasswordRequest(string TokenId, string Token, string NewPassword);
 
+public sealed record VerifyEmailRequest(string TokenId, string Token);
+
 public sealed record GoogleSignInRequest(string IdToken);
 
 public sealed record CompleteTwoFactorLoginRequest(string PendingLoginId, string Code);

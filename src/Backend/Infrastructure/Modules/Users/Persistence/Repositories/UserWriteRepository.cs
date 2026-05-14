@@ -2,6 +2,7 @@ using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Domains.UserAggregate;
+using Domains.UserAggregate.ValueObjects;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories.Base;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,14 @@ public sealed class UserWriteRepository : WriteRepositoryBase, IUserWriteReposit
 
     public Task<RefreshToken?> GetRefreshTokenByHashForUpdateAsync(string tokenHash, CancellationToken cancellationToken = default) =>
         GetTrackedForUpdateAsync(_context.RefreshTokens, t => t.TokenHash == tokenHash, cancellationToken);
+
+    public async Task<int> RevokeAllRefreshTokensForUserAsync(Guid userId, DateTime revokedAtUtc, CancellationToken cancellationToken = default)
+    {
+        UserId uid = UserId.Create(userId);
+        return await _context.RefreshTokens
+            .Where(t => t.UserId == uid && t.RevokedAtUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, revokedAtUtc), cancellationToken);
+    }
 
     public async Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken) > 0;

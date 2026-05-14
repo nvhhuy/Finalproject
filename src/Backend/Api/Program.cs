@@ -2,7 +2,6 @@ using Api;
 using Api.ExceptionHandling;
 using Api.Middleware;
 using Application;
-using Domains.UserAggregate;
 using Infrastructure;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -34,14 +33,36 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
-    using (var scope = app.Services.CreateScope())
+}
+
+bool applyPendingMigrations = app.Environment.IsDevelopment()
+    || app.Configuration.GetValue("Database:ApplyPendingMigrations", false);
+bool seedBootstrapAdmin = app.Environment.IsDevelopment()
+    || app.Configuration.GetValue("Seed:Admin:Enabled", false);
+
+if (applyPendingMigrations || seedBootstrapAdmin)
+{
+    using IServiceScope scope = app.Services.CreateScope();
+    Microsoft.Extensions.Logging.ILogger logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+    ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
     {
-        ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await db.Database.MigrateAsync();
-        await DbSeeder.SeedAsync(db, scope.ServiceProvider);
+        if (applyPendingMigrations)
+            await db.Database.MigrateAsync();
+
+        if (seedBootstrapAdmin)
+            await DbSeeder.SeedAdminIfMissingAsync(db, scope.ServiceProvider);
+    }
+    catch (Exception ex) when (ex.Message.Contains("Failed to connect", StringComparison.Ordinal))
+    {
+        logger.LogCritical(
+            ex,
+            "Database server is not reachable. Start PostgreSQL (connection string in appsettings), for example from the repo root: docker compose -f local/docker-compose.yml up -d postgres");
+        throw;
     }
 }
-else
+
+if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
     app.UseExceptionHandler();

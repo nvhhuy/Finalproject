@@ -1,4 +1,5 @@
-﻿using Application.Contracts.Caching;
+﻿using Application.Contracts.Administration;
+using Application.Contracts.Caching;
 using Application.Contracts.Events;
 using Application.Contracts.Transactions;
 using Application.Contracts.Email;
@@ -13,6 +14,7 @@ using Application.Contracts.Services;
 using Application.Contracts.Settings;
 using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
+using Infrastructure.Administration;
 using Infrastructure.Authentication;
 using Infrastructure.Caching;
 using Infrastructure.Email;
@@ -188,9 +190,12 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
         services.AddScoped<AuditableInterceptor>();
+        services.Configure<SeedAdminOptions>(configuration.GetSection(SeedAdminOptions.SectionName));
+
         services.AddScoped<IUserReadRepository, UserReadRepository>();
         services.AddScoped<IUserWriteRepository, UserWriteRepository>();
         services.AddScoped<IUserRespository, UserRepository>();
+        services.AddScoped<IAdminAuditLogWriter, AdminAuditLogWriter>();
         return services;
     }
 

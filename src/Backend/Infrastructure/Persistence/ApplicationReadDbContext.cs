@@ -1,4 +1,5 @@
 using Application.Contracts.Modules.Users.Persistence;
+using Domains.Administration;
 using Domains.SystemSettings;
 using Domains.UserAggregate;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ExternalUserLogin> ExternalLogins => Set<ExternalUserLogin>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

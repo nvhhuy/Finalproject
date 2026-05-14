@@ -39,4 +39,7 @@ public sealed class UserRepository : IUserRespository
 
     public Task InvalidateUserCacheAsync(Guid userId, string? email = null, string? userName = null, CancellationToken cancellationToken = default) =>
         _write.InvalidateUserCacheAsync(userId, email, userName, cancellationToken);
+
+    public Task<int> RevokeAllRefreshTokensForUserAsync(Guid userId, DateTime revokedAtUtc, CancellationToken cancellationToken = default) =>
+        _write.RevokeAllRefreshTokensForUserAsync(userId, revokedAtUtc, cancellationToken);
 }
