@@ -10,7 +10,6 @@ public static class DependencyInjection
     {
         services.AddMediatR(configuration => configuration.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-        services.AddAutoMapper(typeof(DependencyInjection).Assembly);
         return services;
     }
 }

@@ -43,6 +43,9 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
         if (!user.CanSignIn)
             return new AccountDisabledError("This account cannot sign in.");
 
+        if (user.EmailVerifiedAtUtc is null)
+            return new EmailNotVerifiedError();
+
         PasswordVerificationResult passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.Password, request.Password);
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
             return new InvalidCredentialsError("Invalid email or password.");

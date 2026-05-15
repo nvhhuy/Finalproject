@@ -1,4 +1,5 @@
 using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Mapping;
 using Domains.UserAggregate;
 using MediatR;
 using Shared.Common;
@@ -30,13 +31,6 @@ public sealed class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, Re
         if (user is null)
             return new NotFoundError("User was not found.");
 
-        return new UserProfileDto(
-            user.Id.Value,
-            user.UserName,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.Role,
-            user.TwoFactorEnabled);
+        return user.ToProfileDto();
     }
 }

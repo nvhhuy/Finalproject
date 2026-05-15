@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Mapping;
 using Application.Contracts.Modules.Users.Persistence;
 using Domains.Administration;
 using MediatR;
@@ -43,9 +44,7 @@ public sealed class AdminListAuditLogsQueryHandler : IRequestHandler<AdminListAu
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
-        AdminAuditLogEntryDto[] items = rows
-            .Select(a => new AdminAuditLogEntryDto(a.Id, a.ActorUserId, a.Action, a.TargetUserId, a.IpAddress, a.Details, a.CreatedAtUtc))
-            .ToArray();
+        IReadOnlyList<AdminAuditLogEntryDto> items = rows.ToEntryDtos();
 
         return new AdminAuditLogListDto(items, total, request.Page, request.PageSize);
     }

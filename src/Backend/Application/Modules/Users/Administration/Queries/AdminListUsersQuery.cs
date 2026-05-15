@@ -1,5 +1,6 @@
 using Application.Common;
 using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Mapping;
 using Domains.UserAggregate;
 using MediatR;
 using Shared.Common;
@@ -52,16 +53,7 @@ public sealed class AdminListUsersQueryHandler : IRequestHandler<AdminListUsersQ
 
         PagedList<User> page = await _users.GetUsersAdminPageAsync(p, cancellationToken);
 
-        AdminUserSummaryDto[] items = page
-            .Select(u => new AdminUserSummaryDto(
-                u.Id.Value,
-                u.UserName,
-                u.Email,
-                u.Role,
-                u.IsLocked,
-                u.EmailVerifiedAtUtc,
-                u.RegisteredAtUtc))
-            .ToArray();
+        IReadOnlyList<AdminUserSummaryDto> items = page.ToAdminSummaryDtos();
         return new AdminUserListDto(items, page.TotalCount, request.Page, request.PageSize);
     }
 }

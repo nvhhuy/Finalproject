@@ -1,20 +1,12 @@
 using Application.Contracts.Administration;
-using Application.Contracts.Caching;
 using Application.Contracts.Email;
 using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Services;
-using Application.Modules.Users.Authentication;
-using Application.Modules.Users.Authentication.Commands.ForgotPassword;
-using Application.Modules.Users.Authentication.Commands.VerifyEmail;
-using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
 using MediatR;
-using Microsoft.Extensions.Options;
 using Shared.Common;
 using Shared.Errors;
 using Shared.Errors.General;
-using Shared.Security;
-using System.Security.Cryptography;
 
 namespace Application.Modules.Users.Administration.Commands;
 
@@ -56,22 +48,16 @@ public sealed record AdminResendEmailVerificationCommand(Guid ActingAdminUserId,
 public sealed class AdminResendEmailVerificationCommandHandler : IRequestHandler<AdminResendEmailVerificationCommand, Result<bool, Error>>
 {
     private readonly IUserRespository _users;
-    private readonly ICacheService _cache;
-    private readonly IEmailSender _emailSender;
-    private readonly PasswordResetEmailOptions _emailOptions;
+    private readonly IEmailVerificationSender _emailVerification;
     private readonly IAdminAuditLogWriter _audit;
 
     public AdminResendEmailVerificationCommandHandler(
         IUserRespository users,
-        ICacheService cache,
-        IEmailSender emailSender,
-        IOptions<PasswordResetEmailOptions> emailOptions,
+        IEmailVerificationSender emailVerification,
         IAdminAuditLogWriter audit)
     {
         _users = users;
-        _cache = cache;
-        _emailSender = emailSender;
-        _emailOptions = emailOptions.Value;
+        _emailVerification = emailVerification;
         _audit = audit;
     }
 
@@ -88,39 +74,7 @@ public sealed class AdminResendEmailVerificationCommandHandler : IRequestHandler
         if (target.EmailVerifiedAtUtc is not null)
             return new Error("AlreadyVerified", 400, "Email is already verified.");
 
-        string tokenId = Guid.NewGuid().ToString("N");
-        string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        string tokenHash = TokenHasher.Sha256(token);
-        string cacheKey = AuthCacheKeys.EmailVerificationPrefix + tokenId;
-
-        int ttlMinutes = _emailOptions.TokenTtlMinutes > 0 ? _emailOptions.TokenTtlMinutes : 30;
-        TimeSpan ttl = TimeSpan.FromMinutes(ttlMinutes);
-
-        await _cache.SetAsync(cacheKey, new EmailVerificationTokenPayload(target.Id.Value, tokenHash), ttl, cancellationToken);
-
-        string baseUrl = (_emailOptions.PublicAppBaseUrl ?? "").Trim().TrimEnd('/');
-        string instructions;
-        if (!string.IsNullOrEmpty(baseUrl))
-        {
-            string query = $"tokenId={Uri.EscapeDataString(tokenId)}&token={Uri.EscapeDataString(token)}";
-            instructions =
-                $"Confirm your email address (valid for {ttlMinutes} minutes):{Environment.NewLine}" +
-                $"{baseUrl}/verify-email?{query}";
-        }
-        else
-        {
-            instructions =
-                $"Use the app’s verify-email screen with these values (valid for {ttlMinutes} minutes):{Environment.NewLine}" +
-                $"Token ID: {tokenId}{Environment.NewLine}" +
-                $"Token: {token}";
-        }
-
-        string body =
-            "Please confirm your email address." +
-            $"{Environment.NewLine}{Environment.NewLine}{instructions}" +
-            $"{Environment.NewLine}{Environment.NewLine}If you did not expect this message, contact support.";
-        await _emailSender.SendAsync(target.Email, "Confirm your email", body, cancellationToken);
-
+        await _emailVerification.SendVerificationEmailAsync(target.Id.Value, target.Email, cancellationToken);
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserEmailVerificationSent, request.TargetUserId, request.ActorIpAddress, null);
         await _users.SaveChangesAsync(cancellationToken);
         return true;

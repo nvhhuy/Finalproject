@@ -7,6 +7,7 @@ using Application.Modules.Users.Authentication.Commands.GoogleSignIn;
 using Application.Modules.Users.Authentication.Commands.RefreshSession;
 using Application.Modules.Users.Authentication.Commands.VerifyEmail;
 using Application.Modules.Users.Authentication.Commands.Register;
+using Application.Modules.Users.Authentication.Commands.ResendVerification;
 using Application.Modules.Users.Authentication.Common;
 using Application.Modules.Users.Authentication.Queries;
 using Application.Modules.Users.Profile.Commands.TwoFactor;
@@ -36,13 +37,22 @@ public sealed class AuthController : ApiControllerBase
 
     [HttpPost("register")]
     [Transactional]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<RegistrationResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterCommand command, CancellationToken cancellationToken)
     {
         RegisterCommand withIp = command with { RemoteIpAddress = ClientIp };
-        Result<AuthenticationResponse, Error> result = await Sender.Send(withIp, cancellationToken);
-        return MapAuthResult(result);
+        Result<RegistrationResult, Error> result = await Sender.Send(withIp, cancellationToken);
+        return MatchApi(result, r => OkApi(RegistrationResponseDto.From(r)));
+    }
+
+    [HttpPost("resend-verification")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendEmailVerificationRequest body, CancellationToken cancellationToken)
+    {
+        Result<bool, Error> result = await Sender.Send(new ResendEmailVerificationCommand(body.Email), cancellationToken);
+        return MatchApiEmpty(result);
     }
 
     [HttpPost("login")]

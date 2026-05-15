@@ -1,6 +1,7 @@
 using Application;
 using Application.Contracts.Scheduling;
 using Infrastructure;
+using Infrastructure.Scheduling;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Observability;
@@ -15,7 +16,7 @@ builder.Services.Configure<WorkerSchedulingOptions>(builder.Configuration.GetSec
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<ICronJob, SampleCronJob>();
-builder.Services.AddCronScheduling();
+builder.Services.AddWorkerScheduling(builder.Configuration);
 builder.Services.AddHostedService<SampleQueueConsumerService>();
 
 IConfigurationSection workerSection = builder.Configuration.GetSection(WorkerSchedulingOptions.SectionName);

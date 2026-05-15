@@ -13,7 +13,7 @@ This matrix tracks what the base code currently supports out-of-the-box.
 | Two-factor login/setup | Implemented | Begin/confirm setup and complete login with TOTP. |
 | Forgot password | Implemented (base) | `POST api/auth/forgot-password`, reset token via cache + email sender abstraction. |
 | Reset password (from token) | Implemented (base) | `POST api/auth/reset-password`. |
-| Email verification | Pending | Planned next: verify token flow + `EmailVerified` state gate on sign-in. |
+| Email verification | Implemented | Register sends link; `POST api/auth/verify-email`; `POST api/auth/resend-verification`; login blocked until verified (`EmailNotVerified`). |
 
 ## Admin user management
 
@@ -42,4 +42,4 @@ This matrix tracks what the base code currently supports out-of-the-box.
 |---|---|---|
 | Cron worker base | Implemented | `ICronJob` + `CronJobSchedulerHostedService`. |
 | Queue worker base | Implemented | `QueueConsumerBackgroundService<T>` scaffold. |
-| Real broker adapter (Rabbit/Kafka) | Pending | Null consumer/publisher currently used until adapter is added. |
+| Real broker adapter (Rabbit/Kafka) | Implemented (RabbitMQ) | Set `Messaging:RabbitMq:Enabled` + host; `RabbitMqMessagePublisher` / `RabbitMqMessageConsumer`. Kafka still optional. |

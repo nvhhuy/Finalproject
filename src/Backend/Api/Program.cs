@@ -109,6 +109,8 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 
 app.Run();
 
+public partial class Program;
+
 /// <summary>Small JSON for load balancers / k8s without pulling extra packages.</summary>
 internal static class HealthCheckResponseWriter
 {

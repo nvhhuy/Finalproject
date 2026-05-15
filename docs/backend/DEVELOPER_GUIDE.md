@@ -60,19 +60,33 @@ Some admin controllers in this repo combine **`[JwtAuthorize]`** + **`[Authorize
 
 ---
 
-## 3. DTO mapping: manual vs AutoMapper
+## 3. DTO mapping (Mapperly + manual)
 
-The solution uses **both** patterns:
+The solution uses **Mapperly** (compile-time source generator) for repetitive **domain/entity → application DTO** maps, and **manual** mapping only where shapes differ (registration messages, 2FA challenge, computed metrics).
 
-- **Manual** at the HTTP edge and for auth payloads (e.g. `AuthResponseDto.From`, controller helpers).
-- **AutoMapper** for a small set of application DTOs (`Application/Mappings/UserMappingProfile.cs`, e.g. `User` → `UserSummaryDto`), registered in `Application` `DependencyInjection` via `AddAutoMapper`.
+### 3.1 Where mappers live
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **Manual** | Compile-time safety, easy to read in code review, no extra convention magic, fits DDD boundaries. | More lines for large CRUD surfaces. |
-| **AutoMapper** | Less boilerplate for repetitive property-to-property maps. | Runtime configuration errors, harder refactors, “hidden” mapping logic. |
+| Layer | Folder | Reuse |
+|-------|--------|--------|
+| **Application** | `Application/Mapping/` | `UserMapper`, `AdminAuditLogMapper` — call from handlers, Infrastructure, or anywhere that references `Application`. |
+| **Api** | `Api/Mapping/` | HTTP-only contracts (e.g. `AuthApiMapper` → `AuthResponseDto`). |
 
-**Recommendation:** keep **manual** mapping for auth, security-sensitive, and unstable shapes. Use **AutoMapper** (or **Mapperly**) for repetitive, stable entity-to-read-model maps if the team prefers profiles over constructor mapping. Note: the referenced AutoMapper package version should be upgraded when you next touch dependencies (security advisories).
+**Shared conversions** (e.g. `UserId` → `Guid`) are defined once in `MappingConversions` and pulled in via `[UseStaticMapper(typeof(MappingConversions))]` — no per-mapper duplicate config.
+
+**Assembly defaults** (`MappingAssemblyDefaults.cs`): `RequiredMappingStrategy.Target` so new DTO properties fail the build until mapped.
+
+### 3.2 How to add a new map
+
+1. Add a method to an existing `[Mapper]` class in `Application/Mapping/`, or create `XxxMapper.cs` with `[Mapper]` + `[UseStaticMapper(typeof(MappingConversions))]` when mapping `User` / value objects.
+2. `dotnet build` — generated code appears under `obj/`; call `entity.ToXxxDto()` or `entities.ToXxxDtos()`.
+3. For **nested or renamed** API fields, add `[MapProperty(...)]` on the Api mapper (see `AuthApiMapper`).
+
+### 3.3 When to stay manual
+
+- One-off shapes, security-sensitive fields, or multi-step composition (dashboard metrics, registration text).
+- Prefer `record` constructors in queries when the projection is not a 1:1 entity map.
+
+**AutoMapper** is not used (removed due to NU1903); do not reintroduce without team agreement.
 
 ---
 
@@ -95,12 +109,18 @@ The solution uses **both** patterns:
 
 Register new cron jobs as **`services.AddSingleton<ICronJob, YourJob>()`** (multiple registrations are supported). Tune cron strings under the **`Worker`** configuration section (`WorkerSchedulingOptions`).
 
+**Quartz (default in Worker):** `AddWorkerScheduling()` registers **Quartz.NET** with a hosted registrar. Set **`Worker:UseQuartzScheduler`** to `false` to fall back to the lightweight **Cronos** in-process host. For clustered schedules, set **`Worker:Quartz:UsePersistentStore`** to `true` (uses the same PostgreSQL connection string as the app).
+
+**SMTP email:** enable **`Smtp:Enabled`** and set host/port/credentials. Local dev: `docker compose -f local/docker-compose.yml up -d mailhog` and use port **1025** without SSL (`UseSsl: false`). UI: http://localhost:8025
+
+**RabbitMQ:** enable **`Messaging:RabbitMq:Enabled`**. Local: `docker compose ... up -d rabbitmq` (management UI port **15672**).
+
 ---
 
 ## 5. Tests
 
-- **`Tests/Application.Tests`** — unit tests for **FluentValidation** validators and other pure application rules without a database. Examples: admin user validators, register/login validators.
-- **Next steps for “full” coverage:** add **handler tests** with mocked `IUserRespository` / `IUserReadRepository`, and **integration tests** using `WebApplicationFactory` for HTTP + auth + DB (slower, but catch wiring bugs).
+- **`Tests/Application.Tests`** — unit tests for validators and handlers (e.g. login rejects unverified email).
+- **`Tests/Api.IntegrationTests`** — HTTP tests with **Testcontainers** PostgreSQL (skipped if Docker is unavailable). Override with env **`TEST_DATABASE_CONNECTION_STRING`**.
 
 Run tests from the backend solution directory:
 

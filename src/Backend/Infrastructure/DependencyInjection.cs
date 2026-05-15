@@ -85,7 +85,15 @@ public static class DependencyInjection
         services.Configure<ObjectStorageOptions>(configuration.GetSection(ObjectStorageOptions.SectionName));
         services.AddSingleton<IObjectStorage, S3CompatibleObjectStorage>();
 
-        services.AddSingleton<IEmailSender, NullEmailSender>();
+        services.Configure<SmtpEmailOptions>(configuration.GetSection(SmtpEmailOptions.SectionName));
+        services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
+
+        if (configuration.GetValue($"{SmtpEmailOptions.SectionName}:Enabled", false))
+            services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        else
+            services.AddSingleton<IEmailSender, NullEmailSender>();
+
+        services.AddSingleton<IEmailVerificationSender, EmailVerificationSender>();
         services.AddSingleton<IImageProcessingService, ImageSharpResizeService>();
 
         services.Configure<VideoProcessingOptions>(configuration.GetSection(VideoProcessingOptions.SectionName));
@@ -99,8 +107,19 @@ public static class DependencyInjection
             services.AddSingleton<IVideoProcessingService, NullVideoProcessingService>();
         }
 
-        services.AddSingleton<IMessagePublisher, NullMessagePublisher>();
-        services.AddSingleton<IMessageConsumer, NullMessageConsumer>();
+        if (configuration.GetValue($"{RabbitMqOptions.SectionName}:Enabled", false))
+        {
+            services.AddSingleton<RabbitMqMessagePublisher>();
+            services.AddSingleton<IMessagePublisher>(sp => sp.GetRequiredService<RabbitMqMessagePublisher>());
+            services.AddSingleton<RabbitMqMessageConsumer>();
+            services.AddSingleton<IMessageConsumer>(sp => sp.GetRequiredService<RabbitMqMessageConsumer>());
+        }
+        else
+        {
+            services.AddSingleton<IMessagePublisher, NullMessagePublisher>();
+            services.AddSingleton<IMessageConsumer, NullMessageConsumer>();
+        }
+
         return services;
     }
 

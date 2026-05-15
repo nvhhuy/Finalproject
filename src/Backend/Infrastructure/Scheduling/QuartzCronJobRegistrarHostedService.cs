@@ -1,0 +1,52 @@
+using Application.Contracts.Scheduling;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Quartz;
+
+namespace Infrastructure.Scheduling;
+
+/// <summary>Registers all <see cref="ICronJob"/> instances with the Quartz scheduler after the host starts.</summary>
+public sealed class QuartzCronJobRegistrarHostedService : IHostedService
+{
+    private readonly ISchedulerFactory _schedulerFactory;
+    private readonly IEnumerable<ICronJob> _jobs;
+    private readonly ILogger<QuartzCronJobRegistrarHostedService> _logger;
+
+    public QuartzCronJobRegistrarHostedService(
+        ISchedulerFactory schedulerFactory,
+        IEnumerable<ICronJob> jobs,
+        ILogger<QuartzCronJobRegistrarHostedService> logger)
+    {
+        _schedulerFactory = schedulerFactory;
+        _jobs = jobs;
+        _logger = logger;
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        IScheduler scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
+
+        foreach (ICronJob cron in _jobs)
+        {
+            var jobKey = new JobKey(cron.Name);
+            IJobDetail detail = JobBuilder.Create<QuartzCronJobBridge>()
+                .WithIdentity(jobKey)
+                .UsingJobData(QuartzCronJobBridge.JobNameKey, cron.Name)
+                .Build();
+
+            ITrigger trigger = TriggerBuilder.Create()
+                .WithIdentity($"{cron.Name}-trigger")
+                .ForJob(jobKey)
+                .WithCronSchedule(cron.CronExpression, b => b.InTimeZone(TimeZoneInfo.Utc))
+                .Build();
+
+            if (await scheduler.CheckExists(jobKey, cancellationToken))
+                await scheduler.DeleteJob(jobKey, cancellationToken);
+
+            await scheduler.ScheduleJob(detail, trigger, cancellationToken);
+            _logger.LogInformation("Quartz job registered: {Name} ({Cron})", cron.Name, cron.CronExpression);
+        }
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
