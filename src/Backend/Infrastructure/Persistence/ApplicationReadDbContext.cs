@@ -6,12 +6,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
 
+/// <summary>
+/// CQRS read-side DbContext. Tracking and write paths are disabled — calling <c>SaveChanges</c>
+/// (sync or async) throws <see cref="InvalidOperationException"/> so accidental writes through
+/// the read context fail fast at runtime.
+/// </summary>
 public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbContext
 {
+    private const string WriteForbiddenMessage =
+        "ApplicationReadDbContext is read-only. Use ApplicationDbContext (write side) and IUnitOfWork.SaveChangesAsync for mutations.";
+
     public ApplicationReadDbContext(DbContextOptions<ApplicationReadDbContext> options) : base(options)
     {
         ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         ChangeTracker.AutoDetectChangesEnabled = false;
+        SavingChanges += (_, _) => throw new InvalidOperationException(WriteForbiddenMessage);
     }
 
     public DbSet<User> Users => Set<User>();
@@ -25,4 +34,16 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
         PersistenceModel.Configure(modelBuilder);
         base.OnModelCreating(modelBuilder);
     }
+
+    public override int SaveChanges() =>
+        throw new InvalidOperationException(WriteForbiddenMessage);
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
+        throw new InvalidOperationException(WriteForbiddenMessage);
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException(WriteForbiddenMessage);
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException(WriteForbiddenMessage);
 }

@@ -1,5 +1,6 @@
 using Application.Modules.Users.Authentication;
 using Application.Modules.Users.Authentication.Common;
+using Application.Contracts.Authentication;
 using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Services;
@@ -17,17 +18,20 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
     private readonly IAuthenticationTokenIssuer _tokens;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly ICacheService _cache;
+    private readonly IFailedLoginTracker _failedLogins;
 
     public LoginQueryHandler(
         IUserReadRepository usersRead,
         IAuthenticationTokenIssuer tokens,
         IPasswordHasher<User> passwordHasher,
-        ICacheService cache)
+        ICacheService cache,
+        IFailedLoginTracker failedLogins)
     {
         _usersRead = usersRead;
         _tokens = tokens;
         _passwordHasher = passwordHasher;
         _cache = cache;
+        _failedLogins = failedLogins;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(LoginQuery request, CancellationToken cancellationToken)
@@ -36,9 +40,16 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
         if (validationResult.IsFailure)
             return validationResult.Error;
 
+        TimeSpan? lockoutRemaining = await _failedLogins.GetLockoutRemainingAsync(request.Email, cancellationToken);
+        if (lockoutRemaining is not null)
+            return new AccountTemporarilyLockedError(lockoutRemaining.Value);
+
         User? user = await _usersRead.GetByEmailAsync(request.Email, cancellationToken: cancellationToken);
         if (user is null)
+        {
+            await _failedLogins.RegisterFailureAsync(request.Email, cancellationToken);
             return new InvalidCredentialsError("Invalid email or password.");
+        }
 
         if (!user.CanSignIn)
             return new AccountDisabledError("This account cannot sign in.");
@@ -46,9 +57,20 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
         if (user.EmailVerifiedAtUtc is null)
             return new EmailNotVerifiedError();
 
-        PasswordVerificationResult passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.Password, request.Password);
+        PasswordVerificationResult passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
+        {
+            bool nowLocked = await _failedLogins.RegisterFailureAsync(request.Email, cancellationToken);
+            if (nowLocked)
+            {
+                TimeSpan? remaining = await _failedLogins.GetLockoutRemainingAsync(request.Email, cancellationToken);
+                if (remaining is not null)
+                    return new AccountTemporarilyLockedError(remaining.Value);
+            }
             return new InvalidCredentialsError("Invalid email or password.");
+        }
+
+        await _failedLogins.ResetAsync(request.Email, cancellationToken);
 
         if (user.TwoFactorEnabled)
         {

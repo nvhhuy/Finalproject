@@ -90,6 +90,168 @@ The solution uses **Mapperly** (compile-time source generator) for repetitive **
 
 ---
 
+## 3a. Unit of Work and SaveChanges ownership
+
+The repository pattern in this solution **only stages** mutations. `SaveChanges` is owned by `IUnitOfWork` (`EfUnitOfWork`) so that:
+
+- Every command flushes **once**, deterministically, before returning.
+- Handlers that touch multiple ports (e.g. `IUserRespository` + `IAdminAuditLogWriter`) share the same transaction without coupling repos to each other.
+- Tests do not need to mock `SaveChangesAsync` on every port.
+
+### Pattern for command handlers
+
+```csharp
+public sealed class XxxCommandHandler : IRequestHandler<XxxCommand, Result<bool, Error>>
+{
+    private readonly IUserRespository _users;
+    private readonly IUnitOfWork _uow;
+
+    public XxxCommandHandler(IUserRespository users, IUnitOfWork uow)
+    {
+        _users = users;
+        _uow = uow;
+    }
+
+    public async Task<Result<bool, Error>> Handle(XxxCommand request, CancellationToken ct)
+    {
+        var user = await _users.GetUserByIdForUpdateAsync(request.UserId, ct);
+        if (user is null) return new NotFoundError("...");
+
+        user.DoSomething();
+        await _uow.SaveChangesAsync(ct);
+        return true;
+    }
+}
+```
+
+The `TransactionalActionFilter` wraps each HTTP action with **BeginTransaction -> action -> Commit/Rollback** based on response status, so a successful `IUnitOfWork.SaveChangesAsync` is committed atomically (and rolled back on >= 400 / exceptions).
+
+### Read side cannot SaveChanges
+
+`ApplicationReadDbContext` overrides `SaveChanges`/`SaveChangesAsync` to throw `InvalidOperationException`. Combined with `NoTracking` + `AutoDetectChangesEnabled=false`, accidental writes via the read DbContext **fail fast at runtime** — use `ApplicationDbContext` (write) and the repository ports for mutations.
+
+---
+
+## 3b. Caching: read-through vs ephemeral business state
+
+The codebase uses `ICacheService` (Redis-backed in production, in-memory in development) for two distinct purposes — **placing them in the wrong layer is the most common cache bug**.
+
+### Decision rule
+
+> **Cache an entity read from DB → repository (read-through).  
+> Cache a short-lived business artifact that has no DB row → handler (ephemeral state).**
+
+| Concern | Read-through cache | Ephemeral business state |
+|---------|--------------------|---------------------------|
+| Lives because... | DB read is expensive | Token / challenge / pending workflow needs to be remembered between requests |
+| Has a backing DB row? | Yes | **No** — cache **is** the source of truth until TTL |
+| TTL semantics | Performance hint | Business rule (e.g. "verification link valid 24h") |
+| Invalidation trigger | Mutation on the entity | Token consumed, user cancels, TTL expires |
+| Layer that owns it | **Repository** | **Handler / Application** |
+
+### Pattern A — Read-through cache (Repository)
+
+Already implemented in `UserReadRepository`:
+
+- `GetByIdAsync`, `GetByEmailAsync`, `GetByUserNameAsync` check the cache first, fall back to EF, then populate it.
+- Write-side helpers (`UserWriteRepository.InvalidateUserCacheAsync` /  `IUserRespository.InvalidateUserCacheAsync`) clear the same keys after the unit-of-work commits.
+- Handlers stay oblivious — they just call `_users.GetUserByEmailAsync(email)` and `await _users.InvalidateUserCacheAsync(...)` after mutation.
+
+Adding a new read-through cache:
+
+1. Put the cache key constants in `Infrastructure/.../Repositories/<entity>ReadCacheKeys.cs`.
+2. Wrap the EF query in the read repository (cache miss → query → set).
+3. In the write repository, call `RemoveCacheKeysAsync(...)` (or a typed `InvalidateXxxCacheAsync` helper) after the handler calls `_uow.SaveChangesAsync(ct)`.
+4. **Never** touch these keys from a handler.
+
+### Pattern B — Ephemeral business state (Handler)
+
+Already used by:
+
+- **Email verification token** — `VerifyEmailCommands.cs`, `EmailVerificationSender.cs`.
+- **Password reset token** — `ForgotPasswordCommands.cs`.
+- **Two-factor pending challenge** — 2FA login flow.
+
+These artifacts never hit the database. The cache key + TTL **is** the lifecycle:
+
+```csharp
+string cacheKey = AuthCacheKeys.EmailVerificationPrefix + tokenId;
+await _cache.SetAsync(cacheKey, new EmailVerificationTokenPayload(userId, hash), ttl, ct);
+// ...later...
+EmailVerificationTokenPayload? payload = await _cache.GetAsync<...>(cacheKey, ct);
+if (payload is null) return new InvalidOrExpiredTokenError();
+await _cache.RemoveAsync(cacheKey, ct);   // explicit "consume"
+```
+
+Rules:
+
+- Put the prefix in a static `XxxCacheKeys` class under `Application/Modules/.../`.
+- The handler that **creates** the token also defines its TTL.
+- The handler that **consumes** the token deletes the key explicitly (don't rely on TTL alone for one-time tokens).
+- Do **not** wrap this in a repository — it isn't an entity.
+
+### Anti-patterns
+
+| Smell | Why it hurts |
+|------|--------------|
+| `_cache.Set("user:" + id, user)` inside a command handler | Read-through belongs to the repo. Other handlers reading the same user won't see the cache; invalidation becomes "whoever remembers". |
+| Repo setting TTL based on business rules (e.g. "verification token lives 24h") | Repo is leaking business semantics — violates Clean Architecture. |
+| Repo invalidating cache for tokens, pending challenges, or other handler-owned artifacts | Repo should only invalidate caches **it itself populates**. |
+| Reading the cache directly in a controller | Controllers shouldn't bypass the handler / repository layer. |
+
+### Where to look in code
+
+- Contract: `Application/Contracts/Caching/ICacheService.cs`
+- Read-through example: `Infrastructure/Modules/Users/Persistence/Repositories/UserReadRepository.cs` + `UserReadCacheKeys`
+- Ephemeral example: `Application/Modules/Users/Authentication/Commands/VerifyEmail/VerifyEmailCommands.cs` + `AuthCacheKeys`
+- Invalidation entry points (write side): `IUserRepository.InvalidateUserCacheAsync(...)` called from every command handler after `_uow.SaveChangesAsync(ct)`.
+
+---
+
+## 3c. Transactional outbox for integration events
+
+In-process domain events (`ITransactionalDomainEvent`, `IAfterCommitDomainEvent`) cover same-aggregate consistency and post-commit MediatR handlers. **Anything that has to leave this process** (RabbitMQ publish, webhook, cross-bounded-context message) goes through the **transactional outbox** to keep producer-side state and broker delivery atomic.
+
+### Producing an integration event
+
+1. Define a record implementing `IIntegrationEvent`:
+
+   ```csharp
+   public sealed record UserRegisteredIntegrationEvent(Guid UserId, string Email)
+       : IIntegrationEvent
+   {
+       public Guid EventId { get; } = Guid.NewGuid();
+       public DateTime OccurredOnUtc { get; } = DateTime.UtcNow;
+       public string RoutingKey => "user.registered.v1";
+   }
+   ```
+
+2. Add it from the aggregate the same way as any other domain event: `AddDomainEvent(new UserRegisteredIntegrationEvent(...))`.
+
+3. The `DomainEventsSaveChangesInterceptor` runs during `SavingChangesAsync` and serialises the event into an `OutboxMessages` row inside the same EF `DbContext`. Because `IUnitOfWork.SaveChangesAsync` is the single flush point, the business row and the outbox row commit (or roll back) together.
+
+### Draining the outbox
+
+`OutboxPublisherHostedService` (registered via `AddOutboxPublisher` in the Worker host) polls `OutboxMessages WHERE ProcessedOnUtc IS NULL AND (NextAttemptUtc IS NULL OR NextAttemptUtc <= now())`, publishes the JSON payload via `IMessagePublisher.PublishRawAsync` to RabbitMQ, and marks the row processed. Failures use exponential backoff (`InitialBackoffSeconds × 2^attempts`, capped at 1 h); rows that exceed `MaxAttempts` are marked abandoned with the error captured.
+
+### Configuration (`appsettings.json` → `Outbox` section)
+
+| Key | Default | Notes |
+| --- | --- | --- |
+| `Enabled` | `true` | Disable for API-only deployments without a worker. |
+| `PollIntervalSeconds` | `5` | Idle delay between cycles when no rows are pending. |
+| `BatchSize` | `50` | Rows pulled per cycle. |
+| `MaxAttempts` | `10` | After this many failures the row is abandoned. |
+| `InitialBackoffSeconds` | `10` | Exponential backoff seed. |
+
+### Important rules
+
+- **Only the Worker host drains the outbox** — registering `AddOutboxPublisher` in the API would cause double publishes.
+- **Consumers must be idempotent on `EventId`**: the outbox guarantees at-least-once delivery, not exactly-once.
+- Domain events should be **either** `IIntegrationEvent` (cross-process) **or** an in-process marker, not both. If you need to react in-process AND publish, raise two events.
+
+---
+
 ## 4. Scheduling and the Worker host
 
 ### 4.1 Where cron runs

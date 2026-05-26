@@ -1,6 +1,8 @@
 using Application.Contracts.Administration;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Authorization;
+using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Services;
+using Application.Contracts.Transactions;
 using Application.Modules.Users.Authentication.Common;
 using Domains.UserAggregate;
 using MediatR;
@@ -11,28 +13,26 @@ using Shared.Errors.General;
 namespace Application.Modules.Users.Administration.Commands;
 
 public sealed record ImpersonateUserCommand(Guid TargetUserId, Guid ActingAdminUserId, string? RemoteIpAddress = null)
-    : IRequest<Result<AuthenticationResponse, Error>>;
+    : IRequest<Result<AuthenticationResponse, Error>>, IRequireAdmin;
 
 public sealed class ImpersonateUserCommandHandler : IRequestHandler<ImpersonateUserCommand, Result<AuthenticationResponse, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserReadRepository _read;
     private readonly IAuthenticationTokenIssuer _tokens;
     private readonly IAdminAuditLogWriter _audit;
+    private readonly IUnitOfWork _uow;
 
-    public ImpersonateUserCommandHandler(IUserRespository users, IAuthenticationTokenIssuer tokens, IAdminAuditLogWriter audit)
+    public ImpersonateUserCommandHandler(IUserReadRepository read, IAuthenticationTokenIssuer tokens, IAdminAuditLogWriter audit, IUnitOfWork uow)
     {
-        _users = users;
+        _read = read;
         _tokens = tokens;
         _audit = audit;
+        _uow = uow;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(ImpersonateUserCommand request, CancellationToken cancellationToken)
     {
-        User? admin = await _users.GetUserByIdAsync(request.ActingAdminUserId, cancellationToken);
-        if (admin is null || admin.Role != UserRoles.Admin)
-            return new ForbiddenError("Administrator privileges are required.");
-
-        User? target = await _users.GetUserByIdAsync(request.TargetUserId, cancellationToken);
+        User? target = await _read.GetByIdAsync(request.TargetUserId, cancellationToken: cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
 
@@ -46,7 +46,7 @@ public sealed class ImpersonateUserCommandHandler : IRequestHandler<ImpersonateU
             return pair.Error;
 
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserImpersonated, request.TargetUserId, request.RemoteIpAddress, null);
-        await _users.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return new AuthenticationResponse(
             target,

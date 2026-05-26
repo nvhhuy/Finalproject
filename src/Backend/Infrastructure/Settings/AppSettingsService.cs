@@ -1,4 +1,5 @@
 using Application.Contracts.Settings;
+using Application.Contracts.Transactions;
 using Domains.SystemSettings;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,11 +10,13 @@ public sealed class AppSettingsService : IAppSettingsService
 {
     private readonly ApplicationDbContext _write;
     private readonly ApplicationReadDbContext _read;
+    private readonly IUnitOfWork _uow;
 
-    public AppSettingsService(ApplicationDbContext write, ApplicationReadDbContext read)
+    public AppSettingsService(ApplicationDbContext write, ApplicationReadDbContext read, IUnitOfWork uow)
     {
         _write = write;
         _read = read;
+        _uow = uow;
     }
 
     public async Task<bool> GetBooleanAsync(string key, bool defaultValue, CancellationToken cancellationToken = default)
@@ -40,6 +43,6 @@ public sealed class AppSettingsService : IAppSettingsService
             existing.SetValue(value);
         }
 
-        await _write.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
     }
 }

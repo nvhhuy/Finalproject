@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Contracts.Authorization;
 using Application.Mapping;
 using Application.Contracts.Modules.Users.Persistence;
 using Domains.Administration;
@@ -10,7 +11,7 @@ using Shared.Errors;
 namespace Application.Modules.Users.Administration.Queries;
 
 public sealed record AdminListAuditLogsQuery(int Page, int PageSize, Guid? TargetUserId = null)
-    : IRequest<Result<AdminAuditLogListDto, Error>>;
+    : IRequest<Result<AdminAuditLogListDto, Error>>, IRequireAdmin;
 
 public sealed record AdminAuditLogEntryDto(
     Guid Id,

@@ -1,6 +1,8 @@
 using Application.Contracts.Caching;
 using Application.Contracts.Email;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Contracts.Modules.Users.Persistence.Write;
+using Application.Contracts.Transactions;
 using Application.Modules.Users.Authentication.Options;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -20,13 +22,13 @@ internal sealed record PasswordResetTokenPayload(Guid UserId, string TokenHash);
 
 public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, Result<bool, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserReadRepository _users;
     private readonly ICacheService _cache;
     private readonly IEmailSender _emailSender;
     private readonly PasswordResetEmailOptions _resetEmail;
 
     public ForgotPasswordCommandHandler(
-        IUserRespository users,
+        IUserReadRepository users,
         ICacheService cache,
         IEmailSender emailSender,
         IOptions<PasswordResetEmailOptions> resetEmailOptions)
@@ -43,7 +45,7 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
         if (validation.IsFailure)
             return validation.Error;
 
-        Domains.UserAggregate.User? user = await _users.GetUserByEmailAsync(request.Email);
+        Domains.UserAggregate.User? user = await _users.GetByEmailAsync(request.Email, cancellationToken: cancellationToken);
         if (user is null)
             return true; // prevent account enumeration
 
@@ -85,18 +87,21 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
 
 public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, Result<bool, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserWriteRepository _users;
     private readonly ICacheService _cache;
     private readonly IPasswordHasher<Domains.UserAggregate.User> _passwordHasher;
+    private readonly IUnitOfWork _uow;
 
     public ResetPasswordCommandHandler(
-        IUserRespository users,
+        IUserWriteRepository users,
         ICacheService cache,
-        IPasswordHasher<Domains.UserAggregate.User> passwordHasher)
+        IPasswordHasher<Domains.UserAggregate.User> passwordHasher,
+        IUnitOfWork uow)
     {
         _users = users;
         _cache = cache;
         _passwordHasher = passwordHasher;
+        _uow = uow;
     }
 
     public async Task<Result<bool, Error>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
@@ -114,12 +119,12 @@ public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordC
         if (!string.Equals(payload.TokenHash, hash, StringComparison.Ordinal))
             return new Error("InvalidOrExpiredResetToken", StatusCodes.Status400BadRequest, "Reset token is invalid or expired.");
 
-        Domains.UserAggregate.User? user = await _users.GetUserByIdForUpdateAsync(payload.UserId, cancellationToken);
+        Domains.UserAggregate.User? user = await _users.GetByIdForUpdateAsync(payload.UserId, cancellationToken);
         if (user is null)
             return new Error("InvalidResetTarget", StatusCodes.Status400BadRequest, "Reset token target is no longer available.");
 
-        user.UpdatePassword(_passwordHasher.HashPassword(user, request.NewPassword));
-        await _users.SaveChangesAsync(cancellationToken);
+        user.UpdatePasswordHash(_passwordHasher.HashPassword(user, request.NewPassword));
+        await _uow.SaveChangesAsync(cancellationToken);
         await _users.InvalidateUserCacheAsync(user.Id.Value, user.Email, user.UserName, cancellationToken);
         await _cache.RemoveAsync(cacheKey, cancellationToken);
         return true;

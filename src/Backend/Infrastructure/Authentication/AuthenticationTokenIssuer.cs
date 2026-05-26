@@ -1,4 +1,5 @@
 using Application.Contracts.Services;
+using Application.Contracts.Transactions;
 using Domains.UserAggregate;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +20,20 @@ public sealed class AuthenticationTokenIssuer : IAuthenticationTokenIssuer
     private readonly ApplicationDbContext _db;
     private readonly IOptions<JwtSettings> _jwtOptions;
     private readonly IDateTimeProvider _clock;
+    private readonly IUnitOfWork _uow;
 
     public AuthenticationTokenIssuer(
         IJwtGenerator jwtGenerator,
         ApplicationDbContext db,
         IOptions<JwtSettings> jwtOptions,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IUnitOfWork uow)
     {
         _jwtGenerator = jwtGenerator;
         _db = db;
         _jwtOptions = jwtOptions;
         _clock = clock;
+        _uow = uow;
     }
 
     public async Task<Result<AuthenticationTokenPair, Error>> IssueAsync(
@@ -54,7 +58,7 @@ public sealed class AuthenticationTokenIssuer : IAuthenticationTokenIssuer
         tracked.RecordLogin();
         RefreshToken token = RefreshToken.Issue(tracked.Id, refreshHash, refreshExpires, _clock.Now, remoteIpAddress);
         _db.RefreshTokens.Add(token);
-        await _db.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return new AuthenticationTokenPair(accessToken, accessExpires, refreshPlain, refreshExpires);
     }

@@ -1,7 +1,10 @@
 using Application.Contracts.Administration;
+using Application.Contracts.Authorization;
 using Application.Contracts.Email;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
+using Application.Contracts.Transactions;
 using Domains.UserAggregate;
 using MediatR;
 using Shared.Common;
@@ -11,63 +14,60 @@ using Shared.Errors.General;
 namespace Application.Modules.Users.Administration.Commands;
 
 public sealed record AdminMarkEmailVerifiedCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
-    : IRequest<Result<bool, Error>>;
+    : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminMarkEmailVerifiedCommandHandler : IRequestHandler<AdminMarkEmailVerifiedCommand, Result<bool, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserWriteRepository _write;
     private readonly IAdminAuditLogWriter _audit;
+    private readonly IUnitOfWork _uow;
 
-    public AdminMarkEmailVerifiedCommandHandler(IUserRespository users, IAdminAuditLogWriter audit)
+    public AdminMarkEmailVerifiedCommandHandler(IUserWriteRepository write, IAdminAuditLogWriter audit, IUnitOfWork uow)
     {
-        _users = users;
+        _write = write;
         _audit = audit;
+        _uow = uow;
     }
 
     public async Task<Result<bool, Error>> Handle(AdminMarkEmailVerifiedCommand request, CancellationToken cancellationToken)
     {
-        User? admin = await _users.GetUserByIdAsync(request.ActingAdminUserId, cancellationToken);
-        if (admin is null || admin.Role != UserRoles.Admin)
-            return new ForbiddenError("Administrator privileges are required.");
-
-        User? target = await _users.GetUserByIdForUpdateAsync(request.TargetUserId, cancellationToken);
+        User? target = await _write.GetByIdForUpdateAsync(request.TargetUserId, cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
 
         target.MarkEmailVerified(DateTime.UtcNow);
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserEmailVerified, request.TargetUserId, request.ActorIpAddress, null);
-        await _users.SaveChangesAsync(cancellationToken);
-        await _users.InvalidateUserCacheAsync(target.Id.Value, target.Email, target.UserName, cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
+        await _write.InvalidateUserCacheAsync(target.Id.Value, target.Email, target.UserName, cancellationToken);
         return true;
     }
 }
 
 public sealed record AdminResendEmailVerificationCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
-    : IRequest<Result<bool, Error>>;
+    : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminResendEmailVerificationCommandHandler : IRequestHandler<AdminResendEmailVerificationCommand, Result<bool, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserReadRepository _read;
     private readonly IEmailVerificationSender _emailVerification;
     private readonly IAdminAuditLogWriter _audit;
+    private readonly IUnitOfWork _uow;
 
     public AdminResendEmailVerificationCommandHandler(
-        IUserRespository users,
+        IUserReadRepository read,
         IEmailVerificationSender emailVerification,
-        IAdminAuditLogWriter audit)
+        IAdminAuditLogWriter audit,
+        IUnitOfWork uow)
     {
-        _users = users;
+        _read = read;
         _emailVerification = emailVerification;
         _audit = audit;
+        _uow = uow;
     }
 
     public async Task<Result<bool, Error>> Handle(AdminResendEmailVerificationCommand request, CancellationToken cancellationToken)
     {
-        User? admin = await _users.GetUserByIdAsync(request.ActingAdminUserId, cancellationToken);
-        if (admin is null || admin.Role != UserRoles.Admin)
-            return new ForbiddenError("Administrator privileges are required.");
-
-        User? target = await _users.GetUserByIdAsync(request.TargetUserId, cancellationToken);
+        User? target = await _read.GetByIdAsync(request.TargetUserId, cancellationToken: cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
 
@@ -76,45 +76,50 @@ public sealed class AdminResendEmailVerificationCommandHandler : IRequestHandler
 
         await _emailVerification.SendVerificationEmailAsync(target.Id.Value, target.Email, cancellationToken);
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserEmailVerificationSent, request.TargetUserId, request.ActorIpAddress, null);
-        await _users.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
         return true;
     }
 }
 
 public sealed record AdminRevokeUserSessionsCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
-    : IRequest<Result<bool, Error>>;
+    : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminRevokeUserSessionsCommandHandler : IRequestHandler<AdminRevokeUserSessionsCommand, Result<bool, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserReadRepository _read;
+    private readonly IUserWriteRepository _write;
     private readonly IDateTimeProvider _clock;
     private readonly IAdminAuditLogWriter _audit;
+    private readonly IUnitOfWork _uow;
 
-    public AdminRevokeUserSessionsCommandHandler(IUserRespository users, IDateTimeProvider clock, IAdminAuditLogWriter audit)
+    public AdminRevokeUserSessionsCommandHandler(
+        IUserReadRepository read,
+        IUserWriteRepository write,
+        IDateTimeProvider clock,
+        IAdminAuditLogWriter audit,
+        IUnitOfWork uow)
     {
-        _users = users;
+        _read = read;
+        _write = write;
         _clock = clock;
         _audit = audit;
+        _uow = uow;
     }
 
     public async Task<Result<bool, Error>> Handle(AdminRevokeUserSessionsCommand request, CancellationToken cancellationToken)
     {
-        User? admin = await _users.GetUserByIdAsync(request.ActingAdminUserId, cancellationToken);
-        if (admin is null || admin.Role != UserRoles.Admin)
-            return new ForbiddenError("Administrator privileges are required.");
-
-        User? target = await _users.GetUserByIdAsync(request.TargetUserId, cancellationToken);
+        User? target = await _read.GetByIdAsync(request.TargetUserId, cancellationToken: cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
 
-        int revoked = await _users.RevokeAllRefreshTokensForUserAsync(request.TargetUserId, _clock.Now, cancellationToken);
+        int revoked = await _write.RevokeAllRefreshTokensForUserAsync(request.TargetUserId, _clock.Now, cancellationToken);
         _audit.Append(
             request.ActingAdminUserId,
             AdminAuditActions.UserSessionsRevoked,
             request.TargetUserId,
             request.ActorIpAddress,
             $"tokens_revoked:{revoked}");
-        await _users.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

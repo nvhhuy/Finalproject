@@ -1,17 +1,28 @@
 using Application.Contracts.Events;
 using Domains.Common.Interfaces;
+using Infrastructure.Messaging.Outbox;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Text.Json;
 
 namespace Infrastructure.Persistence.Interceptors;
 
 /// <summary>
-/// Publishes <see cref="ITransactionalDomainEvent"/> immediately after SaveChanges (still inside an explicit transaction if one is open).
-/// Queues <see cref="IAfterCommitDomainEvent"/> until <see cref="Application.Contracts.Transactions.IUnitOfWork.CommitAsync"/> when a transaction is active; otherwise publishes right away.
+/// Two-phase domain-event dispatcher:
+/// <list type="bullet">
+///   <item><see cref="IIntegrationEvent"/> is captured during <c>SavingChangesAsync</c> as an <see cref="OutboxMessage"/>
+///   row written in the same transaction as the business state (transactional outbox).</item>
+///   <item><see cref="ITransactionalDomainEvent"/> is published immediately after <c>SaveChanges</c> succeeds (still
+///   inside any active explicit transaction). Safe for same-aggregate consistency work.</item>
+///   <item><see cref="IAfterCommitDomainEvent"/> is queued until <c>IUnitOfWork.CommitAsync</c>; if no transaction is
+///   active it dispatches right away.</item>
+/// </list>
 /// </summary>
 public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
 {
+    private static readonly JsonSerializerOptions OutboxJsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     private readonly IPublisher _publisher;
     private readonly IAfterCommitDomainEventQueue _afterCommitQueue;
 
@@ -21,18 +32,59 @@ public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
         _afterCommitQueue = afterCommitQueue;
     }
 
+    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+        DbContextEventData eventData,
+        InterceptionResult<int> result,
+        CancellationToken cancellationToken = default)
+    {
+        if (eventData.Context is not null)
+            CaptureIntegrationEvents(eventData.Context);
+
+        return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
     public override async ValueTask<int> SavedChangesAsync(
         SaveChangesCompletedEventData eventData,
         int result,
         CancellationToken cancellationToken = default)
     {
         if (result > 0 && eventData.Context is not null)
-            await DispatchDomainEventsAsync(eventData.Context, cancellationToken);
+            await DispatchInProcessDomainEventsAsync(eventData.Context, cancellationToken);
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
-    private async Task DispatchDomainEventsAsync(DbContext context, CancellationToken cancellationToken)
+    private static void CaptureIntegrationEvents(DbContext context)
+    {
+        List<IHasDomainEvents> carriers = context.ChangeTracker
+            .Entries()
+            .Select(e => e.Entity)
+            .OfType<IHasDomainEvents>()
+            .Where(e => e.DomainEvents.Count > 0)
+            .ToList();
+
+        foreach (IHasDomainEvents carrier in carriers)
+        {
+            foreach (IDomainEvent ev in carrier.DomainEvents)
+            {
+                if (ev is not IIntegrationEvent integration)
+                    continue;
+
+                string payload = JsonSerializer.Serialize(integration, integration.GetType(), OutboxJsonOptions);
+                var row = new OutboxMessage(
+                    eventId: integration.EventId,
+                    occurredOnUtc: integration.OccurredOnUtc,
+                    type: integration.GetType().AssemblyQualifiedName ?? integration.GetType().FullName!,
+                    routingKey: integration.RoutingKey,
+                    exchange: null,
+                    payloadJson: payload);
+
+                context.Set<OutboxMessage>().Add(row);
+            }
+        }
+    }
+
+    private async Task DispatchInProcessDomainEventsAsync(DbContext context, CancellationToken cancellationToken)
     {
         List<IHasDomainEvents> withEvents = context.ChangeTracker
             .Entries()
@@ -48,6 +100,9 @@ public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
 
             foreach (IDomainEvent ev in snapshot)
             {
+                if (ev is IIntegrationEvent)
+                    continue; // already captured into the outbox during SavingChanges
+
                 if (ev is not INotification notification)
                     continue;
 

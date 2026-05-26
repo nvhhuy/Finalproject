@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Contracts.Authorization;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Mapping;
 using Domains.UserAggregate;
@@ -17,7 +18,7 @@ public sealed record AdminListUsersQuery(
     bool? IsLocked = null,
     string? Role = null,
     string? SortBy = null,
-    bool SortDescending = false) : IRequest<Result<AdminUserListDto, Error>>;
+    bool SortDescending = false) : IRequest<Result<AdminUserListDto, Error>>, IRequireAdmin;
 
 public sealed record AdminUserSummaryDto(
     Guid Id,

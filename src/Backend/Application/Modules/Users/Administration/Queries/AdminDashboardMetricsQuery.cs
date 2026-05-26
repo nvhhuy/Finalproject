@@ -1,3 +1,4 @@
+using Application.Contracts.Authorization;
 using Application.Contracts.Modules.Users.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,7 @@ using Shared.Errors;
 
 namespace Application.Modules.Users.Administration.Queries;
 
-public sealed record AdminDashboardMetricsQuery : IRequest<Result<AdminDashboardMetricsDto, Error>>;
+public sealed record AdminDashboardMetricsQuery : IRequest<Result<AdminDashboardMetricsDto, Error>>, IRequireAdmin;
 
 public sealed record AdminDashboardMetricsDto(int TotalActiveUsers, IReadOnlyList<DailyRegistrationDto> RegistrationsLast14Days);
 

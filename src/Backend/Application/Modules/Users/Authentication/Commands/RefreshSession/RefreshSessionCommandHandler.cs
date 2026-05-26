@@ -1,6 +1,8 @@
 using Application.Modules.Users.Authentication.Common;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
+using Application.Contracts.Transactions;
 using Domains.UserAggregate;
 using MediatR;
 using Shared.Common;
@@ -12,26 +14,34 @@ namespace Application.Modules.Users.Authentication.Commands.RefreshSession;
 
 public sealed class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionCommand, Result<AuthenticationResponse, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserReadRepository _read;
+    private readonly IUserWriteRepository _write;
     private readonly IAuthenticationTokenIssuer _tokens;
+    private readonly IUnitOfWork _uow;
 
-    public RefreshSessionCommandHandler(IUserRespository users, IAuthenticationTokenIssuer tokens)
+    public RefreshSessionCommandHandler(
+        IUserReadRepository read,
+        IUserWriteRepository write,
+        IAuthenticationTokenIssuer tokens,
+        IUnitOfWork uow)
     {
-        _users = users;
+        _read = read;
+        _write = write;
         _tokens = tokens;
+        _uow = uow;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
     {
         string hash = TokenHasher.Sha256(request.RefreshToken);
-        RefreshToken? existing = await _users.GetRefreshTokenByHashAsync(hash, cancellationToken);
+        RefreshToken? existing = await _write.GetRefreshTokenByHashForUpdateAsync(hash, cancellationToken);
         if (existing is null || !existing.IsActive)
             return new InvalidCredentialsError("Refresh token is invalid or expired.");
 
         existing.Revoke();
-        await _users.SaveChangesAsync();
+        await _uow.SaveChangesAsync(cancellationToken);
 
-        User? user = await _users.GetUserByIdAsync(existing.UserId.Value, cancellationToken);
+        User? user = await _read.GetByIdAsync(existing.UserId.Value, cancellationToken: cancellationToken);
         if (user is null)
             return new InvalidCredentialsError("User no longer exists.");
 

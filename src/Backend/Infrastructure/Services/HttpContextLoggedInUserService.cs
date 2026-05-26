@@ -24,4 +24,7 @@ public sealed class HttpContextLoggedInUserService : ILoggedInUserService
             return UserId.Create(guid);
         }
     }
+
+    public bool IsInRole(string role) =>
+        _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
 }

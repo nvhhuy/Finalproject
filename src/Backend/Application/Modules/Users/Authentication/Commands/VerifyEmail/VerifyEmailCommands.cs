@@ -1,5 +1,6 @@
 using Application.Contracts.Caching;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Modules.Users.Persistence.Write;
+using Application.Contracts.Transactions;
 using Application.Modules.Users.Authentication;
 using Domains.UserAggregate;
 using MediatR;
@@ -15,13 +16,15 @@ public sealed record EmailVerificationTokenPayload(Guid UserId, string TokenHash
 
 public sealed class VerifyEmailCommandHandler : IRequestHandler<VerifyEmailCommand, Result<bool, Error>>
 {
-    private readonly IUserRespository _users;
+    private readonly IUserWriteRepository _users;
     private readonly ICacheService _cache;
+    private readonly IUnitOfWork _uow;
 
-    public VerifyEmailCommandHandler(IUserRespository users, ICacheService cache)
+    public VerifyEmailCommandHandler(IUserWriteRepository users, ICacheService cache, IUnitOfWork uow)
     {
         _users = users;
         _cache = cache;
+        _uow = uow;
     }
 
     public async Task<Result<bool, Error>> Handle(VerifyEmailCommand request, CancellationToken cancellationToken)
@@ -38,12 +41,12 @@ public sealed class VerifyEmailCommandHandler : IRequestHandler<VerifyEmailComma
         if (!string.Equals(payload.TokenHash, hash, StringComparison.Ordinal))
             return new Error("InvalidOrExpiredVerificationToken", 400, "Verification link is invalid or expired.");
 
-        User? user = await _users.GetUserByIdForUpdateAsync(payload.UserId, cancellationToken);
+        User? user = await _users.GetByIdForUpdateAsync(payload.UserId, cancellationToken);
         if (user is null)
             return new Error("InvalidVerificationTarget", 400, "User is no longer available.");
 
         user.MarkEmailVerified(DateTime.UtcNow);
-        await _users.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
         await _users.InvalidateUserCacheAsync(user.Id.Value, user.Email, user.UserName, cancellationToken);
         await _cache.RemoveAsync(cacheKey, cancellationToken);
         return true;

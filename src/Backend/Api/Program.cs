@@ -2,6 +2,7 @@ using Api;
 using Api.ExceptionHandling;
 using Api.Middleware;
 using Application;
+using Asp.Versioning.ApiExplorer;
 using Infrastructure;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -25,6 +26,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddWebApi(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddPlatformOpenTelemetry(builder.Configuration, serviceNameFallback: "finalproject.api");
 
 var app = builder.Build();
 
@@ -32,7 +34,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        IApiVersionDescriptionProvider provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        foreach (ApiVersionDescription description in provider.ApiVersionDescriptions)
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+    });
 }
 
 bool applyPendingMigrations = app.Environment.IsDevelopment()

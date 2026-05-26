@@ -5,6 +5,7 @@ using Api.Models.Admin;
 using Application.Modules.SystemSettings;
 using Application.Modules.SystemSettings.Admin.Commands;
 using Application.Modules.SystemSettings.Admin.Queries;
+using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +15,10 @@ using Shared.Errors;
 namespace Api.Controllers.Admin;
 
 [ApiController]
+[ApiVersion("1.0")]
 [JwtAuthorize]
 [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
-[Route("api/admin/settings")]
+[Route("api/v{version:apiVersion}/admin/settings")]
 public sealed class AdminSettingsController : ApiControllerBase
 {
     public AdminSettingsController(ISender sender) : base(sender)

@@ -2,6 +2,7 @@ using Api.Authorization;
 using Api.Controllers.Base;
 using Api.Models;
 using Application.Modules.Users.Administration.Queries;
+using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +12,10 @@ using Shared.Errors;
 namespace Api.Controllers.Admin;
 
 [ApiController]
+[ApiVersion("1.0")]
 [JwtAuthorize]
 [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
-[Route("api/admin/metrics")]
+[Route("api/v{version:apiVersion}/admin/metrics")]
 public sealed class AdminMetricsController : ApiControllerBase
 {
     public AdminMetricsController(ISender sender) : base(sender)

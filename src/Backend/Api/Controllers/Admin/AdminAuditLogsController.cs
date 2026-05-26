@@ -2,6 +2,7 @@ using Api.Authorization;
 using Api.Controllers.Base;
 using Api.Models;
 using Application.Modules.Users.Administration.Queries;
+using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +12,10 @@ using Shared.Errors;
 namespace Api.Controllers.Admin;
 
 [ApiController]
+[ApiVersion("1.0")]
 [JwtAuthorize]
 [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
-[Route("api/admin/audit-logs")]
+[Route("api/v{version:apiVersion}/admin/audit-logs")]
 public sealed class AdminAuditLogsController : ApiControllerBase
 {
     public AdminAuditLogsController(ISender sender) : base(sender)

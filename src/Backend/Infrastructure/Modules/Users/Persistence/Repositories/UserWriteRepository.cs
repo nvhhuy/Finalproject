@@ -36,9 +36,6 @@ public sealed class UserWriteRepository : WriteRepositoryBase, IUserWriteReposit
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, revokedAtUtc), cancellationToken);
     }
 
-    public async Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        await _context.SaveChangesAsync(cancellationToken) > 0;
-
     public Task InvalidateUserCacheAsync(Guid userId, string? email = null, string? userName = null, CancellationToken cancellationToken = default) =>
         InvalidateUserLookupAsync(userId, email, userName, cancellationToken);
 }

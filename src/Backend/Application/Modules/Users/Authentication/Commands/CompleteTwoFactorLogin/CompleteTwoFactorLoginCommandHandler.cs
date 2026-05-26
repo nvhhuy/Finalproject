@@ -1,7 +1,7 @@
 using Application.Modules.Users.Authentication;
 using Application.Modules.Users.Authentication.Common;
 using Application.Contracts.Caching;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Services;
 using Domains.UserAggregate;
 using MediatR;
@@ -15,10 +15,10 @@ namespace Application.Modules.Users.Authentication.Commands.CompleteTwoFactorLog
 public sealed class CompleteTwoFactorLoginCommandHandler : IRequestHandler<CompleteTwoFactorLoginCommand, Result<AuthenticationResponse, Error>>
 {
     private readonly ICacheService _cache;
-    private readonly IUserRespository _users;
+    private readonly IUserReadRepository _users;
     private readonly IAuthenticationTokenIssuer _tokens;
 
-    public CompleteTwoFactorLoginCommandHandler(ICacheService cache, IUserRespository users, IAuthenticationTokenIssuer tokens)
+    public CompleteTwoFactorLoginCommandHandler(ICacheService cache, IUserReadRepository users, IAuthenticationTokenIssuer tokens)
     {
         _cache = cache;
         _users = users;
@@ -32,7 +32,7 @@ public sealed class CompleteTwoFactorLoginCommandHandler : IRequestHandler<Compl
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
             return new InvalidCredentialsError("Login session expired. Please sign in again.");
 
-        User? user = await _users.GetUserByIdAsync(userId, cancellationToken);
+        User? user = await _users.GetByIdAsync(userId, cancellationToken: cancellationToken);
         if (user is null || string.IsNullOrEmpty(user.TwoFactorSecret))
             return new InvalidCredentialsError("Two-factor authentication failed.");
 

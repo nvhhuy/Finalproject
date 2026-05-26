@@ -5,6 +5,13 @@ public interface IMessagePublisher
 {
     Task PublishAsync<TMessage>(TMessage message, MessagePublishContext context, CancellationToken cancellationToken = default)
         where TMessage : class;
+
+    /// <summary>
+    /// Publishes an already-serialised payload (used by the outbox worker, which doesn't have
+    /// the original message CLR type at hand). Implementations must publish <paramref name="payload"/>
+    /// verbatim, applying only routing/headers from <paramref name="context"/>.
+    /// </summary>
+    Task PublishRawAsync(ReadOnlyMemory<byte> payload, MessagePublishContext context, CancellationToken cancellationToken = default);
 }
 
 public sealed record MessagePublishContext(string TopicOrExchange, string? RoutingKey = null, string? MessageType = null);

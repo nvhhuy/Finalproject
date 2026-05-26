@@ -1,4 +1,5 @@
 ﻿using Application.Contracts.Administration;
+using Application.Contracts.Authentication;
 using Application.Contracts.Caching;
 using Application.Contracts.Events;
 using Application.Contracts.Transactions;
@@ -8,6 +9,8 @@ using Application.Contracts.Media;
 using Application.Contracts.Messaging;
 using Application.Contracts.Storage;
 using Application.Contracts.Modules.Users.Persistence;
+using Microsoft.AspNetCore.DataProtection;
+using Infrastructure.Modules.Users.Persistence.Conversions;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
@@ -51,6 +54,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
+        AddDataProtection(services, configuration);
         services.AddCaching(configuration);
         services.AddPersistence(configuration);
         services.AddIntegrations(configuration);
@@ -58,6 +62,16 @@ public static class DependencyInjection
         services.AddScoped<IAppSettingsService, AppSettingsService>();
 
         return services;
+    }
+
+    private static void AddDataProtection(IServiceCollection services, IConfiguration configuration)
+    {
+        IDataProtectionBuilder builder = services.AddDataProtection()
+            .SetApplicationName(configuration["DataProtection:ApplicationName"] ?? "finalproject");
+
+        string? keysDirectory = configuration["DataProtection:KeysDirectory"];
+        if (!string.IsNullOrWhiteSpace(keysDirectory))
+            builder.PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
     }
 
     public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
@@ -134,6 +148,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IJwtGenerator, JwtGenerator>();
         services.AddScoped<IAuthenticationTokenIssuer, AuthenticationTokenIssuer>();
+        services.Configure<AccountLockoutOptions>(configuration.GetSection(AccountLockoutOptions.SectionName));
+        services.AddScoped<IFailedLoginTracker, CacheFailedLoginTracker>();
 
         services.AddAuthentication(defaultScheme: JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -190,13 +206,15 @@ public static class DependencyInjection
         if (string.IsNullOrWhiteSpace(readCs))
             readCs = writeCs;
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
+            UserDataProtection.Initialize(sp.GetRequiredService<IDataProtectionProvider>());
             options.UseNpgsql(writeCs, npgsql => npgsql.EnableRetryOnFailure(3));
         });
 
-        services.AddDbContext<ApplicationReadDbContext>(options =>
+        services.AddDbContext<ApplicationReadDbContext>((sp, options) =>
         {
+            UserDataProtection.Initialize(sp.GetRequiredService<IDataProtectionProvider>());
             options.UseNpgsql(readCs, npgsql => npgsql.EnableRetryOnFailure(3));
         });
 
@@ -213,7 +231,6 @@ public static class DependencyInjection
 
         services.AddScoped<IUserReadRepository, UserReadRepository>();
         services.AddScoped<IUserWriteRepository, UserWriteRepository>();
-        services.AddScoped<IUserRespository, UserRepository>();
         services.AddScoped<IAdminAuditLogWriter, AdminAuditLogWriter>();
         return services;
     }

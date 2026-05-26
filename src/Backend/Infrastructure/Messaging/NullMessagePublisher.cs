@@ -15,4 +15,10 @@ public sealed class NullMessagePublisher : IMessagePublisher
         _logger.LogDebug("Message bus disabled. Would publish {Type} to {Target}", typeof(TMessage).Name, context.TopicOrExchange);
         return Task.CompletedTask;
     }
+
+    public Task PublishRawAsync(ReadOnlyMemory<byte> payload, MessagePublishContext context, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Message bus disabled. Would publish raw payload ({Bytes}b) to {Target}", payload.Length, context.TopicOrExchange);
+        return Task.CompletedTask;
+    }
 }

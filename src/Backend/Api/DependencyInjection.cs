@@ -3,7 +3,9 @@ using Api.Configuration;
 using Api.ExceptionHandling;
 using Api.Filters;
 using Api.Hubs;
+using Asp.Versioning;
 using Domains.UserAggregate;
+using Infrastructure.HealthChecks;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +13,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Threading.RateLimiting;
 
 namespace Api;
@@ -27,6 +31,23 @@ public static class DependencyInjection
         services.AddScoped<TransactionalActionFilter>();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
+        services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+
+        services
+            .AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = ApiVersionReader.Combine(
+                    new UrlSegmentApiVersionReader(),
+                    new HeaderApiVersionReader("x-api-version"));
+            })
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
 
         services.AddAuthorization(options =>
         {
@@ -52,7 +73,10 @@ public static class DependencyInjection
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>(
                 name: "database",
-                tags: new[] { "db", "ready" });
+                tags: new[] { "db", "ready" })
+            .AddCheck<RedisHealthCheck>("redis", tags: new[] { "cache", "ready" })
+            .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: new[] { "messaging", "ready" })
+            .AddCheck<SmtpHealthCheck>("smtp", tags: new[] { "email" });
 
         AddRealtimeServices(services, configuration);
 

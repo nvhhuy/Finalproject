@@ -24,9 +24,9 @@ public static class DbSeeder
             return;
 
         string password = string.IsNullOrEmpty(opts.Password) ? "Temp!ChangeMe123" : opts.Password;
-        User admin = User.CreateNew(opts.FirstName, opts.LastName, userName, email, password: password);
+        User admin = User.CreateForLocalLoginPendingHash(opts.FirstName, opts.LastName, userName, email);
         admin.AssignRole(UserRoles.Admin);
-        admin.UpdatePassword(hasher.HashPassword(admin, password));
+        admin.SetInitialPasswordHash(hasher.HashPassword(admin, password));
         admin.MarkRegisteredAt(DateTime.UtcNow);
         admin.MarkEmailVerified(DateTime.UtcNow);
         db.Users.Add(admin);

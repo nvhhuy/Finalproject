@@ -44,6 +44,16 @@ public sealed class RabbitMqMessagePublisher : IMessagePublisher, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task PublishRawAsync(ReadOnlyMemory<byte> payload, MessagePublishContext context, CancellationToken cancellationToken = default)
+    {
+        string exchange = string.IsNullOrWhiteSpace(context.TopicOrExchange) ? _options.DefaultExchange : context.TopicOrExchange;
+        string routingKey = context.RoutingKey ?? context.MessageType ?? "outbox";
+
+        _channel.BasicPublish(exchange, routingKey, basicProperties: null, body: payload);
+        _logger.LogDebug("Published raw payload ({Bytes}b) to exchange {Exchange} routing {RoutingKey}", payload.Length, exchange, routingKey);
+        return Task.CompletedTask;
+    }
+
     public void Dispose()
     {
         _channel.Dispose();

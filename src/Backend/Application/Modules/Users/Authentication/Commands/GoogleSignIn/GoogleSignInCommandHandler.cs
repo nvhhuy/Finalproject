@@ -1,7 +1,9 @@
 using Application.Modules.Users.Authentication.Common;
 using Application.Contracts.ExternalAuth;
 using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
+using Application.Contracts.Transactions;
 using Domains.UserAggregate;
 using Microsoft.EntityFrameworkCore;
 using Shared.Common;
@@ -14,22 +16,25 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
 {
     private readonly IGoogleIdTokenValidator _google;
     private readonly IApplicationReadDbContext _read;
-    private readonly IUserRespository _users;
+    private readonly IUserWriteRepository _users;
     private readonly IAuthenticationTokenIssuer _tokens;
     private readonly IDateTimeProvider _clock;
+    private readonly IUnitOfWork _uow;
 
     public GoogleSignInCommandHandler(
         IGoogleIdTokenValidator google,
         IApplicationReadDbContext read,
-        IUserRespository users,
+        IUserWriteRepository users,
         IAuthenticationTokenIssuer tokens,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IUnitOfWork uow)
     {
         _google = google;
         _read = read;
         _users = users;
         _tokens = tokens;
         _clock = clock;
+        _uow = uow;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(GoogleSignInCommand request, CancellationToken cancellationToken)
@@ -63,7 +68,7 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
                 user.MarkEmailVerified(_clock.Now);
                 _users.AddUser(user);
                 _users.AddExternalLogin(ExternalUserLogin.Create(user.Id, ExternalLoginProviders.Google, info.Subject));
-                await _users.SaveChangesAsync(cancellationToken);
+                await _uow.SaveChangesAsync(cancellationToken);
                 await _users.InvalidateUserCacheAsync(user.Id.Value, user.Email, user.UserName, cancellationToken);
             }
             else
@@ -76,7 +81,7 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
                 if (!alreadyLinked)
                 {
                     _users.AddExternalLogin(ExternalUserLogin.Create(user.Id, ExternalLoginProviders.Google, info.Subject));
-                    await _users.SaveChangesAsync(cancellationToken);
+                    await _uow.SaveChangesAsync(cancellationToken);
                     await _users.InvalidateUserCacheAsync(user.Id.Value, user.Email, user.UserName, cancellationToken);
                 }
             }

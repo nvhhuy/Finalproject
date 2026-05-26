@@ -21,6 +21,9 @@ public sealed class EfUnitOfWork : IUnitOfWork
 
     public bool HasActiveTransaction => _db.Database.CurrentTransaction is not null;
 
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        _db.SaveChangesAsync(cancellationToken);
+
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         if (_db.Database.CurrentTransaction is not null)

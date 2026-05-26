@@ -11,6 +11,7 @@ using Application.Modules.Users.Authentication.Commands.ResendVerification;
 using Application.Modules.Users.Authentication.Common;
 using Application.Modules.Users.Authentication.Queries;
 using Application.Modules.Users.Profile.Commands.TwoFactor;
+using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,8 +26,9 @@ using Api.Controllers.Base;
 namespace Api.Controllers.Authentication;
 
 [ApiController]
+[ApiVersion("1.0")]
 [EnableRateLimiting("auth")]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public sealed class AuthController : ApiControllerBase
 {
     public AuthController(ISender sender) : base(sender)

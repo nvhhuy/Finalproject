@@ -9,7 +9,8 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.7.401" />
     <PackageReference Include="Cronos" Version="0.8.4" />
-    <PackageReference Include="MailKit" Version="4.10.0" />
+    <PackageReference Include="MailKit" Version="4.16.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="8.0.11" />
     <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.1" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
@@ -31,6 +32,10 @@
     <ProjectReference Include="..\Application\Application.csproj" />
     <ProjectReference Include="..\Domains\Domains.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Infrastructure.Tests" />
   </ItemGroup>
 
 </Project>
