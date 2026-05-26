@@ -38,6 +38,7 @@ public sealed class AuthController : ApiControllerBase
     private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
 
     [HttpPost("register")]
+    [AllowAnonymous]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<RegistrationResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status400BadRequest)]
@@ -58,6 +59,8 @@ public sealed class AuthController : ApiControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TwoFactorChallengeDto>), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status400BadRequest)]
@@ -69,6 +72,8 @@ public sealed class AuthController : ApiControllerBase
     }
 
     [HttpPost("refresh")]
+    [AllowAnonymous]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Refresh([FromBody] RefreshSessionRequest body, CancellationToken cancellationToken)
     {
@@ -78,6 +83,8 @@ public sealed class AuthController : ApiControllerBase
     }
 
     [HttpPost("google")]
+    [AllowAnonymous]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Google([FromBody] GoogleSignInRequest body, CancellationToken cancellationToken)
     {
@@ -87,6 +94,7 @@ public sealed class AuthController : ApiControllerBase
     }
 
     [HttpPost("forgot-password")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest body, CancellationToken cancellationToken)
     {
@@ -95,6 +103,8 @@ public sealed class AuthController : ApiControllerBase
     }
 
     [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest body, CancellationToken cancellationToken)
     {
@@ -104,6 +114,7 @@ public sealed class AuthController : ApiControllerBase
     }
 
     [HttpPost("verify-email")]
+    [Transactional]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest body, CancellationToken cancellationToken)
@@ -113,6 +124,8 @@ public sealed class AuthController : ApiControllerBase
     }
 
     [HttpPost("login/2fa")]
+    [AllowAnonymous]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CompleteTwoFactorLogin([FromBody] CompleteTwoFactorLoginRequest body, CancellationToken cancellationToken)
     {
@@ -123,15 +136,23 @@ public sealed class AuthController : ApiControllerBase
 
     [HttpPost("2fa/begin")]
     [Authorize]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<TwoFactorSetupResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> BeginTwoFactor(CancellationToken cancellationToken)
     {
+        // The shared key + otpauth URI in the response are credential material — refuse to let
+        // any proxy / CDN cache them. `no-store` is the strongest directive (no disk, no memory)
+        // and `Pragma: no-cache` covers stubborn HTTP/1.0 intermediaries.
+        Response.Headers.CacheControl = "no-store, no-cache, must-revalidate, max-age=0";
+        Response.Headers.Pragma = "no-cache";
+
         Result<TwoFactorSetupResponse, Error> result = await Sender.Send(new BeginTwoFactorSetupCommand(CurrentUserId), cancellationToken);
         return MatchApi(result);
     }
 
     [HttpPost("2fa/confirm")]
     [Authorize]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ConfirmTwoFactor([FromBody] ConfirmTwoFactorRequest body, CancellationToken cancellationToken)
     {

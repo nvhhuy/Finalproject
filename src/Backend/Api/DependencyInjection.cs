@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
+        services.AddCorsPolicy(configuration);
         services.AddControllers();
         services.AddScoped<TransactionalActionFilter>();
         services.AddEndpointsApiExplorer();
@@ -68,6 +69,26 @@ public static class DependencyInjection
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 5
                     }));
+
+            // Per-user limit for media uploads. Keyed by the authenticated user id (falling back
+            // to IP for any unauthenticated path that slips through). Tight enough to stop a
+            // single token from spamming the bucket (60 inits/min ≈ 1/s sustained) without
+            // friction for normal social-media usage.
+            options.AddPolicy("media-upload", context =>
+            {
+                string partitionKey = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? context.Connection.RemoteIpAddress?.ToString()
+                    ?? "anonymous";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0,
+                    });
+            });
         });
 
         services.AddHealthChecks()
@@ -76,10 +97,38 @@ public static class DependencyInjection
                 tags: new[] { "db", "ready" })
             .AddCheck<RedisHealthCheck>("redis", tags: new[] { "cache", "ready" })
             .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: new[] { "messaging", "ready" })
+            .AddCheck<ObjectStorageHealthCheck>("object-storage", tags: new[] { "storage", "ready" })
             .AddCheck<SmtpHealthCheck>("smtp", tags: new[] { "email" });
 
         AddRealtimeServices(services, configuration);
 
+        return services;
+    }
+
+    private static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
+    {
+        CorsOptions opts = configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
+        services.AddCors(o => o.AddPolicy(CorsOptions.PolicyName, builder =>
+        {
+            // Empty origin list = browser CORS not needed (backend-to-backend only). We still
+            // register an empty policy so UseCors can run without conditionals in Program.cs.
+            if (opts.AllowedOrigins.Length > 0)
+                builder.WithOrigins(opts.AllowedOrigins);
+
+            // Explicit allowlists instead of AllowAnyHeader/AllowAnyMethod: a header-injection
+            // bug in the SPA can't relay arbitrary headers cross-origin, and a future server-side
+            // method handler can't be invoked via CORS unless the operator opts the method in.
+            builder
+                .WithHeaders(opts.AllowedHeaders)
+                .WithMethods(opts.AllowedMethods)
+                .WithExposedHeaders(opts.ExposedHeaders)
+                .SetPreflightMaxAge(TimeSpan.FromSeconds(opts.PreflightMaxAgeSeconds));
+
+            // Credentialed CORS is incompatible with AllowAnyOrigin per the spec; the
+            // WithOrigins call above scopes it correctly.
+            if (opts.AllowCredentials && opts.AllowedOrigins.Length > 0)
+                builder.AllowCredentials();
+        }));
         return services;
     }
 
@@ -89,7 +138,20 @@ public static class DependencyInjection
         if (opts?.Enabled != true)
             return;
 
-        ISignalRServerBuilder signalR = services.AddSignalR();
+        // Pin SignalR's per-message frame cap explicitly. SignalR defaults to 32 KB but we set it
+        // again here so a future "AddSignalR" tweak elsewhere can't relax the limit silently —
+        // and so operators have one obvious knob to tune for chat / collab payloads. 32 KB is
+        // plenty for control messages; large payloads should flow through the REST + media
+        // pipeline instead of a hub.
+        ISignalRServerBuilder signalR = services.AddSignalR(hub =>
+        {
+            hub.MaximumReceiveMessageSize = 32 * 1024;
+            hub.EnableDetailedErrors = false;
+            // Keep-alive every 15s so dropped connections are detected promptly without saturating
+            // small idle deployments.
+            hub.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            hub.ClientTimeoutInterval = TimeSpan.FromSeconds(45);
+        });
         if (opts.UseRedisBackplane && !string.IsNullOrWhiteSpace(configuration["Redis:ConnectionString"]))
             signalR.AddStackExchangeRedis(configuration["Redis:ConnectionString"]!);
     }

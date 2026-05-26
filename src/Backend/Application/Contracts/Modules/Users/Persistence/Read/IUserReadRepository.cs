@@ -14,7 +14,5 @@ public interface IUserReadRepository
     Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<bool> ExistsByUserNameAsync(string userName, CancellationToken cancellationToken = default);
 
-    Task<PagedList<User>> GetUsersPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
-
     Task<PagedList<User>> GetUsersAdminPageAsync(AdminUserListQueryParams query, CancellationToken cancellationToken = default);
 }

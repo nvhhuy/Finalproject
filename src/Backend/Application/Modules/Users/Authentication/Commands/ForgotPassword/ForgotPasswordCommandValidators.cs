@@ -1,3 +1,5 @@
+using Application.Common.Validators;
+
 namespace Application.Modules.Users.Authentication.Commands.ForgotPassword;
 
 public sealed class ForgotPasswordCommandValidator : AbstractValidator<ForgotPasswordCommand>
@@ -14,6 +16,6 @@ public sealed class ResetPasswordCommandValidator : AbstractValidator<ResetPassw
     {
         RuleFor(x => x.TokenId).NotEmpty().MaximumLength(64);
         RuleFor(x => x.Token).NotEmpty().MaximumLength(256);
-        RuleFor(x => x.NewPassword).NotEmpty().MinimumLength(8).MaximumLength(200);
+        RuleFor(x => x.NewPassword).PasswordComplexity();
     }
 }

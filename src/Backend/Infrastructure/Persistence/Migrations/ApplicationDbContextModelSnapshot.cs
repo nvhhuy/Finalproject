@@ -61,6 +61,65 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("AdminAuditLogs", (string)null);
                 });
 
+            modelBuilder.Entity("Domains.MediaAggregate.MediaAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("ByteSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OriginalKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ProcessingAttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ProcessingStartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UploadedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("OwnerUserId", "Status");
+
+                    b.HasIndex("Status", "ProcessingStartedAtUtc");
+
+                    b.ToTable("MediaAssets", (string)null);
+                });
+
             modelBuilder.Entity("Domains.SystemSettings.AppSetting", b =>
                 {
                     b.Property<string>("Key")
@@ -188,6 +247,16 @@ namespace Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
@@ -216,11 +285,15 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
+                    b.HasIndex("Email");
+
+                    b.HasIndex("NormalizedEmail")
                         .IsUnique();
 
-                    b.HasIndex("UserName")
+                    b.HasIndex("NormalizedUserName")
                         .IsUnique();
+
+                    b.HasIndex("UserName");
 
                     b.ToTable("Users", (string)null);
                 });
@@ -231,8 +304,15 @@ namespace Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AbandonedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Attempts")
                         .HasColumnType("integer");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("Error")
                         .HasColumnType("text");
@@ -272,10 +352,59 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasIndex("EventId")
                         .IsUnique();
 
-                    b.HasIndex("ProcessedOnUtc", "NextAttemptUtc", "OccurredOnUtc")
+                    b.HasIndex("ProcessedOnUtc", "AbandonedAtUtc", "NextAttemptUtc", "OccurredOnUtc")
                         .HasDatabaseName("IX_OutboxMessages_Pending");
 
                     b.ToTable("OutboxMessages", (string)null);
+                });
+
+            modelBuilder.Entity("Domains.MediaAggregate.MediaAsset", b =>
+                {
+                    b.OwnsMany("Domains.MediaAggregate.MediaVariant", "Variants", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid");
+
+                            b1.Property<long>("ByteSize")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("ContentType")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)");
+
+                            b1.Property<TimeSpan?>("Duration")
+                                .HasColumnType("interval");
+
+                            b1.Property<int?>("Height")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("Kind")
+                                .HasColumnType("integer");
+
+                            b1.Property<Guid>("MediaAssetId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("StorageKey")
+                                .IsRequired()
+                                .HasMaxLength(512)
+                                .HasColumnType("character varying(512)");
+
+                            b1.Property<int?>("Width")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("MediaAssetId", "Kind");
+
+                            b1.ToTable("MediaVariants", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("MediaAssetId");
+                        });
+
+                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("Domains.UserAggregate.ExternalUserLogin", b =>

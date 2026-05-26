@@ -25,13 +25,12 @@ public sealed class JwtGenerator : IJwtGenerator
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret)),
             SecurityAlgorithms.HmacSha256);
 
+        // Keep the access token PII-free: only the subject, role, jti, and 2FA flag travel inside
+        // the JWT envelope. Profile data (email, names, username) is fetched through `/me` so we
+        // never write PII into proxy / APM / error-reporter sinks that capture full tokens.
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.Value.ToString()),
-            new(JwtRegisteredClaimNames.UniqueName, user.UserName),
-            new(JwtRegisteredClaimNames.GivenName, user.FirstName),
-            new(JwtRegisteredClaimNames.FamilyName, user.LastName),
-            new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(ClaimTypes.Role, user.Role),
             new("two_factor", user.TwoFactorEnabled ? "1" : "0")

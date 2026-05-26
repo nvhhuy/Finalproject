@@ -1,5 +1,6 @@
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Persistence;
 using Domains.Administration;
+using Domains.MediaAggregate;
 using Domains.SystemSettings;
 using Domains.UserAggregate;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,7 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
     public DbSet<ExternalUserLogin> ExternalLogins => Set<ExternalUserLogin>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

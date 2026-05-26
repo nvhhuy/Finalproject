@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace Shared.Errors.General
 {
     public class ValidationError : Error
     {
-        public ValidationError() : base(nameof(ValidationError), StatusCodes.Status400BadRequest)
+        public ValidationError() : base(nameof(ValidationError), (int)HttpStatusCode.BadRequest)
         {
             ValidationErrorDictionary = new();
         }

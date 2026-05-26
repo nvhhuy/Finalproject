@@ -1,7 +1,7 @@
 using Application.Modules.Users.Authentication.Common;
 using Application.Contracts.ExternalAuth;
-using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Modules.Users.Persistence.Write;
+using Application.Contracts.Persistence;
 using Application.Contracts.Services;
 using Application.Contracts.Transactions;
 using Domains.UserAggregate;

@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace Shared.Errors.Authentication
 {
     public abstract class AuthenticationError : Error
     {
-        public AuthenticationError(string errorType, int statusCode = StatusCodes.Status400BadRequest, string? errorMessage = null) : base(errorType, statusCode, errorMessage)
+        public AuthenticationError(string errorType, int statusCode = (int)HttpStatusCode.BadRequest, string? errorMessage = null) : base(errorType, statusCode, errorMessage)
         {
 
         }

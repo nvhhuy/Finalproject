@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace Shared.Errors.General
 {
     public class NotFoundError : Error
     {
         public NotFoundError(
-            string? errorMessage = null) : base(nameof(NotFoundError), StatusCodes.Status404NotFound, errorMessage)
+            string? errorMessage = null) : base(nameof(NotFoundError), (int)HttpStatusCode.NotFound, errorMessage)
         {
             ErrorMessage = errorMessage;
         }

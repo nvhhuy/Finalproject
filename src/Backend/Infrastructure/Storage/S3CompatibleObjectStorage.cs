@@ -1,90 +1,196 @@
-using Application.Contracts.Storage;
 using Amazon;
-using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Application.Contracts.Storage;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Storage;
 
-/// <summary>S3-compatible storage (AWS S3, Cloudflare R2, MinIO). Disabled when bucket is not configured.</summary>
-public sealed class S3CompatibleObjectStorage : IObjectStorage
+/// <summary>
+/// S3 v4 storage backend that talks to AWS S3, Cloudflare R2, MinIO or any other compatible service
+/// through a single set of credentials. The instance is registered as a singleton because
+/// <see cref="IAmazonS3"/> is thread-safe and cheap to share across the host.
+/// </summary>
+public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
 {
     private readonly ObjectStorageOptions _options;
-    private readonly IAmazonS3? _client;
+    private readonly ILogger<S3CompatibleObjectStorage> _logger;
+    private readonly IAmazonS3 _client;
 
-    public S3CompatibleObjectStorage(IOptions<ObjectStorageOptions> options)
+    public S3CompatibleObjectStorage(IOptions<ObjectStorageOptions> options, ILogger<S3CompatibleObjectStorage> logger)
     {
         _options = options.Value;
-        if (string.IsNullOrWhiteSpace(_options.ServiceUrl) || string.IsNullOrWhiteSpace(_options.AccessKey))
-            return;
+        _logger = logger;
 
-        var credentials = new BasicAWSCredentials(_options.AccessKey, _options.SecretKey);
         var config = new AmazonS3Config
         {
-            ServiceURL = _options.ServiceUrl,
             ForcePathStyle = _options.ForcePathStyle,
-            AuthenticationRegion = _options.Region
+            // R2/MinIO require pre-signed v4; AWS supports it everywhere.
+            SignatureVersion = "4",
         };
-        _client = new AmazonS3Client(credentials, config);
+
+        if (!string.IsNullOrWhiteSpace(_options.ServiceUrl))
+            config.ServiceURL = _options.ServiceUrl;
+        else
+            config.RegionEndpoint = RegionEndpoint.GetBySystemName(_options.Region);
+
+        _client = new AmazonS3Client(_options.AccessKey, _options.SecretKey, config);
     }
 
-    public string GetPublicUrl(string bucket, string key) =>
-        string.IsNullOrWhiteSpace(_options.PublicBaseUrl)
-            ? $"{_options.ServiceUrl?.TrimEnd('/')}/{bucket}/{key}"
-            : $"{_options.PublicBaseUrl.TrimEnd('/')}/{key}";
-
-    public async Task<string> PutObjectAsync(string bucket, string key, Stream content, string contentType, CancellationToken cancellationToken = default)
+    public async Task PutAsync(string key, Stream content, string contentType, CancellationToken cancellationToken = default)
     {
-        if (_client is null)
-            throw new InvalidOperationException("Object storage is not configured.");
-
-        await _client.PutObjectAsync(new PutObjectRequest
+        var request = new PutObjectRequest
         {
-            BucketName = bucket,
+            BucketName = _options.Bucket,
             Key = key,
             InputStream = content,
             ContentType = contentType,
-            CannedACL = S3CannedACL.Private
-        }, cancellationToken);
+            // AutoCloseStream=false so callers retain ownership; we never want the SDK to dispose
+            // a stream the application is still managing.
+            AutoCloseStream = false,
+            DisablePayloadSigning = true, // R2 rejects payload signing on PUT for streamed bodies
+        };
 
-        return GetPublicUrl(bucket, key);
+        await _client.PutObjectAsync(request, cancellationToken);
+        _logger.LogDebug("Uploaded {Key} ({ContentType}) to bucket {Bucket}", key, contentType, _options.Bucket);
     }
 
-    public async Task<Stream?> GetObjectAsync(string bucket, string key, CancellationToken cancellationToken = default)
+    public async Task<Stream> GetAsync(string key, CancellationToken cancellationToken = default)
     {
-        if (_client is null)
-            return null;
+        GetObjectResponse response = await _client.GetObjectAsync(_options.Bucket, key, cancellationToken);
+        return response.ResponseStream;
+    }
 
+    public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
+    {
+        await _client.DeleteObjectAsync(_options.Bucket, key, cancellationToken);
+        _logger.LogDebug("Deleted {Key} from bucket {Bucket}", key, _options.Bucket);
+    }
+
+    public string GetPublicUrl(string key)
+    {
+        // Private-bucket / paid-content mode: hand back a short-lived signed URL. Done
+        // synchronously through the AWS SDK's URL builder — no network call, just HMAC.
+        if (_options.UsePresignedDownloads)
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = _options.Bucket,
+                Key = key,
+                Verb = HttpVerb.GET,
+                Expires = DateTime.UtcNow.AddMinutes(_options.PresignedDownloadUrlExpirationMinutes),
+            };
+            return _client.GetPreSignedURL(request);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_options.CdnBaseUrl))
+            return _options.CdnBaseUrl.TrimEnd('/') + "/" + key.TrimStart('/');
+
+        // No CDN configured: build the bucket-direct URL. Works for AWS path-style/virtual-hosted
+        // and MinIO. R2 buckets have no public endpoint without a CDN — operators should configure
+        // CdnBaseUrl to point at the worker route or a Cloudflare custom domain.
+        if (!string.IsNullOrWhiteSpace(_options.ServiceUrl))
+        {
+            string root = _options.ServiceUrl.TrimEnd('/');
+            return _options.ForcePathStyle
+                ? $"{root}/{_options.Bucket}/{key.TrimStart('/')}"
+                : $"{root.Replace("//", $"//{_options.Bucket}.", StringComparison.Ordinal)}/{key.TrimStart('/')}";
+        }
+
+        return $"https://{_options.Bucket}.s3.{_options.Region}.amazonaws.com/{key.TrimStart('/')}";
+    }
+
+    public Task<string> GeneratePresignedDownloadUrlAsync(
+        string key,
+        TimeSpan expiration,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _options.Bucket,
+            Key = key,
+            Verb = HttpVerb.GET,
+            Expires = DateTime.UtcNow.Add(expiration),
+        };
+
+        return Task.FromResult(_client.GetPreSignedURL(request));
+    }
+
+    public Task<string> GeneratePresignedUploadUrlAsync(
+        string key,
+        string contentType,
+        TimeSpan expiration,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _options.Bucket,
+            Key = key,
+            Verb = HttpVerb.PUT,
+            Expires = DateTime.UtcNow.Add(expiration),
+            ContentType = contentType,
+        };
+
+        string url = _client.GetPreSignedURL(request);
+        return Task.FromResult(url);
+    }
+
+    public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
         try
         {
-            GetObjectResponse response = await _client.GetObjectAsync(bucket, key, cancellationToken);
-            MemoryStream ms = new();
-            await response.ResponseStream.CopyToAsync(ms, cancellationToken);
-            ms.Position = 0;
-            return ms;
+            await _client.GetObjectMetadataAsync(_options.Bucket, key, cancellationToken);
+            return true;
         }
-        catch (AmazonS3Exception)
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+    }
+
+    public async Task<ObjectMetadata?> GetMetadataAsync(string key, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            GetObjectMetadataResponse meta = await _client.GetObjectMetadataAsync(_options.Bucket, key, cancellationToken);
+            return new ObjectMetadata(
+                ByteSize: meta.ContentLength,
+                ContentType: meta.Headers.ContentType ?? "application/octet-stream");
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
             return null;
         }
     }
 
-    public async Task DeleteObjectAsync(string bucket, string key, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<ObjectListing> ListKeysAsync(
+        string prefix,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_client is null)
-            return;
-        await _client.DeleteObjectAsync(bucket, key, cancellationToken);
+        // S3 ListObjectsV2 returns at most 1000 entries per call and uses a continuation token for
+        // paging. Yielding inside the loop streams results to the caller — no million-row buffer.
+        string? continuationToken = null;
+        do
+        {
+            var request = new ListObjectsV2Request
+            {
+                BucketName = _options.Bucket,
+                Prefix = prefix,
+                ContinuationToken = continuationToken,
+                MaxKeys = 1000,
+            };
+            ListObjectsV2Response response = await _client.ListObjectsV2Async(request, cancellationToken);
+            foreach (S3Object obj in response.S3Objects ?? Enumerable.Empty<S3Object>())
+            {
+                yield return new ObjectListing(
+                    Key: obj.Key,
+                    ByteSize: obj.Size,
+                    LastModifiedUtc: obj.LastModified.ToUniversalTime());
+            }
+            continuationToken = response.IsTruncated ? response.NextContinuationToken : null;
+        } while (continuationToken is not null);
     }
-}
 
-public sealed class ObjectStorageOptions
-{
-    public const string SectionName = "ObjectStorage";
-    public string ServiceUrl { get; init; } = string.Empty;
-    public string AccessKey { get; init; } = string.Empty;
-    public string SecretKey { get; init; } = string.Empty;
-    public string Region { get; init; } = "auto";
-    public bool ForcePathStyle { get; init; } = true;
-    public string? PublicBaseUrl { get; init; }
+    public void Dispose() => _client.Dispose();
 }

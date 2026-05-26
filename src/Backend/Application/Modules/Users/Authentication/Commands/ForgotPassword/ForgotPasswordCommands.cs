@@ -5,7 +5,6 @@ using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Transactions;
 using Application.Modules.Users.Authentication.Options;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Shared.Common;
@@ -41,10 +40,6 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
 
     public async Task<Result<bool, Error>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
-        Result<bool, ValidationError> validation = await request.ValidateAsync(new ForgotPasswordCommandValidator(), cancellationToken);
-        if (validation.IsFailure)
-            return validation.Error;
-
         Domains.UserAggregate.User? user = await _users.GetByEmailAsync(request.Email, cancellationToken: cancellationToken);
         if (user is null)
             return true; // prevent account enumeration
@@ -106,22 +101,18 @@ public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordC
 
     public async Task<Result<bool, Error>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
-        Result<bool, ValidationError> validation = await request.ValidateAsync(new ResetPasswordCommandValidator(), cancellationToken);
-        if (validation.IsFailure)
-            return validation.Error;
-
         string cacheKey = AuthCacheKeys.PasswordResetPrefix + request.TokenId;
         PasswordResetTokenPayload? payload = await _cache.GetAsync<PasswordResetTokenPayload>(cacheKey, cancellationToken);
         if (payload is null)
-            return new Error("InvalidOrExpiredResetToken", StatusCodes.Status400BadRequest, "Reset token is invalid or expired.");
+            return new Error("InvalidOrExpiredResetToken", (int)System.Net.HttpStatusCode.BadRequest, "Reset token is invalid or expired.");
 
         string hash = TokenHasher.Sha256(request.Token);
         if (!string.Equals(payload.TokenHash, hash, StringComparison.Ordinal))
-            return new Error("InvalidOrExpiredResetToken", StatusCodes.Status400BadRequest, "Reset token is invalid or expired.");
+            return new Error("InvalidOrExpiredResetToken", (int)System.Net.HttpStatusCode.BadRequest, "Reset token is invalid or expired.");
 
         Domains.UserAggregate.User? user = await _users.GetByIdForUpdateAsync(payload.UserId, cancellationToken);
         if (user is null)
-            return new Error("InvalidResetTarget", StatusCodes.Status400BadRequest, "Reset token target is no longer available.");
+            return new Error("InvalidResetTarget", (int)System.Net.HttpStatusCode.BadRequest, "Reset token target is no longer available.");
 
         user.UpdatePasswordHash(_passwordHasher.HashPassword(user, request.NewPassword));
         await _uow.SaveChangesAsync(cancellationToken);

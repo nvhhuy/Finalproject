@@ -51,10 +51,6 @@ public sealed class AdminCreateUserCommandHandler : IRequestHandler<AdminCreateU
 
     public async Task<Result<Guid, Error>> Handle(AdminCreateUserCommand request, CancellationToken cancellationToken)
     {
-        Result<bool, ValidationError> validation = await request.ValidateAsync(new AdminCreateUserCommandValidator(), cancellationToken);
-        if (validation.IsFailure)
-            return validation.Error;
-
         if (await _read.ExistsByEmailAsync(request.Email, cancellationToken))
             return new EmailAlreadyInUseError();
         if (await _read.ExistsByUserNameAsync(request.UserName, cancellationToken))
@@ -105,10 +101,6 @@ public sealed class AdminUpdateUserCommandHandler : IRequestHandler<AdminUpdateU
 
     public async Task<Result<bool, Error>> Handle(AdminUpdateUserCommand request, CancellationToken cancellationToken)
     {
-        Result<bool, ValidationError> validation = await request.ValidateAsync(new AdminUpdateUserCommandValidator(), cancellationToken);
-        if (validation.IsFailure)
-            return validation.Error;
-
         User? target = await _write.GetByIdForUpdateAsync(request.TargetUserId, cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
@@ -222,10 +214,6 @@ public sealed class AdminResetPasswordCommandHandler : IRequestHandler<AdminRese
 
     public async Task<Result<bool, Error>> Handle(AdminResetPasswordCommand request, CancellationToken cancellationToken)
     {
-        Result<bool, ValidationError> validation = await request.ValidateAsync(new AdminResetPasswordCommandValidator(), cancellationToken);
-        if (validation.IsFailure)
-            return validation.Error;
-
         User? target = await _write.GetByIdForUpdateAsync(request.TargetUserId, cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");

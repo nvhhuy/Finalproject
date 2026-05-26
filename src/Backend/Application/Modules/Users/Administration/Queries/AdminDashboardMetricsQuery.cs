@@ -1,5 +1,5 @@
 using Application.Contracts.Authorization;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Shared.Common;

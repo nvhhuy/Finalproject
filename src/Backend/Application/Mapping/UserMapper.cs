@@ -1,4 +1,3 @@
-using Application.Common.Dtos;
 using Application.Modules.Users.Administration.Queries;
 using Application.Modules.Users.Profile.Queries;
 using Domains.UserAggregate;
@@ -10,8 +9,6 @@ namespace Application.Mapping;
 [UseStaticMapper(typeof(MappingConversions))]
 public static partial class UserMapper
 {
-    public static partial UserSummaryDto ToSummaryDto(this User user);
-
     public static partial AdminUserSummaryDto ToAdminSummaryDto(this User user);
 
     public static partial UserProfileDto ToProfileDto(this User user);

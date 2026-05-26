@@ -28,21 +28,27 @@ Source root: `src/Backend/`
 
 ### Core capabilities already wired
 
-- JWT auth + role policy baseline.
-- Refresh-token session flow (`/auth/refresh`) with hashed refresh token storage.
-- Read/write DB context split (`ApplicationDbContext` + `ApplicationReadDbContext`).
+- JWT auth + role policy baseline. Unauthorized/forbidden responses use the shared `ApiResponse<T>` envelope (see `JwtEnvelopeEvents`).
+- Refresh-token session flow (`/auth/refresh`) with hashed refresh token storage **plus theft detection**: a revoked-token replay revokes every active session for the user and logs a security event.
+- Case-insensitive email/username lookups via `NormalizedEmail` / `NormalizedUserName` (ASP.NET Identity-style upper-invariant normalization at the aggregate boundary).
+- Read/write DB context split (`ApplicationDbContext` + `ApplicationReadDbContext` exposed as `IApplicationReadDbContext` under `Application.Contracts.Persistence`).
 - Repository base helpers for cache/read/write reuse.
 - Admin user management endpoints (create/edit/delete/lock/unlock/impersonate/reset 2FA/reset password).
 - Runtime app settings table + admin toggle API (example: public registration on/off).
 - Forgot/reset password flow scaffold (`/auth/forgot-password`, `/auth/reset-password`) via email abstraction.
 - Domain event pipeline (transactional + after-commit queue).
+- Transactional outbox with **publisher confirms** (`WaitForConfirmsOrDie`) and `AbandonedAtUtc` for poison-row separation; an `OutboxCleanupJob` keeps the table bounded.
+- RabbitMQ consumer hardening: `DispatchConsumersAsync=true`, per-channel `BasicQos(prefetchCount)`, dead-letter queues, **admin tooling** (`AdminMessagingController`: peek/replay/drain).
+- **Correlation IDs** propagated end-to-end: HTTP middleware → `ICorrelationContext` (AsyncLocal) → `OutboxMessage.CorrelationId` → AMQP `BasicProperties.CorrelationId` → worker logger scope.
 - Transaction patterns (`[Transactional]` filter and `IUnitOfWork`).
 - Distributed cache abstraction (`ICacheService`) with Redis fallback support.
 - Optional realtime hub (`Realtime:Enabled`) with optional Redis SignalR backplane.
+- Media pipeline (presigned PUT → ClamAV scan → ffmpeg/ImageSharp variants → HLS) with stale-recovery cron, storage cleanup cron, magic-byte verification, and **streaming temp-file outputs** (no >100 MB in managed memory per rung).
 - Background execution scaffolding:
-  - Cron via `ICronJob` + `CronJobSchedulerHostedService`
+  - Cron via `ICronJob` + `CronJobSchedulerHostedService` (or `AddWorkerScheduling` Quartz path)
   - Queue worker base via `QueueConsumerBackgroundService<TMessage>`
-- Structured logging (Serilog) and health checks (`/health`).
+- API security: CORS (`Cors.AllowedOrigins`), rate limiting (`auth`, `media-upload`), CSP + X-Frame-Options + Referrer-Policy + Permissions-Policy.
+- Structured logging (Serilog), OpenTelemetry traces/metrics, health checks (`/health`).
 
 ---
 

@@ -19,11 +19,13 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
         builder.Property(e => e.PayloadJson).HasColumnType("jsonb").IsRequired();
 
         builder.Property(e => e.ProcessedOnUtc).HasColumnType("timestamp with time zone");
+        builder.Property(e => e.AbandonedAtUtc).HasColumnType("timestamp with time zone");
         builder.Property(e => e.Attempts).IsRequired();
         builder.Property(e => e.NextAttemptUtc).HasColumnType("timestamp with time zone");
         builder.Property(e => e.Error).HasColumnType("text");
+        builder.Property(e => e.CorrelationId).HasMaxLength(64);
 
-        builder.HasIndex(e => new { e.ProcessedOnUtc, e.NextAttemptUtc, e.OccurredOnUtc })
+        builder.HasIndex(e => new { e.ProcessedOnUtc, e.AbandonedAtUtc, e.NextAttemptUtc, e.OccurredOnUtc })
             .HasDatabaseName("IX_OutboxMessages_Pending");
         builder.HasIndex(e => e.EventId).IsUnique();
     }

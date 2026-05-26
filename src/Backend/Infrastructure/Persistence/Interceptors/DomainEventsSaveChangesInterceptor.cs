@@ -1,4 +1,5 @@
 using Application.Contracts.Events;
+using Application.Contracts.Services;
 using Domains.Common.Interfaces;
 using Infrastructure.Messaging.Outbox;
 using MediatR;
@@ -25,11 +26,16 @@ public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
 
     private readonly IPublisher _publisher;
     private readonly IAfterCommitDomainEventQueue _afterCommitQueue;
+    private readonly ICorrelationContext _correlation;
 
-    public DomainEventsSaveChangesInterceptor(IPublisher publisher, IAfterCommitDomainEventQueue afterCommitQueue)
+    public DomainEventsSaveChangesInterceptor(
+        IPublisher publisher,
+        IAfterCommitDomainEventQueue afterCommitQueue,
+        ICorrelationContext correlation)
     {
         _publisher = publisher;
         _afterCommitQueue = afterCommitQueue;
+        _correlation = correlation;
     }
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
@@ -38,7 +44,7 @@ public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
         CancellationToken cancellationToken = default)
     {
         if (eventData.Context is not null)
-            CaptureIntegrationEvents(eventData.Context);
+            CaptureIntegrationEvents(eventData.Context, _correlation.Current);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -54,7 +60,7 @@ public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
-    private static void CaptureIntegrationEvents(DbContext context)
+    private static void CaptureIntegrationEvents(DbContext context, string? correlationId)
     {
         List<IHasDomainEvents> carriers = context.ChangeTracker
             .Entries()
@@ -77,7 +83,8 @@ public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
                     type: integration.GetType().AssemblyQualifiedName ?? integration.GetType().FullName!,
                     routingKey: integration.RoutingKey,
                     exchange: null,
-                    payloadJson: payload);
+                    payloadJson: payload,
+                    correlationId: correlationId);
 
                 context.Set<OutboxMessage>().Add(row);
             }

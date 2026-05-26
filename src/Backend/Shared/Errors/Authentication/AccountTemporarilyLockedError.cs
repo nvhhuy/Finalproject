@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace Shared.Errors.Authentication;
 
@@ -8,7 +8,7 @@ public sealed class AccountTemporarilyLockedError : AuthenticationError
     public AccountTemporarilyLockedError(TimeSpan retryAfter)
         : base(
             "Authentication.TemporarilyLocked",
-            StatusCodes.Status429TooManyRequests,
+            (int)HttpStatusCode.TooManyRequests,
             $"Too many failed login attempts. Try again in {Math.Ceiling(retryAfter.TotalSeconds):0}s.")
     {
         RetryAfter = retryAfter;

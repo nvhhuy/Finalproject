@@ -1,7 +1,7 @@
 using Application.Common;
 using Application.Contracts.Authorization;
 using Application.Mapping;
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Persistence;
 using Domains.Administration;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

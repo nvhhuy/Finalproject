@@ -22,6 +22,12 @@ public abstract class QueueConsumerBackgroundService<TMessage> : BackgroundServi
 
     protected abstract string SubscriptionName { get; }
 
+    /// <summary>
+    /// Override to opt in to the broker's dead-letter routing. Default <c>null</c> preserves the
+    /// historical requeue-on-failure behaviour for sample / non-critical queues.
+    /// </summary>
+    protected virtual SubscriptionOptions? SubscriptionOptions => null;
+
     protected abstract Task HandleAsync(TMessage message, CancellationToken cancellationToken);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -29,6 +35,7 @@ public abstract class QueueConsumerBackgroundService<TMessage> : BackgroundServi
         _subscription = await _consumer.SubscribeAsync<TMessage>(
             SubscriptionName,
             HandleAsync,
+            SubscriptionOptions,
             stoppingToken);
 
         _logger.LogInformation(

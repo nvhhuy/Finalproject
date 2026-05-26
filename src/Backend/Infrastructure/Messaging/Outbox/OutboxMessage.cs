@@ -16,7 +16,8 @@ public sealed class OutboxMessage
         string type,
         string routingKey,
         string? exchange,
-        string payloadJson)
+        string payloadJson,
+        string? correlationId = null)
     {
         Id = Guid.NewGuid();
         EventId = eventId;
@@ -25,6 +26,7 @@ public sealed class OutboxMessage
         RoutingKey = routingKey;
         Exchange = exchange;
         PayloadJson = payloadJson;
+        CorrelationId = correlationId;
     }
 
     /// <summary>Surrogate primary key.</summary>
@@ -50,6 +52,15 @@ public sealed class OutboxMessage
     /// <summary>When the worker successfully published the row. <c>null</c> while pending.</summary>
     public DateTime? ProcessedOnUtc { get; private set; }
 
+    /// <summary>
+    /// When the worker permanently gave up on this row (max attempts exceeded). When non-null
+    /// the row is excluded from the publisher loop but kept in place for forensic review until
+    /// the cleanup job's much longer abandoned-retention window expires. Distinct from
+    /// <see cref="ProcessedOnUtc"/> so dashboards and alerts can separate "successfully
+    /// published" from "dead-lettered locally".
+    /// </summary>
+    public DateTime? AbandonedAtUtc { get; private set; }
+
     /// <summary>Number of publish attempts (including the successful one).</summary>
     public int Attempts { get; private set; }
 
@@ -58,6 +69,14 @@ public sealed class OutboxMessage
 
     /// <summary>Last error message captured by the worker (truncated).</summary>
     public string? Error { get; private set; }
+
+    /// <summary>
+    /// Correlation id captured from the originating request when the row was written. Carried
+    /// through to the AMQP message so consumers can stitch logs across the API → outbox → worker
+    /// boundary. Nullable because background-emitted events (cron-driven, system bootstrap) may
+    /// have no inbound request to inherit from.
+    /// </summary>
+    public string? CorrelationId { get; private set; }
 
     public void MarkProcessed(DateTime utcNow)
     {
@@ -74,12 +93,16 @@ public sealed class OutboxMessage
         NextAttemptUtc = utcNow + nextDelay;
     }
 
-    /// <summary>Stops further retries (e.g. after exceeding the attempt cap).</summary>
+    /// <summary>
+    /// Stops further retries (e.g. after exceeding the attempt cap). Sets <see cref="AbandonedAtUtc"/>
+    /// rather than <see cref="ProcessedOnUtc"/> so the publisher's "pending" filter excludes the
+    /// row but downstream cleanup can use a longer retention policy for forensic work.
+    /// </summary>
     public void MarkAbandoned(DateTime utcNow, string error)
     {
         Attempts += 1;
         Error = error.Length <= 2000 ? error : error[..2000];
-        ProcessedOnUtc = utcNow;
+        AbandonedAtUtc = utcNow;
         NextAttemptUtc = null;
     }
 }

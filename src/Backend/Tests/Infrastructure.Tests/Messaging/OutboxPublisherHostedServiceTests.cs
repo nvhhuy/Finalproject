@@ -108,7 +108,10 @@ public sealed class OutboxPublisherHostedServiceTests
 
         OutboxMessage reloaded = await db.OutboxMessages.SingleAsync(m => m.Id == row.Id);
         Assert.Equal(3, reloaded.Attempts);
-        Assert.NotNull(reloaded.ProcessedOnUtc);
+        // After M7 fix: abandoned rows now set AbandonedAtUtc (not ProcessedOnUtc) so the
+        // publisher loop can skip them while keeping them separable from successful publishes.
+        Assert.Null(reloaded.ProcessedOnUtc);
+        Assert.NotNull(reloaded.AbandonedAtUtc);
         Assert.Equal("final fail", reloaded.Error);
         Assert.Null(reloaded.NextAttemptUtc);
     }

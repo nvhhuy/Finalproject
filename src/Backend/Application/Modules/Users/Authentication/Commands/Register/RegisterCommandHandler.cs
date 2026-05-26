@@ -46,10 +46,6 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
 
     public async Task<Result<RegistrationResult, Error>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        Result<bool, ValidationError> validationResult = await request.ValidateAsync(new RegisterCommandValidator(), cancellationToken);
-        if (validationResult.IsFailure)
-            return validationResult.Error;
-
         bool allowPublicRegister = await _settings.GetBooleanAsync(AppSettingKeys.AllowPublicRegister, defaultValue: true, cancellationToken);
         if (!allowPublicRegister)
             return new ForbiddenError("Public registration is disabled by application setting.");

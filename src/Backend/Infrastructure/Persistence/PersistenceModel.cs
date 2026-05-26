@@ -1,5 +1,4 @@
 using Domains.Common.Interfaces;
-using Infrastructure.Persistence.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -11,8 +10,6 @@ internal static class PersistenceModel
     {
         modelBuilder.Ignore<List<IDomainEvent>>()
             .ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-
-        AuditableConfiguration.Configure(modelBuilder);
 
         DataSeed.Seed(modelBuilder);
     }

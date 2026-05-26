@@ -1,10 +1,10 @@
 using Application.Contracts.Events;
 using Application.Contracts.Services;
-using Domains.UserAggregate.ValueObjects;
 using Infrastructure.Modules.Users.Persistence.Conversions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Events;
 using Infrastructure.Persistence.Interceptors;
+using Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -27,26 +27,15 @@ internal static class TestDbContextFactory
         publisher = new RecordingPublisher();
         afterCommitQueue = new AfterCommitDomainEventQueue();
 
-        var auditable = new AuditableInterceptor(new StubClock(), new StubLoggedInUserService());
-        var domainEvents = new DomainEventsSaveChangesInterceptor(publisher, afterCommitQueue);
+        var domainEvents = new DomainEventsSaveChangesInterceptor(
+            publisher, afterCommitQueue, new AsyncLocalCorrelationContext());
 
         DbContextOptions<ApplicationDbContext> options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName ?? Guid.NewGuid().ToString())
             .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
-        return new ApplicationDbContext(options, auditable, domainEvents);
-    }
-
-    private sealed class StubClock : IDateTimeProvider
-    {
-        public DateTime Now => DateTime.UtcNow;
-    }
-
-    private sealed class StubLoggedInUserService : ILoggedInUserService
-    {
-        public UserId? UserId => null;
-        public bool IsInRole(string role) => false;
+        return new ApplicationDbContext(options, domainEvents);
     }
 }
 

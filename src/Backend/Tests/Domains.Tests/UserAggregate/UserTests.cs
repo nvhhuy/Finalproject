@@ -112,13 +112,16 @@ public sealed class UserTests
     public void MarkDeleted_is_idempotent_and_keeps_first_timestamp()
     {
         User user = User.CreateNew(FirstName, LastName, UserName, Email, ValidHash);
+        DateTime firstTime = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTime secondTime = firstTime.AddSeconds(30);
 
-        user.MarkDeleted();
-        DateTime first = user.DeletedAtUtc!.Value;
-        Thread.Sleep(5);
-        user.MarkDeleted();
+        user.MarkDeleted(firstTime);
+        user.MarkDeleted(secondTime);
 
-        Assert.Equal(first, user.DeletedAtUtc);
+        // Idempotent: the second call must NOT overwrite, regardless of the wall clock. Passing
+        // an explicit clock value removes the previous Thread.Sleep dependence that was flaky on
+        // slow CI runners and on Windows where DateTime resolution can be ~16 ms.
+        Assert.Equal(firstTime, user.DeletedAtUtc);
     }
 
     [Fact]
@@ -199,7 +202,8 @@ public sealed class UserTests
 
         if (deleted) user.MarkDeleted();
         if (closed) user.CloseAccount();
-        if (locked && !deleted) user.Lock("test");
+        // Lock now rejects deleted/closed users, so only lock the healthy permutation.
+        if (locked && !deleted && !closed) user.Lock("test");
 
         Assert.Equal(expected, user.CanSignIn);
     }
@@ -212,6 +216,59 @@ public sealed class UserTests
         user.AssignRole(UserRoles.Admin);
 
         Assert.Equal(UserRoles.Admin, user.Role);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("SuperUser")]
+    [InlineData("admin")] // wrong casing
+    public void AssignRole_rejects_unknown_roles(string role)
+    {
+        User user = User.CreateNew(FirstName, LastName, UserName, Email, ValidHash);
+
+        Assert.Throws<ArgumentException>(() => user.AssignRole(role));
+        Assert.Equal(UserRoles.User, user.Role);
+    }
+
+    [Fact]
+    public void Lock_throws_when_account_is_closed()
+    {
+        User user = User.CreateNew(FirstName, LastName, UserName, Email, ValidHash);
+        user.CloseAccount();
+
+        Assert.Throws<InvalidOperationException>(() => user.Lock("nope"));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void UpdateProfile_rejects_blank_firstName(string firstName)
+    {
+        User user = User.CreateNew(FirstName, LastName, UserName, Email, ValidHash);
+
+        Assert.Throws<ArgumentException>(() => user.UpdateProfile(firstName, LastName, UserName, Email));
+        Assert.Equal(FirstName, user.FirstName); // unchanged
+    }
+
+    [Fact]
+    public void UpdateProfile_rejects_blank_email()
+    {
+        User user = User.CreateNew(FirstName, LastName, UserName, Email, ValidHash);
+
+        Assert.Throws<ArgumentException>(() => user.UpdateProfile(FirstName, LastName, UserName, " "));
+        Assert.Equal(Email, user.Email);
+    }
+
+    [Fact]
+    public void RecordLogin_uses_supplied_clock()
+    {
+        User user = User.CreateNew(FirstName, LastName, UserName, Email, ValidHash);
+        DateTime fixedInstant = new(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+
+        user.RecordLogin(fixedInstant);
+
+        Assert.Equal(fixedInstant, user.LastLoginAtUtc);
     }
 
     [Fact]

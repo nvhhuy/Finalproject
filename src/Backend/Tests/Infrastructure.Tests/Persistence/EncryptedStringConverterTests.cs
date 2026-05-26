@@ -40,19 +40,19 @@ public sealed class EncryptedStringConverterTests
         var decoder = new EncryptedStringConverter(provider.CreateProtector("purposeB"));
 
         string ciphertext = (string)encoder.ConvertToProvider("topsecret")!;
-        object? result = decoder.ConvertFromProvider(ciphertext);
 
-        Assert.Null(result);
+        Assert.Throws<EncryptedColumnDecryptionException>(() => decoder.ConvertFromProvider(ciphertext));
     }
 
     [Fact]
-    public void Tampered_ciphertext_returns_null_instead_of_throwing()
+    public void Tampered_ciphertext_surfaces_as_typed_exception_not_silent_null()
     {
         var converter = new EncryptedStringConverter(NewProtector("p"));
 
-        object? result = converter.ConvertFromProvider("not-a-real-protected-payload");
+        EncryptedColumnDecryptionException ex = Assert.Throws<EncryptedColumnDecryptionException>(
+            () => converter.ConvertFromProvider("not-a-real-protected-payload"));
 
-        Assert.Null(result);
+        Assert.NotNull(ex.InnerException);
     }
 
     private static IDataProtector NewProtector(string purpose) =>

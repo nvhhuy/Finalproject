@@ -15,6 +15,7 @@ public sealed class NullMessageConsumer : IMessageConsumer
     public Task<IDisposable> SubscribeAsync<TMessage>(
         string subscriptionName,
         Func<TMessage, CancellationToken, Task> handler,
+        SubscriptionOptions? options = null,
         CancellationToken cancellationToken = default) where TMessage : class
     {
         _logger.LogInformation(

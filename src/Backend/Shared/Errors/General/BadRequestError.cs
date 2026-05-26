@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace Shared.Errors.General
 {
     public class BadRequestError : Error
     {
-        protected BadRequestError(string errorType = nameof(BadRequestError), int statusCode = StatusCodes.Status400BadRequest, string? errorMessage = null) : base(errorType, statusCode, errorMessage)
+        protected BadRequestError(string errorType = nameof(BadRequestError), int statusCode = (int)HttpStatusCode.BadRequest, string? errorMessage = null) : base(errorType, statusCode, errorMessage)
         {
         }
     }

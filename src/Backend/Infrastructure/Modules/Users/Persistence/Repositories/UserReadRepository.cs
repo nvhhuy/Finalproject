@@ -1,7 +1,7 @@
 using Application.Common;
 using Application.Contracts.Caching;
-using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Contracts.Persistence;
 using Application.Modules.Users.Administration.Queries;
 using Domains.UserAggregate;
 using Infrastructure.Extensions;
@@ -31,34 +31,44 @@ public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepo
             IdTtl,
             cancellationToken);
 
-    public Task<User?> GetByEmailAsync(string email, CacheOptions cache = default, CancellationToken cancellationToken = default) =>
-        GetSingleCachedByPredicateAsync(
-            UserReadCacheKeys.ByEmail(email),
+    public Task<User?> GetByEmailAsync(string email, CacheOptions cache = default, CancellationToken cancellationToken = default)
+    {
+        // Normalize the input the same way the aggregate normalized it at write-time so the
+        // unique index on NormalizedEmail can serve the lookup. Without this, "Foo@x.com" would
+        // miss a row stored from "foo@x.com".
+        string normalized = NormalizeForLookup(email);
+        return GetSingleCachedByPredicateAsync(
+            UserReadCacheKeys.ByEmail(normalized),
             _read.Users,
-            u => u.Email == email,
+            u => u.NormalizedEmail == normalized,
             cache,
             LookupTtl,
             cancellationToken);
+    }
 
-    public Task<User?> GetByUserNameAsync(string userName, CacheOptions cache = default, CancellationToken cancellationToken = default) =>
-        GetSingleCachedByPredicateAsync(
-            UserReadCacheKeys.ByUserName(userName),
+    public Task<User?> GetByUserNameAsync(string userName, CacheOptions cache = default, CancellationToken cancellationToken = default)
+    {
+        string normalized = NormalizeForLookup(userName);
+        return GetSingleCachedByPredicateAsync(
+            UserReadCacheKeys.ByUserName(normalized),
             _read.Users,
-            u => u.UserName == userName,
+            u => u.NormalizedUserName == normalized,
             cache,
             LookupTtl,
             cancellationToken);
+    }
 
-    public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default) =>
-        ExistsAsync(_read.Users, u => u.Email == email, cancellationToken);
+    public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        string normalized = NormalizeForLookup(email);
+        return ExistsAsync(_read.Users, u => u.NormalizedEmail == normalized, cancellationToken);
+    }
 
-    public Task<bool> ExistsByUserNameAsync(string userName, CancellationToken cancellationToken = default) =>
-        ExistsAsync(_read.Users, u => u.UserName == userName, cancellationToken);
-
-    public Task<PagedList<User>> GetUsersPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default) =>
-        GetUsersAdminPageAsync(
-            new AdminUserListQueryParams(page, pageSize, null, null, null, null, null, false),
-            cancellationToken);
+    public Task<bool> ExistsByUserNameAsync(string userName, CancellationToken cancellationToken = default)
+    {
+        string normalized = NormalizeForLookup(userName);
+        return ExistsAsync(_read.Users, u => u.NormalizedUserName == normalized, cancellationToken);
+    }
 
     public async Task<PagedList<User>> GetUsersAdminPageAsync(AdminUserListQueryParams p, CancellationToken cancellationToken = default)
     {
@@ -66,14 +76,17 @@ public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepo
 
         if (!string.IsNullOrWhiteSpace(p.EmailContains))
         {
-            string term = p.EmailContains.Trim().ToLowerInvariant();
-            query = query.Where(u => u.Email.ToLower().Contains(term));
+            // Compare on the normalized column so we hit the unique index. Term is uppercased
+            // to match the aggregate's Normalize(...) convention; an .ILike call would also
+            // work but forces a sequential scan in production (no functional index exists).
+            string term = NormalizeForLookup(p.EmailContains);
+            query = query.Where(u => u.NormalizedEmail.Contains(term));
         }
 
         if (!string.IsNullOrWhiteSpace(p.UserNameContains))
         {
-            string term = p.UserNameContains.Trim().ToLowerInvariant();
-            query = query.Where(u => u.UserName.ToLower().Contains(term));
+            string term = NormalizeForLookup(p.UserNameContains);
+            query = query.Where(u => u.NormalizedUserName.Contains(term));
         }
 
         if (p.IsLocked is not null)
@@ -96,4 +109,6 @@ public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepo
 
         return await query.ToPagedListAsync(p.Page, p.PageSize, cancellationToken);
     }
+
+    private static string NormalizeForLookup(string? value) => (value ?? string.Empty).Trim().ToUpperInvariant();
 }

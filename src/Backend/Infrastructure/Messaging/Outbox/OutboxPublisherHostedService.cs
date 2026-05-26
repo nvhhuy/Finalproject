@@ -1,6 +1,7 @@
 using Application.Contracts.Messaging;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -80,6 +81,12 @@ public sealed class OutboxPublisherHostedService : BackgroundService
     /// Pure pipeline used by the hosted service; exposed for unit tests so callers can pass in
     /// an in-memory <see cref="ApplicationDbContext"/> and a stub publisher without spinning up DI.
     /// </summary>
+    /// <remarks>
+    /// On PostgreSQL we open an explicit transaction and load the batch with
+    /// <c>SELECT ... FOR UPDATE SKIP LOCKED</c> so that running multiple worker instances does
+    /// not cause double-publishing. On EF Core InMemory (used by tests) we fall back to a plain
+    /// query because the provider does not support row-level locking.
+    /// </remarks>
     internal static async Task<int> ProcessBatchAsync(
         ApplicationDbContext db,
         IMessagePublisher publisher,
@@ -88,15 +95,31 @@ public sealed class OutboxPublisherHostedService : BackgroundService
         CancellationToken cancellationToken)
     {
         DateTime now = DateTime.UtcNow;
+        bool isRelational = db.Database.IsRelational();
 
-        List<OutboxMessage> batch = await db.OutboxMessages
-            .Where(m => m.ProcessedOnUtc == null && (m.NextAttemptUtc == null || m.NextAttemptUtc <= now))
-            .OrderBy(m => m.OccurredOnUtc)
-            .Take(opts.BatchSize)
-            .ToListAsync(cancellationToken);
+        await using IDbContextTransaction? transaction = isRelational
+            ? await db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        List<OutboxMessage> batch = isRelational
+            ? await LoadBatchWithSkipLockedAsync(db, opts.BatchSize, now, cancellationToken)
+            : await db.OutboxMessages
+                // Pending = not published AND not abandoned AND eligible for next attempt. The
+                // abandoned filter prevents the publisher from re-trying poison messages on every
+                // tick after MarkAbandoned has been recorded.
+                .Where(m => m.ProcessedOnUtc == null
+                    && m.AbandonedAtUtc == null
+                    && (m.NextAttemptUtc == null || m.NextAttemptUtc <= now))
+                .OrderBy(m => m.OccurredOnUtc)
+                .Take(opts.BatchSize)
+                .ToListAsync(cancellationToken);
 
         if (batch.Count == 0)
+        {
+            if (transaction is not null)
+                await transaction.CommitAsync(cancellationToken);
             return 0;
+        }
 
         foreach (OutboxMessage row in batch)
         {
@@ -105,7 +128,8 @@ public sealed class OutboxPublisherHostedService : BackgroundService
                 var context = new MessagePublishContext(
                     TopicOrExchange: row.Exchange ?? string.Empty,
                     RoutingKey: row.RoutingKey,
-                    MessageType: row.Type);
+                    MessageType: row.Type,
+                    CorrelationId: row.CorrelationId);
                 ReadOnlyMemory<byte> payload = Encoding.UTF8.GetBytes(row.PayloadJson);
                 await publisher.PublishRawAsync(payload, context, cancellationToken);
                 row.MarkProcessed(DateTime.UtcNow);
@@ -134,8 +158,31 @@ public sealed class OutboxPublisherHostedService : BackgroundService
         }
 
         await db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
         return batch.Count;
     }
+
+    /// <summary>
+    /// PostgreSQL-only pessimistic claim. <c>FOR UPDATE SKIP LOCKED</c> ensures concurrent
+    /// outbox workers will silently skip rows already held by a peer's transaction instead of
+    /// blocking on them, so the only contention overhead is the per-row lock acquisition.
+    /// </summary>
+    private static Task<List<OutboxMessage>> LoadBatchWithSkipLockedAsync(
+        ApplicationDbContext db,
+        int batchSize,
+        DateTime now,
+        CancellationToken cancellationToken) =>
+        db.OutboxMessages
+            .FromSqlInterpolated(
+                $@"SELECT * FROM ""OutboxMessages""
+                   WHERE ""ProcessedOnUtc"" IS NULL
+                     AND ""AbandonedAtUtc"" IS NULL
+                     AND (""NextAttemptUtc"" IS NULL OR ""NextAttemptUtc"" <= {now})
+                   ORDER BY ""OccurredOnUtc""
+                   LIMIT {batchSize}
+                   FOR UPDATE SKIP LOCKED")
+            .ToListAsync(cancellationToken);
 
     private static TimeSpan ComputeBackoff(int initialSeconds, int previousAttempts)
     {

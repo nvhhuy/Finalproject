@@ -1,4 +1,4 @@
-using Application.Contracts.Modules.Users.Persistence;
+using Application.Contracts.Persistence;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

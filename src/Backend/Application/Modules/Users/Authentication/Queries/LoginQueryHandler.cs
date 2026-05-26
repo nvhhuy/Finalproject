@@ -20,6 +20,13 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
     private readonly ICacheService _cache;
     private readonly IFailedLoginTracker _failedLogins;
 
+    // Cached PBKDF2 hash used for the "user does not exist" branch so VerifyHashedPassword always
+    // runs once per login attempt regardless of whether the email is registered. Without this the
+    // PBKDF2 work item creates a ~tens-of-milliseconds timing gap between known and unknown emails
+    // that lets an attacker enumerate the user table by clock alone. Volatile + null-check =
+    // benign double-compute on race, but never null after first set.
+    private static volatile string? _cachedDummyHash;
+
     public LoginQueryHandler(
         IUserReadRepository usersRead,
         IAuthenticationTokenIssuer tokens,
@@ -36,26 +43,22 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(LoginQuery request, CancellationToken cancellationToken)
     {
-        Result<bool, ValidationError> validationResult = await request.ValidateAsync(new LoginQueryValidator(), cancellationToken);
-        if (validationResult.IsFailure)
-            return validationResult.Error;
-
         TimeSpan? lockoutRemaining = await _failedLogins.GetLockoutRemainingAsync(request.Email, cancellationToken);
         if (lockoutRemaining is not null)
             return new AccountTemporarilyLockedError(lockoutRemaining.Value);
 
         User? user = await _usersRead.GetByEmailAsync(request.Email, cancellationToken: cancellationToken);
+
+        // Anti-enumeration: when the email isn't registered we still spend a full PBKDF2 verify
+        // against a dummy hash so the response time looks identical to a known-email + wrong-
+        // password attempt. Returning the same InvalidCredentialsError on both branches removes
+        // the response-shape oracle as well.
         if (user is null)
         {
+            _ = _passwordHasher.VerifyHashedPassword(null!, GetOrComputeDummyHash(), request.Password);
             await _failedLogins.RegisterFailureAsync(request.Email, cancellationToken);
             return new InvalidCredentialsError("Invalid email or password.");
         }
-
-        if (!user.CanSignIn)
-            return new AccountDisabledError("This account cannot sign in.");
-
-        if (user.EmailVerifiedAtUtc is null)
-            return new EmailNotVerifiedError();
 
         PasswordVerificationResult passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
@@ -69,6 +72,14 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
             }
             return new InvalidCredentialsError("Invalid email or password.");
         }
+
+        // Password was correct: only NOW do we surface account-state errors. Returning these
+        // before the password check would leak which email addresses are registered.
+        if (!user.CanSignIn)
+            return new AccountDisabledError("This account cannot sign in.");
+
+        if (user.EmailVerifiedAtUtc is null)
+            return new EmailNotVerifiedError();
 
         await _failedLogins.ResetAsync(request.Email, cancellationToken);
 
@@ -93,5 +104,20 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
             pair.Value.AccessTokenExpiresUtc,
             pair.Value.RefreshToken,
             pair.Value.RefreshTokenExpiresUtc);
+    }
+
+    private string GetOrComputeDummyHash()
+    {
+        // Lazy double-checked init. The hash is computed via the DI-injected IPasswordHasher so it
+        // carries whatever iteration count the deployment configured (default 600 000 after the
+        // hardening pass). Using a cached dummy hash means the unknown-user branch executes the
+        // exact same PBKDF2 work as the known-user branch.
+        string? cached = _cachedDummyHash;
+        if (cached is not null)
+            return cached;
+        User dummy = User.CreateForLocalLoginPendingHash("D", "D", "ctdummy", "dummy@local.invalid");
+        string computed = _passwordHasher.HashPassword(dummy, "__constant_time_dummy__");
+        _cachedDummyHash = computed;
+        return computed;
     }
 }

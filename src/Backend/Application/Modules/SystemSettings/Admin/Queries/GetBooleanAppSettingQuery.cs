@@ -1,3 +1,4 @@
+using Application.Contracts.Authorization;
 using Application.Contracts.Settings;
 using MediatR;
 using Shared.Common;
@@ -5,7 +6,7 @@ using Shared.Errors;
 
 namespace Application.Modules.SystemSettings.Admin.Queries;
 
-public sealed record GetBooleanAppSettingQuery(string Key, bool DefaultValue) : IRequest<Result<bool, Error>>;
+public sealed record GetBooleanAppSettingQuery(string Key, bool DefaultValue) : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class GetBooleanAppSettingQueryHandler : IRequestHandler<GetBooleanAppSettingQuery, Result<bool, Error>>
 {

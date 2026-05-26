@@ -1,4 +1,3 @@
-using Application.Contracts.Modules.Users.Persistence;
 using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Domains.UserAggregate;

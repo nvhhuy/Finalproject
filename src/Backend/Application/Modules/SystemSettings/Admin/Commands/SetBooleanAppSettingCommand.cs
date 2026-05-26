@@ -1,3 +1,4 @@
+using Application.Contracts.Authorization;
 using Application.Contracts.Settings;
 using MediatR;
 using Shared.Common;
@@ -5,7 +6,7 @@ using Shared.Errors;
 
 namespace Application.Modules.SystemSettings.Admin.Commands;
 
-public sealed record SetBooleanAppSettingCommand(string Key, bool Value) : IRequest<Result<bool, Error>>;
+public sealed record SetBooleanAppSettingCommand(string Key, bool Value) : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class SetBooleanAppSettingCommandHandler : IRequestHandler<SetBooleanAppSettingCommand, Result<bool, Error>>
 {

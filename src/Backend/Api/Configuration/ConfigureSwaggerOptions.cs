@@ -23,5 +23,26 @@ public sealed class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOption
                 Description = description.IsDeprecated ? "This API version has been deprecated." : null
             });
         }
+
+        // Bearer security definition + global requirement so Swagger UI surfaces an Authorize
+        // button. Without these, the UI's "Try it out" cannot call any [Authorize] endpoint.
+        // We register a per-operation requirement instead of a hard global so that the few
+        // anonymous endpoints (Register / Login / ForgotPassword) don't show a misleading lock
+        // icon on the Swagger UI page.
+        var bearerScheme = new OpenApiSecurityScheme
+        {
+            Description = "JWT bearer token. Format: 'Bearer {token}'",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Reference = new OpenApiReference { Id = "Bearer", Type = ReferenceType.SecurityScheme }
+        };
+        options.AddSecurityDefinition("Bearer", bearerScheme);
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            [bearerScheme] = Array.Empty<string>()
+        });
     }
 }

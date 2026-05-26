@@ -1,4 +1,5 @@
 using Domains.Administration;
+using Domains.MediaAggregate;
 using Domains.UserAggregate;
 using Domains.SystemSettings;
 using Infrastructure.Messaging.Outbox;
@@ -13,7 +14,6 @@ namespace Infrastructure.Persistence;
 /// </summary>
 public sealed class ApplicationDbContext : DbContext
 {
-    private readonly AuditableInterceptor _auditableInterceptor;
     private readonly DomainEventsSaveChangesInterceptor _domainEventsInterceptor;
 
     public DbSet<User> Users => Set<User>();
@@ -22,19 +22,18 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
-        AuditableInterceptor auditableInterceptor,
         DomainEventsSaveChangesInterceptor domainEventsInterceptor) : base(options)
     {
-        _auditableInterceptor = auditableInterceptor;
         _domainEventsInterceptor = domainEventsInterceptor;
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.AddInterceptors(_auditableInterceptor, _domainEventsInterceptor);
+        optionsBuilder.AddInterceptors(_domainEventsInterceptor);
         base.OnConfiguring(optionsBuilder);
     }
 

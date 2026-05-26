@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace Shared.Errors.Authentication;
 
@@ -6,7 +6,7 @@ public sealed class TwoFactorRequiredError : AuthenticationError
 {
     public string PendingLoginId { get; }
     public TwoFactorRequiredError(string pendingLoginId)
-        : base("Authentication.TwoFactorRequired", StatusCodes.Status202Accepted, "Two-factor authentication is required.")
+        : base("Authentication.TwoFactorRequired", (int)HttpStatusCode.Accepted, "Two-factor authentication is required.")
     {
         PendingLoginId = pendingLoginId;
     }

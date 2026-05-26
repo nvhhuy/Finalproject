@@ -9,6 +9,12 @@ namespace Infrastructure.Modules.Users.Persistence.Conversions;
 /// Base64URL ciphertext. Existing plaintext rows (pre-encryption) will fail to decrypt;
 /// users must re-enrol 2FA after migration.
 /// </summary>
+/// <remarks>
+/// Decryption failures are surfaced as <see cref="EncryptedColumnDecryptionException"/> so that
+/// a corrupted/tampered ciphertext or a key rotation gone wrong cannot silently degrade the
+/// system to "value missing". Callers (or the global exception handler) can decide whether to
+/// 5xx the request or trigger an operator alert.
+/// </remarks>
 public sealed class EncryptedStringConverter : ValueConverter<string?, string?>
 {
     public EncryptedStringConverter(IDataProtector protector)
@@ -29,9 +35,17 @@ public sealed class EncryptedStringConverter : ValueConverter<string?, string?>
         {
             return protector.Unprotect(ciphertext);
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            throw new EncryptedColumnDecryptionException(
+                "Failed to decrypt an encrypted column. The ciphertext may be tampered with, the data-protection key may have been rotated without a recovery path, or the column may contain legacy plaintext that was never encrypted.",
+                ex);
         }
     }
+}
+
+/// <summary>Thrown by <see cref="EncryptedStringConverter"/> when a value cannot be decrypted.</summary>
+public sealed class EncryptedColumnDecryptionException : Exception
+{
+    public EncryptedColumnDecryptionException(string message, Exception inner) : base(message, inner) { }
 }

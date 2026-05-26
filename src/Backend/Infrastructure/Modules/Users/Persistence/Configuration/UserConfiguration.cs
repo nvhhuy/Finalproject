@@ -21,7 +21,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.FirstName).HasMaxLength(128).IsRequired();
         builder.Property(e => e.LastName).HasMaxLength(128).IsRequired();
         builder.Property(e => e.UserName).HasMaxLength(128).IsRequired();
+        builder.Property(e => e.NormalizedUserName).HasMaxLength(128).IsRequired();
         builder.Property(e => e.Email).HasMaxLength(256).IsRequired();
+        builder.Property(e => e.NormalizedEmail).HasMaxLength(256).IsRequired();
         builder.Property(e => e.PasswordHash).HasColumnName("Password").HasMaxLength(512).IsRequired();
         builder.Property(e => e.Role).HasMaxLength(64).IsRequired();
         builder.Property(e => e.LockReason).HasMaxLength(512);
@@ -33,7 +35,13 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(e => e.EmailVerifiedAtUtc).HasColumnType("timestamp with time zone");
         builder.Property(e => e.RegisteredAtUtc).HasColumnType("timestamp with time zone");
-        builder.HasIndex(e => e.Email).IsUnique();
-        builder.HasIndex(e => e.UserName).IsUnique();
+        // The non-normalized columns no longer carry uniqueness; the case-insensitive
+        // NormalizedEmail / NormalizedUserName indexes below are the enforcement boundary.
+        // Plain Email / UserName get plain indexes (non-unique) to still serve LIKE-prefix
+        // display queries (e.g. admin pages that search by visible casing).
+        builder.HasIndex(e => e.Email);
+        builder.HasIndex(e => e.UserName);
+        builder.HasIndex(e => e.NormalizedEmail).IsUnique();
+        builder.HasIndex(e => e.NormalizedUserName).IsUnique();
     }
 }

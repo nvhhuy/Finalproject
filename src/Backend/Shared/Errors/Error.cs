@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace Shared.Errors
 {
@@ -8,6 +8,11 @@ namespace Shared.Errors
     /// keeping the shared HTTP-friendly shape (<see cref="ErrorType"/>, <see cref="StatusCode"/>,
     /// <see cref="ErrorMessage"/>).
     /// </summary>
+    /// <remarks>
+    /// Uses <see cref="HttpStatusCode"/> values (BCL) rather than ASP.NET-specific
+    /// <c>StatusCodes</c> constants so the <c>Shared</c> kernel does not transitively pull in
+    /// <c>Microsoft.AspNetCore.*</c> and can be referenced by non-HTTP hosts (Worker, scripts).
+    /// </remarks>
     public class Error
     {
         public string ErrorType { get; init; }
@@ -16,7 +21,7 @@ namespace Shared.Errors
 
         public Error(
             string errorType = "InternalServerError",
-            int? statusCode = StatusCodes.Status500InternalServerError,
+            int? statusCode = (int)HttpStatusCode.InternalServerError,
             string? errorMessage = null)
         {
             ErrorType = errorType;

@@ -40,7 +40,7 @@ public sealed class AuthIntegrationTests
             password = "Password123!"
         };
 
-        HttpResponseMessage registerResponse = await client.PostAsJsonAsync("/api/auth/register", registerBody);
+        HttpResponseMessage registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", registerBody);
         registerResponse.EnsureSuccessStatusCode();
         ApiResponse<RegistrationResponseDto>? registerPayload =
             await registerResponse.Content.ReadFromJsonAsync<ApiResponse<RegistrationResponseDto>>();
@@ -48,7 +48,7 @@ public sealed class AuthIntegrationTests
         Assert.True(registerPayload.Success);
         Assert.Contains("verify", registerPayload.Data!.Message, StringComparison.OrdinalIgnoreCase);
 
-        HttpResponseMessage loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { email, password = "Password123!" });
+        HttpResponseMessage loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "Password123!" });
         Assert.Equal(HttpStatusCode.Forbidden, loginResponse.StatusCode);
     }
 }
