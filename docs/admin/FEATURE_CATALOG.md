@@ -1,6 +1,6 @@
 # Admin feature catalog
 
-Mục lục tính năng **đã có** trong Admin Console — routes, hành vi, API backend tương ứng.
+Catalog of **existing** Admin Console features — routes, behavior, and corresponding backend APIs.
 
 ---
 
@@ -122,8 +122,8 @@ Requires RabbitMQ enabled on API. API: `/api/v1/admin/messaging/dlq/...`.
 | Locale | Code | File |
 |--------|------|------|
 | English | `en` | `i18n/locales/en.json` |
-| Tiếng Việt | `vi` | `i18n/locales/vi.json` |
-| 中文 (简体) | `zh` | `i18n/locales/zh.json` |
+| Vietnamese | `vi` | `i18n/locales/vi.json` |
+| Chinese (Simplified) | `zh` | `i18n/locales/zh.json` |
 
 - Persisted: `localStorage` key `admin-locale`
 - Switcher: header (compact) + sidebar + login page
@@ -151,4 +151,4 @@ Requires RabbitMQ enabled on API. API: `/api/v1/admin/messaging/dlq/...`.
 - Real-time websockets / live audit stream
 - Role management UI beyond assigning User/Admin on user form
 
-Những mục trên có thể thêm theo [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md) nếu backend đã hỗ trợ.
+The items above can be added following [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md) if the backend already supports them.

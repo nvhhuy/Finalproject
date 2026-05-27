@@ -18,9 +18,9 @@ Step-by-step workflow for adding product features on top of the base without bre
 
 ```
 New capability?
-├── Chỉ đổi UI landing/marketing → app/page.tsx + i18n
-├── API đã có, thêm màn authenticated → checklist "New app page" below
-├── API mới → Backend first, then Frontend API module + page
+├── Landing/marketing UI only → app/page.tsx + i18n
+├── API exists, add authenticated screen → checklist "New app page" below
+├── New API → Backend first, then Frontend API module + page
 └── Admin-only → src/Admin, not Frontend
 ```
 

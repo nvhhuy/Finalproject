@@ -1,6 +1,6 @@
 # Frontend feature catalog
 
-Mục lục tính năng **đã có** trong base Frontend — routes, hành vi, API backend.
+Catalog of **existing** Frontend base features — routes, behavior, and backend APIs.
 
 ---
 
@@ -97,8 +97,8 @@ Client: `lib/features/media/media-api.ts`.
 | Locale | File |
 |--------|------|
 | English | `i18n/locales/en.json` |
-| Tiếng Việt | `i18n/locales/vi.json` |
-| 中文 | `i18n/locales/zh.json` |
+| Vietnamese | `i18n/locales/vi.json` |
+| Chinese (Simplified) | `i18n/locales/zh.json` |
 
 Switcher: `components/layout/LanguageSwitcher.tsx`.
 

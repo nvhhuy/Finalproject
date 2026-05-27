@@ -1,83 +1,83 @@
-# Admin onboarding (người mới)
+# Admin onboarding (new developers)
 
-Giúp dev mới **chạy Admin local trong ~15 phút** và biết **đọc gì tiếp theo**. Admin là SPA nội bộ — không thay thế Swagger, nhưng là cách vận hành hàng ngày (users, audit, DLQ, settings).
+Helps new developers **run Admin locally in ~15 minutes** and know **what to read next**. Admin is an internal SPA — it does not replace Swagger, but it is the day-to-day operations tool (users, audit, DLQ, settings).
 
 ---
 
-## Bạn đang ở đâu trong repo?
+## Where am I in the repo?
 
 ```
 Finalproject/
 ├── src/Admin/              ← Admin Console (Vite + React)
-├── src/Backend/Api/        ← API mà Admin gọi
+├── src/Backend/Api/        ← API that Admin calls
 ├── local/docker-compose.yml
-└── docs/admin/             ← tài liệu bạn đang đọc
+└── docs/admin/             ← documentation you are reading
 ```
 
 ---
 
-## Lộ trình đọc (khuyến nghị)
+## Recommended reading path
 
-| Thứ tự | Tài liệu | Thời gian | Mục tiêu |
-|--------|----------|-----------|----------|
-| 1 | **File này** | 15 phút | Chạy local + đăng nhập |
-| 2 | [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md) | 15 phút | Biết có những màn / API gì |
-| 3 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | 20 phút | Folder, auth, data flow |
-| 4 | [`COMMON_LIBRARIES.md`](./COMMON_LIBRARIES.md) | 15 phút | Helper dùng chung (date, toast, …) |
-| 5 | [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md) | Khi thêm feature | Quy trình mở rộng |
-| 6 | [`LLM_FEATURE_IMPLEMENTATION_RULES.md`](./LLM_FEATURE_IMPLEMENTATION_RULES.md) | Khi dùng AI | Quy tắc code Admin |
+| Order | Document | Time | Goal |
+|-------|----------|------|------|
+| 1 | **This file** | 15 min | Run locally + sign in |
+| 2 | [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md) | 15 min | Know existing screens / APIs |
+| 3 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | 20 min | Folders, auth, data flow |
+| 4 | [`COMMON_LIBRARIES.md`](./COMMON_LIBRARIES.md) | 15 min | Shared helpers (date, toast, …) |
+| 5 | [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md) | When adding features | Extension workflow |
+| 6 | [`LLM_FEATURE_IMPLEMENTATION_RULES.md`](./LLM_FEATURE_IMPLEMENTATION_RULES.md) | When using AI | Admin coding rules |
 
-**Không cần đọc hết một lúc.** Ngày 1: mục 1–3; khi sửa code: thêm 4–6.
+**You do not need to read everything at once.** Day 1: items 1–3; when changing code: add 4–6.
 
 ---
 
 ## Day 1 — checklist
 
-### 1. Cài đặt
+### 1. Install prerequisites
 
-- [Node.js ≥ 20.19](https://nodejs.org/) (khớp `package.json` engines)
-- Backend API chạy được (xem [`docs/backend/ONBOARDING.md`](../backend/ONBOARDING.md))
-- Docker local (Postgres, …): `docker compose -f local/docker-compose.yml up -d` từ repo root
+- [Node.js ≥ 20.19](https://nodejs.org/) (matches `package.json` engines)
+- Backend API running (see [`docs/backend/ONBOARDING.md`](../backend/ONBOARDING.md))
+- Local Docker (Postgres, …): `docker compose -f local/docker-compose.yml up -d` from repo root
 
-### 2. Cấu hình Admin
+### 2. Configure Admin
 
 ```bash
 cd src/Admin
-cp .env.example .env   # tùy chọn — chỉnh proxy nếu API port khác
+cp .env.example .env   # optional — adjust proxy if API port differs
 npm install
 ```
 
-| Biến | Mục đích |
-|------|----------|
-| `VITE_API_PROXY_TARGET` | Target cho Vite proxy `/api` → backend (mặc định `https://localhost:7124`) |
-| `VITE_API_BASE_URL` | Production: origin API tuyệt đối (để trống = same-origin `/api`) |
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_PROXY_TARGET` | Target for Vite proxy `/api` → backend (default `https://localhost:7124`) |
+| `VITE_API_BASE_URL` | Production: absolute API origin (leave empty = same-origin `/api`) |
 
-### 3. Chạy dev
+### 3. Run dev server
 
 ```bash
 npm run dev
 ```
 
-Mở [http://localhost:5174](http://localhost:5174).
+Open [http://localhost:5174](http://localhost:5174).
 
-Backend `Cors:AllowedOrigins` phải có `http://localhost:5174` (đã có trong `appsettings.Development.json`).
+Backend `Cors:AllowedOrigins` must include `http://localhost:5174` (already in `appsettings.Development.json`).
 
-### 4. Đăng nhập (Development)
+### 4. Sign in (Development)
 
 | Field | Value |
 |-------|-------|
 | Email | `admin@localhost` |
 | Password | `Temp!ChangeMe123` |
 
-Chỉ tài khoản role **Admin** hoàn tất được flow đăng nhập. Nếu bật 2FA trên user admin, làm theo màn hình xác thực.
+Only accounts with **Admin** role can complete the login flow. If 2FA is enabled on the admin user, follow the verification screen.
 
-### 5. Kiểm tra nhanh
+### 5. Quick smoke test
 
-- [ ] Dashboard load metrics (hoặc thông báo lỗi nếu API tắt)
-- [ ] Users — list, filter, mở user detail
-- [ ] Đổi ngôn ngữ (header / sidebar / login) — EN / VI / 中文
+- [ ] Dashboard loads metrics (or error alert if API is down)
+- [ ] Users — list, filter, open user detail
+- [ ] Switch language (header / sidebar / login) — EN / VI / ZH
 - [ ] Settings — toggle public registration
-- [ ] Audit logs — filter theo `targetUserId` từ user detail
+- [ ] Audit logs — filter by `targetUserId` from user detail
 
 ### 6. Build & lint
 
@@ -88,13 +88,13 @@ npm run lint
 
 ---
 
-## Cấu trúc source (tóm tắt)
+## Source structure (summary)
 
 ```
 src/Admin/src/
 ├── app/              # App, router, providers (Query, auth hydrate, Toaster)
 ├── config/           # env (API_V1)
-├── features/         # Màn hình theo domain
+├── features/         # Screens by domain
 │   ├── auth/
 │   ├── dashboard/
 │   ├── users/
@@ -112,34 +112,34 @@ src/Admin/src/
     └── types/        # DTO mirror backend
 ```
 
-Chi tiết: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Details: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ---
 
-## Quy ước làm việc hàng ngày
+## Daily conventions
 
-1. **Feature mới** → đọc [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md) trước khi code.
-2. **Chuỗi UI** → thêm key vào **cả 3** file `i18n/locales/{en,vi,zh}.json`.
-3. **Ngày/giờ** → dùng `@/shared/lib` (`formatDateOrDash`, …), không gọi `toLocaleDateString()` trực tiếp trong page.
-4. **API mutation** → `idempotent: true` qua `admin-api`; user update/delete cần `rowVersion` (xem backend concurrency doc).
-5. **Query cache** → dùng `queryKeys` từ `@/shared/constants/query-keys`.
+1. **New feature** → read [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md) before coding.
+2. **UI strings** → add keys to **all 3** files `i18n/locales/{en,vi,zh}.json`.
+3. **Dates/times** → use `@/shared/lib` (`formatDateOrDash`, …), do not call `toLocaleDateString()` directly in pages.
+4. **API mutations** → `idempotent: true` via `admin-api`; user update/delete requires `rowVersion` (see backend concurrency doc).
+5. **Query cache** → use `queryKeys` from `@/shared/constants/query-keys`.
 
 ---
 
 ## Troubleshooting
 
-| Triệu chứng | Gợi ý |
-|-------------|--------|
-| CORS error | Thêm origin Admin vào backend `Cors:AllowedOrigins` |
-| 401 sau vài phút | Refresh token trong sessionStorage; kiểm tra API `/auth/refresh` |
-| SSL proxy lỗi | Thử `VITE_API_PROXY_TARGET=http://localhost:5076` nếu API HTTP |
-| Metrics / list trống | API chưa chạy hoặc DB chưa seed |
-| Concurrency conflict toast | User bị sửa song song — refresh trang, lấy `rowVersion` mới |
+| Symptom | Suggestion |
+|---------|------------|
+| CORS error | Add Admin origin to backend `Cors:AllowedOrigins` |
+| 401 after a few minutes | Refresh token in sessionStorage; check API `/auth/refresh` |
+| SSL proxy error | Try `VITE_API_PROXY_TARGET=http://localhost:5076` if API is HTTP |
+| Metrics / list empty | API not running or DB not seeded |
+| Concurrency conflict toast | User edited concurrently — refresh page, get new `rowVersion` |
 
 ---
 
-## Tiếp theo
+## Next steps
 
-- Thêm màn hình: [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md)
-- Danh sách tính năng hiện có: [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md)
-- Code với AI: [`LLM_FEATURE_IMPLEMENTATION_RULES.md`](./LLM_FEATURE_IMPLEMENTATION_RULES.md) + rule `.cursor/rules/admin.mdc`
+- Add a screen: [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md)
+- Feature list: [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md)
+- Code with AI: [`LLM_FEATURE_IMPLEMENTATION_RULES.md`](./LLM_FEATURE_IMPLEMENTATION_RULES.md) + rule `.cursor/rules/admin.mdc`
