@@ -8,6 +8,7 @@ using Domains.UserAggregate;
 using MediatR;
 using Shared.Common;
 using Shared.Errors;
+using Shared.Errors.Authentication;
 using Shared.Errors.General;
 
 namespace Application.Modules.Users.Administration.Commands;
@@ -32,9 +33,18 @@ public sealed class ImpersonateUserCommandHandler : IRequestHandler<ImpersonateU
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(ImpersonateUserCommand request, CancellationToken cancellationToken)
     {
+        if (request.TargetUserId == request.ActingAdminUserId)
+            return new ForbiddenError("Administrators cannot impersonate themselves.");
+
         User? target = await _read.GetByIdAsync(request.TargetUserId, cancellationToken: cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
+
+        if (string.Equals(target.Role, UserRoles.Admin, StringComparison.Ordinal))
+            return new ForbiddenError("Impersonating another administrator is not allowed.");
+
+        if (!target.CanSignIn)
+            return new AccountDisabledError("The target user account is locked, closed, or deleted.");
 
         Result<AuthenticationTokenPair, Error> pair = await _tokens.IssueAsync(
             target,

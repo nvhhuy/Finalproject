@@ -46,6 +46,7 @@ public sealed class MediaController : ApiControllerBase
     }
 
     [HttpPost("{id:guid}/complete")]
+    [RequiresIdempotencyKey(Scope = "media.complete")]
     [Transactional]
     [EnableRateLimiting("media-upload")]
     [ProducesResponseType(typeof(ApiResponse<MediaAssetDto>), StatusCodes.Status200OK)]

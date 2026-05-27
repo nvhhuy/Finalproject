@@ -39,6 +39,7 @@ public sealed class AuthController : ApiControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
+    [RequiresIdempotencyKey(Scope = "auth.register")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<RegistrationResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status400BadRequest)]

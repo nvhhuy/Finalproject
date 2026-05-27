@@ -1,0 +1,62 @@
+# Example act_runner configuration.
+# Copy to `runner-config.yaml` next to it and adjust per environment.
+# Reference: https://docs.gitea.com/usage/actions/act-runner
+
+log:
+  # `info` is enough for steady-state operation. Switch to `debug` when
+  # diagnosing job dispatch issues.
+  level: info
+
+runner:
+  # Where act_runner stores per-job workspaces. Mounting this on a fast disk
+  # (NVMe) cuts cold-cache job time roughly in half because `actions/checkout`
+  # and the .NET restore step both write here.
+  file: .runner
+
+  # Maximum jobs to run in parallel. Tune to (CPU cores / 2) for build-heavy
+  # workloads like `dotnet build`; the migration-check workflow spawns a
+  # Postgres sidecar + a .NET build per job, ~2 GB RAM each.
+  capacity: 2
+
+  # Hard timeout per job. The migration drift workflow finishes in 2-3 minutes
+  # on warm cache; 30 minutes leaves plenty of headroom for cold restores and
+  # signals a stuck job loudly.
+  timeout: 30m
+
+  # Allow self-hosted workflows to download actions from github.com directly.
+  # If your Gitea is air-gapped, set this to false and mirror the actions you
+  # need into Gitea repos (see CI_GITEA_SETUP.md §6).
+  insecure: false
+
+  # Resource limits on the per-job container. Defending the host from a runaway
+  # job — the .NET 8 SDK image can balloon to 1.5 GB during restore on cold
+  # caches; we leave a 2x safety margin.
+  fetch_timeout: 5s
+  fetch_interval: 2s
+
+cache:
+  # act_runner's local cache server gives `actions/cache` a back-end so .NET
+  # NuGet restores reuse packages across runs. Without this every job
+  # re-downloads the whole NuGet cache (~200 MB).
+  enabled: true
+  dir: ""             # default: ${runner.file}/cache
+  host: ""            # leave blank to bind to the docker bridge IP
+  port: 0             # 0 = auto-allocate (recommended)
+  external_server: "" # set only if you point at a shared/distributed cache
+
+container:
+  # Engine to run job containers in. `docker` is the default and what we test
+  # with; `podman` works but needs `--privileged` adjustments.
+  network: ""             # default: a fresh bridge network per job
+  privileged: false
+  options: ""             # extra docker run flags (e.g. "--cpus 2 --memory 4g")
+  workdir_parent: ""      # default: tmpfs inside the container
+  valid_volumes: []       # whitelist of host paths jobs may bind-mount
+  docker_host: ""         # default: unix:///var/run/docker.sock
+
+  # When a workflow uses `services:` (the migration-check job does — Postgres),
+  # act_runner spawns those alongside the job container. We keep them on the
+  # same auto-created bridge so `Host=localhost` in the workflow reaches the
+  # service through Docker's hostname mapping.
+  force_pull: true        # always pull image:tag to avoid stale Postgres images
+  force_rebuild: false

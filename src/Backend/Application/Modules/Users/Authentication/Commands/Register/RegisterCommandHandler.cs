@@ -2,10 +2,11 @@ using Application.Contracts.Email;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
+using Application.Contracts.FeatureFlags;
 using Application.Contracts.Settings;
+using Application.FeatureFlags;
 using Application.Contracts.Transactions;
 using Application.Extensions;
-using Application.Modules.SystemSettings;
 using Application.Modules.Users.Authentication.Common;
 using Application.Modules.Users.Profile.DomainEvents;
 using Domains.UserAggregate;
@@ -21,7 +22,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IUserReadRepository _userRead;
     private readonly IUserWriteRepository _userWrite;
     private readonly IPasswordHasher<User> _passwordHasher;
-    private readonly IAppSettingsService _settings;
+    private readonly IFeatureFlagService _featureFlags;
     private readonly IDateTimeProvider _clock;
     private readonly IEmailVerificationSender _emailVerification;
     private readonly IUnitOfWork _uow;
@@ -30,7 +31,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         IUserReadRepository userRead,
         IUserWriteRepository userWrite,
         IPasswordHasher<User> passwordHasher,
-        IAppSettingsService settings,
+        IFeatureFlagService featureFlags,
         IDateTimeProvider clock,
         IEmailVerificationSender emailVerification,
         IUnitOfWork uow)
@@ -38,7 +39,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         _userRead = userRead;
         _userWrite = userWrite;
         _passwordHasher = passwordHasher;
-        _settings = settings;
+        _featureFlags = featureFlags;
         _clock = clock;
         _emailVerification = emailVerification;
         _uow = uow;
@@ -46,7 +47,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
 
     public async Task<Result<RegistrationResult, Error>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        bool allowPublicRegister = await _settings.GetBooleanAsync(AppSettingKeys.AllowPublicRegister, defaultValue: true, cancellationToken);
+        bool allowPublicRegister = await _featureFlags.IsEnabledAsync(FeatureFlagKeys.AllowPublicRegister, cancellationToken: cancellationToken);
         if (!allowPublicRegister)
             return new ForbiddenError("Public registration is disabled by application setting.");
 

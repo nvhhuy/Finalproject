@@ -28,8 +28,12 @@ public static class DependencyInjection
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
         services.AddCorsPolicy(configuration);
-        services.AddControllers();
         services.AddScoped<TransactionalActionFilter>();
+        services.AddScoped<IdempotencyActionFilter>();
+        services.AddControllers(options =>
+        {
+            options.Filters.AddService<IdempotencyActionFilter>();
+        });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();

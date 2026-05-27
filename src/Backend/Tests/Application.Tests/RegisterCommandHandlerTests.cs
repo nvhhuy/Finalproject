@@ -2,9 +2,8 @@ using Application.Contracts.Email;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
-using Application.Contracts.Settings;
+using Application.Contracts.FeatureFlags;
 using Application.Contracts.Transactions;
-using Application.Modules.SystemSettings;
 using Application.Modules.Users.Authentication.Commands.Register;
 using Application.Modules.Users.Authentication.Common;
 using Domains.UserAggregate;
@@ -31,7 +30,7 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task Register_returns_forbidden_when_public_registration_is_disabled()
     {
-        var settings = NewSettings(allowPublicRegister: false);
+        var settings = NewFeatureFlags(allowPublicRegister: false);
         var read = new Mock<IUserReadRepository>();
         var write = new Mock<IUserWriteRepository>();
         RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, settings.Object);
@@ -52,7 +51,7 @@ public sealed class RegisterCommandHandlerTests
         read.Setup(r => r.ExistsByEmailAsync(Email, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var write = new Mock<IUserWriteRepository>();
 
-        RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, NewSettings().Object);
+        RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, NewFeatureFlags().Object);
 
         Result<RegistrationResult, Error> result =
             await handler.Handle(NewCommand(), CancellationToken.None);
@@ -70,7 +69,7 @@ public sealed class RegisterCommandHandlerTests
         read.Setup(r => r.ExistsByUserNameAsync(UserName, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var write = new Mock<IUserWriteRepository>();
 
-        RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, NewSettings().Object);
+        RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, NewFeatureFlags().Object);
 
         Result<RegistrationResult, Error> result =
             await handler.Handle(NewCommand(), CancellationToken.None);
@@ -95,7 +94,7 @@ public sealed class RegisterCommandHandlerTests
         var uow = new Mock<IUnitOfWork>();
 
         RegisterCommandHandler handler = BuildHandler(
-            read.Object, write.Object, NewSettings().Object,
+            read.Object, write.Object, NewFeatureFlags().Object,
             emailSender: emailSender.Object, uow: uow.Object);
 
         Result<RegistrationResult, Error> result =
@@ -117,10 +116,10 @@ public sealed class RegisterCommandHandlerTests
     private static RegisterCommand NewCommand() =>
         new("First", "Last", UserName, Email, Password);
 
-    private static Mock<IAppSettingsService> NewSettings(bool allowPublicRegister = true)
+    private static Mock<IFeatureFlagService> NewFeatureFlags(bool allowPublicRegister = true)
     {
-        var mock = new Mock<IAppSettingsService>();
-        mock.Setup(s => s.GetBooleanAsync(AppSettingKeys.AllowPublicRegister, true, It.IsAny<CancellationToken>()))
+        var mock = new Mock<IFeatureFlagService>();
+        mock.Setup(s => s.IsEnabledAsync(It.IsAny<string>(), It.IsAny<FeatureFlagContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(allowPublicRegister);
         return mock;
     }
@@ -128,7 +127,7 @@ public sealed class RegisterCommandHandlerTests
     private static RegisterCommandHandler BuildHandler(
         IUserReadRepository read,
         IUserWriteRepository write,
-        IAppSettingsService settings,
+        IFeatureFlagService featureFlags,
         IEmailVerificationSender? emailSender = null,
         IUnitOfWork? uow = null)
     {
@@ -139,7 +138,7 @@ public sealed class RegisterCommandHandlerTests
             read,
             write,
             new PasswordHasher<User>(),
-            settings,
+            featureFlags,
             clock.Object,
             emailSender ?? Mock.Of<IEmailVerificationSender>(),
             uow ?? Mock.Of<IUnitOfWork>());

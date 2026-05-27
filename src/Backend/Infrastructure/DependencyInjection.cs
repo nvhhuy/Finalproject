@@ -15,6 +15,8 @@ using Infrastructure.Modules.Users.Persistence.Conversions;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
+using Application.Contracts.FeatureFlags;
+using Application.Contracts.Idempotency;
 using Application.Contracts.Settings;
 using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
@@ -32,6 +34,8 @@ using Infrastructure.Modules.Users.Persistence.Repositories;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Interceptors;
 using Infrastructure.Services;
+using Infrastructure.FeatureFlags;
+using Infrastructure.Idempotency;
 using Infrastructure.Settings;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -82,6 +86,10 @@ public static class DependencyInjection
         });
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IAppSettingsService, AppSettingsService>();
+        services.Configure<IdempotencyOptions>(configuration.GetSection(IdempotencyOptions.SectionName));
+        services.Configure<FeatureFlagOptions>(configuration.GetSection(FeatureFlagOptions.SectionName));
+        services.AddScoped<IIdempotencyService, IdempotencyService>();
+        services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 
         // Media pipeline DI lives in Application.AddApplication; here we just bind the options block.
         Application.DependencyInjection.AddMediaApplicationOptions(services, configuration);

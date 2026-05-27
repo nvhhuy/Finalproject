@@ -1,16 +1,20 @@
 # Project documentation
 
-Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Frontend`). The folders below are **written docs** for those stacks.
+Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Frontend`). This `docs/` tree is the human-facing handbook for those stacks.
+
+## Quick entry points
+
+| You are… | Read this first |
+|---|---|
+| New backend developer | [`backend/ONBOARDING.md`](./backend/ONBOARDING.md) |
+| PM/tech lead checking what base already supports | [`backend/FEATURE_CATALOG.md`](./backend/FEATURE_CATALOG.md) |
+| Engineer implementing a new backend feature | [`backend/BASE_GUIDE.md`](./backend/BASE_GUIDE.md) |
+| Engineer debugging migrations/CI drift | [`backend/MIGRATION_WORKFLOW.md`](./backend/MIGRATION_WORKFLOW.md) |
+| Operator setting up Gitea CI runners | [`backend/CI_GITEA_SETUP.md`](./backend/CI_GITEA_SETUP.md) |
+
+## Documentation areas
 
 | Area | Location |
 |------|----------|
-| **Backend** (architecture, modules, style, base guide) | [`backend/`](./backend/) |
-| **Frontend** (to be expanded) | [`frontend/`](./frontend/) |
-
-Start with [`backend/BASE_GUIDE.md`](./backend/BASE_GUIDE.md) and [`backend/MODULE_STRUCTURE.md`](./backend/MODULE_STRUCTURE.md). For production hardening and per-customer gaps, see [`backend/EXTENSIBILITY_AND_GAPS.md`](./backend/EXTENSIBILITY_AND_GAPS.md).
-
-Recommended next:
-
-- [`backend/CODEBASE_INCLUDED_AND_USAGE_GUIDE.md`](./backend/CODEBASE_INCLUDED_AND_USAGE_GUIDE.md) - complete inventory + practical usage flow.
-- [`backend/LLM_FEATURE_IMPLEMENTATION_RULES.md`](./backend/LLM_FEATURE_IMPLEMENTATION_RULES.md) - strict coding rules for AI-assisted feature implementation.
-- [`backend/FEATURE_BASELINE_MATRIX.md`](./backend/FEATURE_BASELINE_MATRIX.md) - current implemented vs pending platform features.
+| Backend docs hub | [`backend/README.md`](./backend/README.md) |
+| Frontend docs | [`frontend/README.md`](./frontend/README.md) |

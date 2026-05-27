@@ -22,6 +22,18 @@ public abstract class ApiControllerBase : ControllerBase
 
     protected Guid CurrentAdminId => CurrentUserId;
 
+    protected bool IsImpersonating =>
+        User.FindFirst("impersonator_sub") is not null;
+
+    protected Guid? CurrentImpersonatorId
+    {
+        get
+        {
+            string? impersonator = User.FindFirstValue("impersonator_sub");
+            return Guid.TryParse(impersonator, out Guid id) ? id : null;
+        }
+    }
+
     protected bool TryGetUserId(out Guid userId)
     {
         string? sub = User.FindFirstValue(ClaimTypes.NameIdentifier)

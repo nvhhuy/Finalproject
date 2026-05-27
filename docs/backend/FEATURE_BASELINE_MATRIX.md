@@ -1,5 +1,8 @@
 # Backend Feature Baseline Matrix
 
+> This file is the **short status snapshot**. For the comprehensive feature list
+> with API endpoints and operational notes, use [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md).
+
 This matrix tracks what the base code currently supports out-of-the-box.
 
 ## Authentication and session

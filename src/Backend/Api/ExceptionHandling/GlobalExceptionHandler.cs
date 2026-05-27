@@ -1,5 +1,8 @@
+using Api.Models;
+using Application.Contracts.Transactions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Errors.General;
 
 namespace Api.ExceptionHandling;
 
@@ -17,6 +20,18 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        if (exception is ConcurrencyConflictException)
+        {
+            ConcurrencyConflictError error = new();
+            httpContext.Response.StatusCode = error.StatusCode ?? StatusCodes.Status409Conflict;
+            await httpContext.Response.WriteAsJsonAsync(
+                ApiResponse<object?>.Fail(
+                    new ApiErrorPayload(error.ErrorType, error.ErrorMessage, error.StatusCode),
+                    httpContext),
+                cancellationToken);
+            return true;
+        }
+
         _logger.LogError(exception, "Unhandled exception");
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
         await httpContext.Response.WriteAsJsonAsync(new ProblemDetails

@@ -11,5 +11,7 @@ namespace Infrastructure.Services;
 public sealed class NullLoggedInUserService : ILoggedInUserService
 {
     public UserId? UserId => null;
+    public UserId? ImpersonatorUserId => null;
+    public bool IsImpersonating => false;
     public bool IsInRole(string role) => false;
 }

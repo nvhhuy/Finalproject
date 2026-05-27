@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Pre-commit hook for EF Core migration safety. Activated by
+# `tools/backend/git-hooks/install.sh` which points `core.hooksPath` at this
+# directory.
+#
+# Philosophy: hooks should be FAST and ADVISORY. We only block commits that
+# would definitely fail CI; we never try to fix things automatically (a hook
+# that rewrites files mid-commit confuses every Git GUI and breaks `git add -p`
+# workflows).
+#
+# We run only when migration files are staged — non-migration commits are
+# unaffected so the hook adds zero overhead for the 90% of changes that don't
+# touch the schema.
+
+set -euo pipefail
+
+# Resolve the repo root the same way Git does (handle the case where this hook
+# is invoked from a subdirectory or via a worktree).
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Skip cleanly when the commit doesn't touch migration files. This is the hot
+# path — must stay sub-millisecond.
+STAGED="$(git diff --cached --name-only --diff-filter=ACMRTUXB)"
+if ! grep -qE '^src/Backend/Infrastructure/Persistence/Migrations/' <<<"$STAGED" \
+   && ! grep -qE '^src/Backend/(Domains|Infrastructure)/.+\.cs$' <<<"$STAGED"; then
+    exit 0
+fi
+
+# Allow operators to bypass when they know what they're doing (e.g. WIP commit
+# during the rebase script itself, which stages files between EF steps).
+if [[ "${SKIP_MIGRATION_CHECK:-0}" == "1" ]]; then
+    echo "[pre-commit] SKIP_MIGRATION_CHECK=1 — bypassing drift check."
+    exit 0
+fi
+
+CHECK="$REPO_ROOT/tools/backend/migration/check.sh"
+if [[ ! -x "$CHECK" ]]; then
+    echo "[pre-commit] $CHECK not found or not executable — skipping migration check." >&2
+    exit 0
+fi
+
+# Run the fast checks only. The full checks need Postgres + a `dotnet build`,
+# which a pre-commit hook should never trigger.
+if ! "$CHECK" --fast; then
+    cat >&2 <<'EOF'
+
+The migration drift check above blocked your commit. To fix:
+
+  • If the issue is a stale timestamp / forgotten rebase:
+        ./tools/backend/migration/rebase.sh
+
+  • If the issue is an unstaged ApplicationDbContextModelSnapshot.cs:
+        git add src/Backend/Infrastructure/Persistence/Migrations/ApplicationDbContextModelSnapshot.cs
+
+  • To bypass this hook (rarely correct):
+        SKIP_MIGRATION_CHECK=1 git commit ...
+
+See docs/backend/MIGRATION_WORKFLOW.md for the full troubleshooting flow.
+EOF
+    exit 1
+fi

@@ -2,6 +2,7 @@ using Domains.Administration;
 using Domains.MediaAggregate;
 using Domains.UserAggregate;
 using Domains.SystemSettings;
+using Infrastructure.Idempotency;
 using Infrastructure.Messaging.Outbox;
 using Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,

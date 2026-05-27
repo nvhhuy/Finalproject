@@ -16,6 +16,7 @@ public sealed partial class AdminUsersController
     private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
 
     [HttpPost]
+    [RequiresIdempotencyKey(Scope = "admin.users.create")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserRequest body, CancellationToken cancellationToken)
@@ -35,6 +36,7 @@ public sealed partial class AdminUsersController
     }
 
     [HttpPut("{userId:guid}")]
+    [RequiresIdempotencyKey(Scope = "admin.users.update")]
     [Transactional]
     public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] AdminUpdateUserRequest body, CancellationToken cancellationToken)
     {
@@ -53,6 +55,7 @@ public sealed partial class AdminUsersController
     }
 
     [HttpDelete("{userId:guid}")]
+    [RequiresIdempotencyKey(Scope = "admin.users.delete")]
     [Transactional]
     public async Task<IActionResult> DeleteUser(Guid userId, CancellationToken cancellationToken)
     {
@@ -61,6 +64,7 @@ public sealed partial class AdminUsersController
     }
 
     [HttpPost("{userId:guid}/lock")]
+    [RequiresIdempotencyKey(Scope = "admin.users.lock")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> LockUser(Guid userId, [FromBody] LockUserRequest? body, CancellationToken cancellationToken)
@@ -70,6 +74,7 @@ public sealed partial class AdminUsersController
     }
 
     [HttpPost("{userId:guid}/unlock")]
+    [RequiresIdempotencyKey(Scope = "admin.users.unlock")]
     [Transactional]
     public async Task<IActionResult> UnlockUser(Guid userId, CancellationToken cancellationToken)
     {
@@ -78,6 +83,7 @@ public sealed partial class AdminUsersController
     }
 
     [HttpPost("{userId:guid}/impersonate")]
+    [RequiresIdempotencyKey(Scope = "admin.users.impersonate")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ImpersonateUser(Guid userId, CancellationToken cancellationToken)
@@ -88,6 +94,7 @@ public sealed partial class AdminUsersController
     }
 
     [HttpPost("{userId:guid}/2fa/reset")]
+    [RequiresIdempotencyKey(Scope = "admin.users.2fa.reset")]
     [Transactional]
     public async Task<IActionResult> ResetTwoFactor(Guid userId, CancellationToken cancellationToken)
     {
@@ -96,6 +103,7 @@ public sealed partial class AdminUsersController
     }
 
     [HttpPost("{userId:guid}/password/reset")]
+    [RequiresIdempotencyKey(Scope = "admin.users.password.reset")]
     [Transactional]
     public async Task<IActionResult> ResetPassword(Guid userId, [FromBody] AdminResetPasswordRequest body, CancellationToken cancellationToken)
     {

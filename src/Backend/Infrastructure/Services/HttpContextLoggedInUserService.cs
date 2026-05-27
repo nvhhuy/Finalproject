@@ -24,6 +24,8 @@ public sealed class HttpContextLoggedInUserService : ILoggedInUserService
         _httpContextAccessor = httpContextAccessor;
     }
 
+    public const string ImpersonatorClaimType = "impersonator_sub";
+
     public UserId? UserId
     {
         get
@@ -37,6 +39,20 @@ public sealed class HttpContextLoggedInUserService : ILoggedInUserService
             return UserId.Create(guid);
         }
     }
+
+    public UserId? ImpersonatorUserId
+    {
+        get
+        {
+            string? impersonator = _httpContextAccessor.HttpContext?.User?
+                .FindFirst(ImpersonatorClaimType)?.Value;
+            if (string.IsNullOrEmpty(impersonator) || !Guid.TryParse(impersonator, out Guid guid))
+                return null;
+            return UserId.Create(guid);
+        }
+    }
+
+    public bool IsImpersonating => ImpersonatorUserId is not null;
 
     public bool IsInRole(string role) =>
         _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;

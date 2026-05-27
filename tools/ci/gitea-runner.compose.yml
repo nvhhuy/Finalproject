@@ -1,0 +1,87 @@
+# Gitea Actions runner — drop-in docker-compose for the migration-check
+# workflow (.github/workflows/migration-check.yml). See docs/backend/
+# CI_GITEA_SETUP.md for the full setup walk-through.
+#
+# Quick start (on the host that will run the runner):
+#
+#   1. Get a registration token from Gitea
+#        Site Admin / Org Settings / Repo Settings → Actions → Runners → Create Runner
+#
+#   2. Drop the token into a `.env` next to this file:
+#        cat > .env <<EOF
+#        GITEA_INSTANCE_URL=https://gitea.example.com
+#        GITEA_RUNNER_REGISTRATION_TOKEN=<paste-token-here>
+#        GITEA_RUNNER_NAME=$(hostname)-migration
+#        EOF
+#
+#   3. Bring it up:
+#        docker compose -f tools/ci/gitea-runner.compose.yml up -d
+#
+#   4. Verify under Gitea → Site Admin → Actions → Runners. The runner should
+#      report "Idle" with label `ubuntu-latest`.
+#
+# Operator notes:
+#   * The runner needs access to the Docker socket so it can spawn job/service
+#     containers (Postgres in our case). This grants root-equivalent power on
+#     the host — keep the runner on a machine isolated from production data.
+#   * Workspace + cache are persisted in named volumes so restarting the
+#     container doesn't wipe NuGet/restored builds.
+#   * Resource limits intentionally err on the small side; raise mem/cpu when
+#     adding heavier workflows (e.g. integration tests).
+
+services:
+  gitea-runner:
+    image: gitea/act_runner:0.2.10
+    container_name: gitea-runner-migration
+    restart: unless-stopped
+
+    # Runner stays on Docker's default bridge network. Job/service containers
+    # created by act_runner join their own ephemeral network per job.
+    environment:
+      GITEA_INSTANCE_URL: "${GITEA_INSTANCE_URL:?set GITEA_INSTANCE_URL in .env}"
+      GITEA_RUNNER_REGISTRATION_TOKEN: "${GITEA_RUNNER_REGISTRATION_TOKEN:?set GITEA_RUNNER_REGISTRATION_TOKEN in .env}"
+      GITEA_RUNNER_NAME: "${GITEA_RUNNER_NAME:-act-runner-1}"
+      # `ubuntu-latest:docker://catthehacker/ubuntu:act-latest` is the de-facto
+      # equivalent of GitHub's ubuntu-latest image and ships pre-installed with
+      # bash, curl, jq, git, etc. Add more labels here if your workflows use
+      # `runs-on: ubuntu-22.04` etc.
+      GITEA_RUNNER_LABELS: >-
+        ubuntu-latest:docker://catthehacker/ubuntu:act-latest,
+        ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04
+
+    volumes:
+      # Docker-out-of-Docker: the runner uses the host Docker daemon to spawn
+      # job containers. Mounting the socket is the simplest path; for stricter
+      # isolation switch to dind (Docker-in-Docker) and remove this mount.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Persistent runner state (registration, queued logs, cache).
+      - gitea-runner-data:/data
+
+      # Optional: pre-populated act_runner config. Uncomment when you've
+      # customised tools/ci/runner-config.example.yaml.
+      # - ./runner-config.yaml:/config.yaml:ro
+
+    # Lightweight by default — bump these when you add jobs that build large
+    # solutions or run heavy integration tests. With capacity=2 in the runner
+    # config, peak usage is roughly (parallel jobs × ~2 GB) for our .NET
+    # workflows.
+    #
+    # NOTE: `deploy.resources.*` is ignored by plain `docker compose up`
+    # outside Swarm, so we use compose-native limits here.
+    mem_limit: 4g
+    cpus: 2.0
+    pids_limit: 512
+
+    # Health check: act_runner exposes no HTTP endpoint. We validate both
+    # liveness (process exists) and registration (sentinel file exists).
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f act_runner >/dev/null && test -f /data/.runner"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  gitea-runner-data:
+    driver: local

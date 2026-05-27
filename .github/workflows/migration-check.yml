@@ -1,0 +1,109 @@
+name: Migration drift check
+
+# Trigger on any PR that could plausibly affect the schema:
+#   - Migration files themselves
+#   - Entity classes (Domains/)
+#   - EF Configurations (Infrastructure/.../Configuration/)
+#   - ApplicationDbContext + related infrastructure
+# Push-to-main is checked too so we catch issues that slipped past PR review
+# (e.g. an admin merged with admin override).
+
+on:
+  pull_request:
+    paths:
+      - 'src/Backend/Infrastructure/Persistence/Migrations/**'
+      - 'src/Backend/Infrastructure/Persistence/**'
+      - 'src/Backend/Infrastructure/**/Configuration/**'
+      - 'src/Backend/Domains/**'
+      - 'src/Backend/Application/Contracts/Modules/**/Persistence/**'
+      - 'src/Backend/Infrastructure/Infrastructure.csproj'
+      - 'src/Backend/Api/Api.csproj'
+      - 'tools/backend/migration/**'
+      - '.github/workflows/migration-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/Backend/Infrastructure/Persistence/Migrations/**'
+      - 'src/Backend/Domains/**'
+
+concurrency:
+  group: migration-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    name: Drift detection (Postgres 16)
+    runs-on: ubuntu-latest
+    env:
+      # Keep logs per workflow run so concurrent self-hosted jobs never clobber
+      # each other's `/tmp` files.
+      DRIFT_LOG_DIR: /tmp/migration-drift-${{ github.run_id }}-${{ github.run_attempt }}
+
+    # Sidecar Postgres on the runner. We deliberately use the same major
+    # version as production (16) so any feature/syntax difference surfaces
+    # here, not in staging. Credentials are inline because this DB lives for
+    # ~30 seconds and never touches data we'd care about.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: drift_check
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d drift_check"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          # The drift check needs to compare against origin/main; shallow
+          # clones don't include it. fetch-depth: 0 is the GitHub Actions
+          # equivalent of `git clone` with no --depth flag.
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install dotnet-ef
+        # Pin to the .NET 8 line so we don't accidentally pull in a 9.x
+        # toolchain on a runner with multiple SDKs installed.
+        run: dotnet tool install --global dotnet-ef --version '8.*'
+
+      - name: Add global tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Restore + build (cached by setup-dotnet)
+        # Building once here means subsequent EF invocations can skip rebuild
+        # with `--no-build`, which roughly halves the workflow runtime.
+        run: |
+          dotnet restore src/Backend
+          dotnet build src/Backend --no-restore --configuration Debug
+
+      - name: Run drift check (full mode)
+        # The script takes care of every guard — static checks, model-drift
+        # detection, and a full schema apply against the sidecar Postgres.
+        # We point it at the CI DB via DRIFT_CHECK_CONNECTION so the developer
+        # workflow (which defaults to the local connection string) stays
+        # unchanged.
+        env:
+          DRIFT_CHECK_CONNECTION: "Host=localhost;Port=5432;Database=drift_check;Username=ci;Password=ci"
+          MIGRATION_BASE_REF: "origin/${{ github.event.pull_request.base.ref || 'main' }}"
+        run: ./tools/backend/migration/check.sh --full
+
+      - name: Upload drift logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-logs
+          path: |
+            ${{ env.DRIFT_LOG_DIR }}/**
+          if-no-files-found: ignore
+          retention-days: 7
