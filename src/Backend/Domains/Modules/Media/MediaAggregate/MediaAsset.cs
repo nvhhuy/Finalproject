@@ -10,7 +10,7 @@ namespace Domains.MediaAggregate;
 /// Processing → Ready, or terminates in <see cref="MediaAssetStatus.Failed"/> after exhausted
 /// retries. All transitions raise domain events so the outbox + worker pipeline can react.
 /// </summary>
-public sealed class MediaAsset : AggregateRoot<MediaAssetId>, IHasRowVersion
+public sealed class MediaAsset : AggregateRoot<MediaAssetId>
 {
     private readonly List<MediaVariant> _variants = new();
 
@@ -52,11 +52,6 @@ public sealed class MediaAsset : AggregateRoot<MediaAssetId>, IHasRowVersion
 
     /// <summary>Last error message from the processing pipeline (truncated). Set when <see cref="Status"/> = <see cref="MediaAssetStatus.Failed"/>.</summary>
     public string? ErrorMessage { get; private set; }
-
-    /// <summary>Optimistic concurrency token; incremented on every successful update.</summary>
-    public uint RowVersion { get; private set; }
-
-    uint IHasRowVersion.RowVersion => RowVersion;
 
     public IReadOnlyCollection<MediaVariant> Variants => _variants.AsReadOnly();
 

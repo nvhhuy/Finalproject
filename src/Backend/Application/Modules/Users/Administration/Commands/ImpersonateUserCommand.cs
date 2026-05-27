@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Contracts.Administration;
 using Application.Contracts.Authorization;
 using Application.Contracts.Modules.Users.Persistence.Read;
@@ -13,7 +14,11 @@ using Shared.Errors.General;
 
 namespace Application.Modules.Users.Administration.Commands;
 
-public sealed record ImpersonateUserCommand(Guid TargetUserId, Guid ActingAdminUserId, string? RemoteIpAddress = null)
+public sealed record ImpersonateUserCommand(
+    Guid TargetUserId,
+    Guid ActingAdminUserId,
+    uint ExpectedRowVersion,
+    string? RemoteIpAddress = null)
     : IRequest<Result<AuthenticationResponse, Error>>, IRequireAdmin;
 
 public sealed class ImpersonateUserCommandHandler : IRequestHandler<ImpersonateUserCommand, Result<AuthenticationResponse, Error>>
@@ -39,6 +44,10 @@ public sealed class ImpersonateUserCommandHandler : IRequestHandler<ImpersonateU
         User? target = await _read.GetByIdAsync(request.TargetUserId, cancellationToken: cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
+
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
 
         if (string.Equals(target.Role, UserRoles.Admin, StringComparison.Ordinal))
             return new ForbiddenError("Impersonating another administrator is not allowed.");

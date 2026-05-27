@@ -46,6 +46,8 @@ internal static class UserReadCacheKeys
 **Step 2 — Wrap the query inside the read repository:**
 
 ```csharp
+using Domains.UserAggregate.ValueObjects;
+
 public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepository
 {
     private static readonly TimeSpan IdTtl = TimeSpan.FromMinutes(10);
@@ -54,7 +56,7 @@ public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepo
         GetSingleCachedByPredicateAsync(
             UserReadCacheKeys.ById(id),
             _read.Users,
-            u => u.Id.Value == id,
+            u => u.Id == UserId.Create(id),  // see EF_PITFALLS.md — never u.Id.Value in LINQ
             cache,
             IdTtl,
             ct);

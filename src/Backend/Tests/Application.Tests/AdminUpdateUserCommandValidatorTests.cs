@@ -17,7 +17,8 @@ public sealed class AdminUpdateUserCommandValidatorTests
             "B",
             "u1",
             "u1@e.com",
-            "Moderator");
+            "Moderator",
+            ExpectedRowVersion: 0);
 
         var result = await _validator.ValidateAsync(command);
 
@@ -30,8 +31,8 @@ public sealed class AdminUpdateUserCommandValidatorTests
     {
         Guid adminId = Guid.NewGuid();
         Guid targetId = Guid.NewGuid();
-        var asUser = new AdminUpdateUserCommand(adminId, targetId, "A", "B", "u1", "u1@e.com", UserRoles.User);
-        var asAdmin = new AdminUpdateUserCommand(adminId, targetId, "A", "B", "u2", "u2@e.com", UserRoles.Admin);
+        var asUser = new AdminUpdateUserCommand(adminId, targetId, "A", "B", "u1", "u1@e.com", UserRoles.User, 0);
+        var asAdmin = new AdminUpdateUserCommand(adminId, targetId, "A", "B", "u2", "u2@e.com", UserRoles.Admin, 0);
 
         Assert.True((await _validator.ValidateAsync(asUser)).IsValid);
         Assert.True((await _validator.ValidateAsync(asAdmin)).IsValid);

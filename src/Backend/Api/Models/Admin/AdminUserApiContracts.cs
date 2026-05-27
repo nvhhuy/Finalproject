@@ -1,7 +1,7 @@
 namespace Api.Models.Admin;
 
 /// <summary>Admin lock user command body.</summary>
-public sealed record LockUserRequest(string? Reason);
+public sealed record LockUserRequest(string? Reason, uint RowVersion);
 
 public sealed record AdminCreateUserRequest(
     string FirstName,
@@ -16,6 +16,7 @@ public sealed record AdminUpdateUserRequest(
     string LastName,
     string UserName,
     string Email,
-    string Role);
+    string Role,
+    uint RowVersion);
 
-public sealed record AdminResetPasswordRequest(string NewPassword);
+public sealed record AdminResetPasswordRequest(string NewPassword, uint RowVersion);

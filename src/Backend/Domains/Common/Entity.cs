@@ -2,10 +2,13 @@ using Domains.Common.Interfaces;
 
 namespace Domains.Common
 {
-    public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents where TId : notnull
+    public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents, IHasRowVersion where TId : notnull
     {
         private readonly List<IDomainEvent> _domainEvents = new();
         public TId Id { get; protected set; } = default!;
+
+        /// <summary>Optimistic concurrency token; incremented on every successful update.</summary>
+        public uint RowVersion { get; private set; }
         public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
         public void AddDomainEvent(IDomainEvent domainEvent)
         {

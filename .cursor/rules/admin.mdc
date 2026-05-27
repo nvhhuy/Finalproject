@@ -1,0 +1,54 @@
+---
+description: Admin Console (Vite/React) conventions — i18n, shared lib, query keys, feature boundaries
+globs: src/Admin/**/*
+alwaysApply: false
+---
+
+# Admin Console rules
+
+Read before editing `src/Admin/`:
+
+- Onboarding: `docs/admin/ONBOARDING.md`
+- Add/extend features: `docs/admin/EXTENSIBILITY_GUIDE.md`
+- Shared helpers: `docs/admin/COMMON_LIBRARIES.md`
+- Full AI checklist: `docs/admin/LLM_FEATURE_IMPLEMENTATION_RULES.md`
+
+## Architecture
+
+- `features/*` = pages/screens only; may import `shared/*`, `i18n/*`, `config/*`
+- `shared/*` must NOT import from `features/*`
+- API: extend `shared/api/admin-api.ts` + types in `shared/types/api.ts`; use `apiRequest` from `client.ts`
+- Routes: `app/router.tsx`; nav: `AdminLayout` `navItems`
+
+## i18n (required for new UI)
+
+- Use `useTranslation()` and `t('key')` for all user-visible strings
+- Add keys to `i18n/locales/en.json`, `vi.json`, and `zh.json` together
+- Zod messages: `createLoginSchemas(t)`, `createUserFormSchemas(t)`, or `createValidators(t)`
+
+## Reuse shared lib — do not reinvent
+
+```ts
+import { formatDateOrDash, formatDateTimeOrDash, formatEmpty, toast, toastApiError, runAdminAction, confirmAction, copyWithToast } from '@/shared/lib'
+import { queryKeys } from '@/shared/constants/query-keys'
+import { formSelectClass } from '@/shared/constants/styles'
+```
+
+- Dates: never `toLocaleDateString()` in feature pages
+- Pagination: `usePagination`, `useTotalPages`, `DataTablePagination`
+- Search: `useDebouncedValue`
+- Mutations: invalidate `queryKeys.*`; `idempotent: true` on admin writes; pass `rowVersion` when required
+
+## Page shell
+
+```tsx
+<PageHeader title={t('...')} description={t('...')} />
+<PageContent>...</PageContent>
+```
+
+## Quality
+
+- Minimal diff; match existing Tailwind + Card/Button patterns
+- Run `npx tsc -b` in `src/Admin` after changes
+- Update `docs/admin/FEATURE_CATALOG.md` when adding user-facing features
+- No secrets in code; no refresh token in localStorage

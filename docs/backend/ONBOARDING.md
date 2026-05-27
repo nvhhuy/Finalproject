@@ -26,9 +26,12 @@ Finalproject/
 | 2 | [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md) | 20 phút | Biết base đã có gì |
 | 3 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) + [`MODULE_STRUCTURE.md`](./MODULE_STRUCTURE.md) | 30 phút | Layer, folder, bounded context |
 | 4 | [`BASE_GUIDE.md`](./BASE_GUIDE.md) | 45 phút | Flow thêm feature cụ thể |
-| 5 | [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md) | Khi cần | Auth, cache, worker, logging chi tiết |
-| 6 | [`MIGRATION_WORKFLOW.md`](./MIGRATION_WORKFLOW.md) | Trước khi đụng DB schema | Team nhiều người |
-| 7 | [`LLM_FEATURE_IMPLEMENTATION_RULES.md`](./LLM_FEATURE_IMPLEMENTATION_RULES.md) | Khi code với AI | Quy tắc bắt buộc |
+| 5 | [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md) | Khi cần | Auth, cache, logging chi tiết |
+| 6 | [`MESSAGING_AND_WORKER.md`](./MESSAGING_AND_WORKER.md) | Khi bật media/outbox | Api **không** gọi Worker qua HTTP |
+| 7 | [`DATA_PROTECTION.md`](./DATA_PROTECTION.md) | Khi deploy / 2FA | Key ring `local/dataprotection-keys` (gitignored) |
+| 8 | [`EF_PITFALLS.md`](./EF_PITFALLS.md) | Khi LINQ lỗi 500 | `Id.Value`, `DateOnly` GroupBy, … |
+| 9 | [`MIGRATION_WORKFLOW.md`](./MIGRATION_WORKFLOW.md) | Trước khi đụng DB schema | Team nhiều người |
+| 10 | [`LLM_FEATURE_IMPLEMENTATION_RULES.md`](./LLM_FEATURE_IMPLEMENTATION_RULES.md) + [`.cursor/rules/backend.mdc`](../../.cursor/rules/backend.mdc) | Khi code với AI | Quy tắc bắt buộc |
 
 **Không cần đọc hết một lúc.** Ngày 1: mục 1–3; tuần 1: thêm 4–6.
 
@@ -71,13 +74,20 @@ dotnet run --project src/Backend/Api
 dotnet run --project src/Backend/Worker
 ```
 
-### 5. Kiểm tra nhanh
+### 5. DataProtection keys (2FA)
 
-- Swagger: `https://localhost:<port>/swagger` (port xem log khi start)
+Thư mục `local/dataprotection-keys/` **không** có trong Git. Worker Dev đã trỏ `DataProtection:KeysDirectory` vào đó; lần chạy đầu tự tạo file XML.
+
+Nên thêm cùng `KeysDirectory` cho **Api** Development (xem [`DATA_PROTECTION.md`](./DATA_PROTECTION.md)) để 2FA secret trong DB không “hỏng” sau khi restart Api.
+
+### 6. Kiểm tra nhanh
+
+- Swagger: `https://localhost:7124/swagger` (hoặc port trong log)
 - Health: `GET /health/ready`
-- Đăng ký / login qua Swagger hoặc Postman — xem [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md) mục Auth
+- Admin dev: `admin@localhost.com` / `Temp!ChangeMe123` (khi seed bật)
+- Đăng ký / login — xem [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md) mục Auth
 
-### 6. Tests
+### 7. Tests
 
 ```bash
 cd src/Backend
@@ -120,7 +130,10 @@ HTTP Request
 | Thêm API endpoint mới | [`BASE_GUIDE.md`](./BASE_GUIDE.md) § thêm feature |
 | Đổi bảng DB | [`MIGRATION_WORKFLOW.md`](./MIGRATION_WORKFLOW.md) + `migration/new.sh` |
 | Debug auth / JWT | [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md) § Authentication |
-| Bật RabbitMQ / outbox | [`CODEBASE_INCLUDED_AND_USAGE_GUIDE.md`](./CODEBASE_INCLUDED_AND_USAGE_GUIDE.md) |
+| Api ↔ Worker / queue | [`MESSAGING_AND_WORKER.md`](./MESSAGING_AND_WORKER.md) |
+| DataProtection keys | [`DATA_PROTECTION.md`](./DATA_PROTECTION.md) |
+| EF LINQ 500 | [`EF_PITFALLS.md`](./EF_PITFALLS.md) |
+| Bật RabbitMQ / outbox | [`MESSAGING_AND_WORKER.md`](./MESSAGING_AND_WORKER.md) § Enable locally |
 | Upload ảnh/video | [`FEATURE_CATALOG.md`](./FEATURE_CATALOG.md) § Media + Worker |
 | Setup CI Gitea | [`CI_GITEA_SETUP.md`](./CI_GITEA_SETUP.md) |
 | Biết còn thiếu gì cho prod | [`EXTENSIBILITY_AND_GAPS.md`](./EXTENSIBILITY_AND_GAPS.md) |

@@ -14,7 +14,7 @@ For onboarding topics (JWT vs policies, DTO mapping choices, Worker triggers, ob
 | **Application** | **`Modules/{Domain}/`** for feature code + **`Contracts/Modules/{Domain}/`** for that domain’s ports; global `Contracts/` for cross-cutting ports. |
 | **Infrastructure** | Shared `Persistence/` + **`Modules/{Domain}/`** for domain-specific EF repos/config (e.g. Users). |
 | **Api** | HTTP API, filters, authorization policies, controllers. |
-| **Worker** | Background host (cron jobs and queue-consumer workers). |
+| **Worker** | Background host (outbox publisher, cron jobs, queue consumers). See [`MESSAGING_AND_WORKER.md`](./MESSAGING_AND_WORKER.md). |
 | **Shared** | Cross-cutting types (e.g. `Result`, errors). |
 
 Registration flow: **Api** `Program.cs` calls `AddApplication()` then `AddInfrastructure(configuration)`.

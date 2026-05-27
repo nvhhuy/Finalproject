@@ -10,6 +10,12 @@ using Serilog;
 using Worker;
 using Worker.Media;
 
+#if DEBUG
+// IDE/Rider often launch bin/Debug/.../Worker without DOTNET_ENVIRONMENT (defaults to Production
+// and trips the DataProtection fail-fast). Match Api launchSettings: Development for local runs.
+EnsureDevelopmentEnvironmentWhenUnset();
+#endif
+
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 PlatformSerilog.RegisterForHostApplicationBuilder(builder, "worker");
@@ -40,3 +46,16 @@ if (workerSection.GetValue("EnableSamples", false))
 
 IHost app = builder.Build();
 await app.RunAsync();
+
+#if DEBUG
+static void EnsureDevelopmentEnvironmentWhenUnset()
+{
+    if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"))
+        || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")))
+    {
+        return;
+    }
+
+    Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development");
+}
+#endif

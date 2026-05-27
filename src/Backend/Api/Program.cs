@@ -112,7 +112,7 @@ if (exposeSwagger)
         IApiVersionDescriptionProvider provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
         foreach (ApiVersionDescription description in provider.ApiVersionDescriptions)
             options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
-        options.DocumentTitle = "Wuy Final Project API";
+        options.DocumentTitle = "API";
     });
 }
 
@@ -151,7 +151,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseForwardedHeaders();
 
-app.UseHttpsRedirection();
+// In Development the http profile listens on :5000; redirecting every call to https breaks
+// browser CORS preflight (307 responses carry no Access-Control-Allow-Origin).
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 
 app.UseCorrelationId();
 
@@ -185,6 +188,7 @@ app.UseSerilogRequestLogging(options =>
 // UseCors must run AFTER UseRouting and BEFORE UseAuthentication. The rate limiter sits
 // after CORS so a CORS preflight that the browser sends every 10 minutes doesn't burn
 // a token bucket entry on its own.
+app.UseRouting();
 app.UseCors(Api.Configuration.CorsOptions.PolicyName);
 
 app.UseRateLimiter();

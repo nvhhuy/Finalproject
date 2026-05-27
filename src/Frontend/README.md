@@ -1,16 +1,68 @@
-# React + Vite
+# Frontend (Next.js base)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Reusable **frontend base** aligned with the backend in `src/Backend`.
 
-Currently, two official plugins are available:
+**Documentation:** [`docs/frontend/`](../../docs/frontend/README.md) — onboarding, architecture, feature catalog, extensibility, AI rules.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- SEO-ready public pages (Next.js App Router)
+- **i18n:** English, Tiếng Việt, 中文 (`react-i18next`)
+- Auth: login, register, refresh, 2FA, Google sign-in, forgot/reset password, verify/resend email
+- Profile: view + edit (`rowVersion`), resend verification, avatar upload demo
+- 2FA: begin + confirm + QR code
+- Media lab: presigned upload flow
+- Typed API client + dev HTTPS proxy (`app/api/[...path]`)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Env
 
-## Expanding the ESLint configuration
+Same as **Admin**: the browser calls `/api/*` on the dev server; Next proxies to **`https://localhost:7124`** (self-signed cert; `npm run dev` sets `NODE_TLS_REJECT_UNAUTHORIZED=0` for that hop only).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Backend (HTTPS profile):**
+
+```bash
+cd src/Backend/Api
+dotnet run --launch-profile https
+```
+
+Swagger: `https://localhost:7124/swagger`
+
+## Run
+
+```bash
+npm install
+npm run dev
+```
+
+Open:
+
+- `/` landing
+- `/login`
+- `/app`
+
+## Code structure
+
+```
+app/                 # Next.js routes only (pages, layouts, API proxy)
+components/
+  ui/                # Button, Input — no business logic
+  layout/            # PublicHeader, LanguageSwitcher
+  auth/              # GoogleSignIn, QrCode
+  i18n/              # LocaleSync
+lib/
+  api/               # http client, ApiResponse types, idempotency
+  auth/              # AuthProvider, tokens, RequireAuth
+  features/          # Domain API modules (auth, users, media)
+  shared/            # Reusable helpers — format date, display, pagination
+  errors.ts          # ApiClientError
+  ui/cn.ts           # className merge
+i18n/                # en / vi / zh locales + config
+```
+
+**Use shared helpers** instead of inline formatting:
+
+```ts
+import { formatDateTimeOrDash, formatBytes, formatCount } from "@/lib/shared";
+```
+
+Add new cross-cutting utilities under `lib/shared/` (mirror Admin `shared/lib/`).

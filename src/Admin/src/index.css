@@ -1,24 +1,28 @@
-:root {
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #0f172a;
-  background-color: #f8fafc;
-  --muted: #64748b;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-surface: #0f1419;
+  --color-surface-elevated: #1a2332;
+  --color-surface-muted: #243044;
+  --color-border: #2d3a4f;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f1f5f9;
-    background-color: #020617;
-    --muted: #94a3b8;
+@layer base {
+  html {
+    @apply antialiased;
   }
-}
 
-body {
-  margin: 0;
+  body {
+    @apply min-h-screen bg-[var(--color-surface)] font-sans text-slate-100;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
 }

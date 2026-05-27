@@ -54,7 +54,7 @@ public sealed class AdminUserManagementCommandValidatorTests
     public async Task AdminResetPassword_rejects_short_password()
     {
         var validator = new AdminResetPasswordCommandValidator();
-        var command = new AdminResetPasswordCommand(Guid.NewGuid(), Guid.NewGuid(), "short");
+        var command = new AdminResetPasswordCommand(Guid.NewGuid(), Guid.NewGuid(), "short", ExpectedRowVersion: 0);
 
         var result = await validator.ValidateAsync(command);
 

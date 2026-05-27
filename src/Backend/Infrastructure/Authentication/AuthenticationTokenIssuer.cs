@@ -51,7 +51,7 @@ public sealed class AuthenticationTokenIssuer : IAuthenticationTokenIssuer
         string refreshHash = TokenHasher.Sha256(refreshPlain);
         DateTime refreshExpires = _clock.Now.AddDays(_jwtOptions.Value.RefreshTokenExpirationDays);
 
-        User? tracked = await _db.Users.FirstOrDefaultAsync(u => u.Id.Value == user.Id.Value, cancellationToken);
+        User? tracked = await _db.Users.FirstOrDefaultAsync(u => u.Id == user.Id, cancellationToken);
         if (tracked is null)
             return new NotFoundError("User was not found for token issuance.");
 

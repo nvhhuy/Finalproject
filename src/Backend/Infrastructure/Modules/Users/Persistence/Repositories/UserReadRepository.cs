@@ -4,6 +4,7 @@ using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Persistence;
 using Application.Modules.Users.Administration.Queries;
 using Domains.UserAggregate;
+using Domains.UserAggregate.ValueObjects;
 using Infrastructure.Extensions;
 using Infrastructure.Persistence.Repositories.Base;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,7 @@ public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepo
         GetSingleCachedByPredicateAsync(
             UserReadCacheKeys.ById(id),
             _read.Users,
-            u => u.Id.Value == id,
+            u => u.Id == UserId.Create(id),
             cache,
             IdTtl,
             cancellationToken);
@@ -87,6 +88,13 @@ public sealed class UserReadRepository : CachedReadRepositoryBase, IUserReadRepo
         {
             string term = NormalizeForLookup(p.UserNameContains);
             query = query.Where(u => u.NormalizedUserName.Contains(term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(p.Search))
+        {
+            string term = NormalizeForLookup(p.Search);
+            query = query.Where(u =>
+                u.NormalizedEmail.Contains(term) || u.NormalizedUserName.Contains(term));
         }
 
         if (p.IsLocked is not null)

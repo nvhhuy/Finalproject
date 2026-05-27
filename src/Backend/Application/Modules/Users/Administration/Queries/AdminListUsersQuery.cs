@@ -15,6 +15,7 @@ public sealed record AdminListUsersQuery(
     int PageSize,
     string? EmailContains = null,
     string? UserNameContains = null,
+    string? Search = null,
     bool? IsLocked = null,
     string? Role = null,
     string? SortBy = null,
@@ -27,7 +28,8 @@ public sealed record AdminUserSummaryDto(
     string Role,
     bool IsLocked,
     DateTime? EmailVerifiedAtUtc,
-    DateTime? RegisteredAtUtc);
+    DateTime? RegisteredAtUtc,
+    uint RowVersion);
 
 public sealed record AdminUserListDto(IReadOnlyList<AdminUserSummaryDto> Items, int TotalCount, int Page, int PageSize);
 
@@ -47,6 +49,7 @@ public sealed class AdminListUsersQueryHandler : IRequestHandler<AdminListUsersQ
             request.PageSize,
             request.EmailContains,
             request.UserNameContains,
+            request.Search,
             request.IsLocked,
             request.Role,
             request.SortBy,

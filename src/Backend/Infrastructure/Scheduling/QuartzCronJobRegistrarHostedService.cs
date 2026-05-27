@@ -28,6 +28,21 @@ public sealed class QuartzCronJobRegistrarHostedService : IHostedService
 
         foreach (ICronJob cron in _jobs)
         {
+            string quartzCron;
+            try
+            {
+                quartzCron = QuartzCronExpression.ToQuartz(cron.CronExpression);
+            }
+            catch (FormatException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Skipping Quartz job {Name}: invalid cron {Cron}",
+                    cron.Name,
+                    cron.CronExpression);
+                continue;
+            }
+
             var jobKey = new JobKey(cron.Name);
             IJobDetail detail = JobBuilder.Create<QuartzCronJobBridge>()
                 .WithIdentity(jobKey)
@@ -37,14 +52,18 @@ public sealed class QuartzCronJobRegistrarHostedService : IHostedService
             ITrigger trigger = TriggerBuilder.Create()
                 .WithIdentity($"{cron.Name}-trigger")
                 .ForJob(jobKey)
-                .WithCronSchedule(cron.CronExpression, b => b.InTimeZone(TimeZoneInfo.Utc))
+                .WithCronSchedule(quartzCron, b => b.InTimeZone(TimeZoneInfo.Utc))
                 .Build();
 
             if (await scheduler.CheckExists(jobKey, cancellationToken))
                 await scheduler.DeleteJob(jobKey, cancellationToken);
 
             await scheduler.ScheduleJob(detail, trigger, cancellationToken);
-            _logger.LogInformation("Quartz job registered: {Name} ({Cron})", cron.Name, cron.CronExpression);
+            _logger.LogInformation(
+                "Quartz job registered: {Name} ({Cron} -> {QuartzCron})",
+                cron.Name,
+                cron.CronExpression,
+                quartzCron);
         }
     }
 

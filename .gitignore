@@ -1,3 +1,6 @@
+# Local dev key ring (Api + Worker share via appsettings.Development.json)
+local/dataprotection-keys/
+
 # Environment and secrets (anywhere in the repo)
 .env
 .env.*

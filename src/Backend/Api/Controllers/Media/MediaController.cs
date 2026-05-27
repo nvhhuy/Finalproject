@@ -78,9 +78,14 @@ public sealed class MediaController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid id,
+        [FromQuery] uint rowVersion,
+        CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(new DeleteMediaAssetCommand(id, CurrentUserId), cancellationToken);
+        Result<bool, Error> result = await Sender.Send(
+            new DeleteMediaAssetCommand(id, CurrentUserId, rowVersion),
+            cancellationToken);
         return MatchApiEmpty(result);
     }
 }

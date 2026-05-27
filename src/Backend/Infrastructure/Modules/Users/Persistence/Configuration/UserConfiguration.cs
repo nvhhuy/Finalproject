@@ -43,7 +43,5 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(e => e.UserName);
         builder.HasIndex(e => e.NormalizedEmail).IsUnique();
         builder.HasIndex(e => e.NormalizedUserName).IsUnique();
-
-        builder.Property(e => e.RowVersion).IsRowVersion();
     }
 }

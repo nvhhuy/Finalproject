@@ -1,0 +1,169 @@
+{
+  "theme": {
+    "label": "Giao diện",
+    "light": "Sáng",
+    "dark": "Tối",
+    "auto": "Hệ thống"
+  },
+  "common": {
+    "loading": "Đang tải…",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "back": "Quay lại",
+    "submit": "Gửi",
+    "language": "Ngôn ngữ",
+    "openApp": "Mở ứng dụng",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "signOut": "Đăng xuất",
+    "enabled": "Đã bật",
+    "disabled": "Chưa bật",
+    "saved": "Đã lưu",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "dash": "—"
+  },
+  "nav": {
+    "dashboard": "Tổng quan",
+    "profile": "Hồ sơ",
+    "twoFa": "2FA",
+    "mediaLab": "Media Lab"
+  },
+  "authLayout": {
+    "tagline": "Auth, hồ sơ, 2FA và media sẵn sàng kết nối backend .NET của bạn."
+  },
+  "appShell": {
+    "workspace": "Không gian làm việc"
+  },
+  "userMenu": {
+    "openMenu": "Mở menu tài khoản",
+    "account": "Tài khoản",
+    "profile": "Cài đặt hồ sơ",
+    "security": "Bảo mật & 2FA",
+    "appearance": "Giao diện",
+    "language": "Ngôn ngữ"
+  },
+  "landing": {
+    "tag": "Frontend nền",
+    "title": "(Code base)",
+    "heroSubtitle": "Starter hiện đại cho app người dùng — JWT, đa ngôn ngữ, API typed và tích hợp backend thật.",
+    "getStarted": "Bắt đầu miễn phí",
+    "featuresTitle": "Tính năng có sẵn",
+    "featureAuth": "Auth (đăng nhập/đăng ký/refresh, Google, quên/đặt lại mật khẩu, xác minh email)",
+    "featureProfile": "Hồ sơ (xem + sửa) + demo upload avatar",
+    "feature2fa": "Thiết lập/xác nhận 2FA + đăng nhập 2FA",
+    "featureMedia": "Media lab: upload presigned → complete → theo dõi trạng thái",
+    "featureApi": "API client typed + idempotency"
+  },
+  "login": {
+    "title": "Đăng nhập",
+    "subtitle": "JWT + refresh token. Hỗ trợ xác thực hai yếu tố.",
+    "signIn": "Đăng nhập",
+    "twoFaTitle": "Mã 2FA",
+    "twoFaHint": "Nhập mã từ ứng dụng xác thực.",
+    "verify": "Xác minh",
+    "needAccount": "Chưa có tài khoản?",
+    "forgotPassword": "Quên mật khẩu?",
+    "signInFailed": "Đăng nhập thất bại",
+    "apiUnreachable": "Không kết nối được API. Chạy backend: cd src/Backend/Api && dotnet run --launch-profile https"
+  },
+  "register": {
+    "title": "Tạo tài khoản",
+    "subtitle": "Tự động gửi header Idempotency-Key.",
+    "userName": "Tên đăng nhập",
+    "firstName": "Họ",
+    "lastName": "Tên",
+    "create": "Tạo tài khoản",
+    "backToLogin": "Về đăng nhập",
+    "success": "Đăng ký thành công. Kiểm tra email nếu cần xác minh.",
+    "resendHint": "Chưa nhận được email?",
+    "resend": "Gửi lại email xác minh"
+  },
+  "forgotPassword": {
+    "title": "Quên mật khẩu",
+    "subtitle": "Chúng tôi sẽ gửi liên kết đặt lại nếu email tồn tại.",
+    "send": "Gửi liên kết",
+    "sent": "Nếu email đã đăng ký, liên kết đặt lại đã được gửi.",
+    "backToLogin": "Về đăng nhập"
+  },
+  "resetPassword": {
+    "title": "Đặt lại mật khẩu",
+    "subtitle": "Chọn mật khẩu mới cho tài khoản.",
+    "reset": "Đặt lại mật khẩu",
+    "success": "Đã cập nhật mật khẩu. Bạn có thể đăng nhập.",
+    "invalidLink": "Liên kết không hợp lệ hoặc đã hết hạn.",
+    "backToLogin": "Về đăng nhập"
+  },
+  "verifyEmail": {
+    "title": "Xác minh email",
+    "verifying": "Đang xác minh email…",
+    "success": "Email đã xác minh. Bạn có thể đăng nhập.",
+    "failed": "Xác minh thất bại.",
+    "missingParams": "Thiếu token trong liên kết.",
+    "backToLogin": "Về đăng nhập"
+  },
+  "dashboard": {
+    "title": "Tổng quan",
+    "subtitle": "Tổng quan tài khoản và liên kết nhanh.",
+    "signedInAs": "Đăng nhập với",
+    "tip": "Dùng menu để thử Hồ sơ, 2FA và Media Lab.",
+    "quickProfile": "Sửa hồ sơ",
+    "quick2fa": "Bảo mật / 2FA",
+    "quickMedia": "Media lab"
+  },
+  "profile": {
+    "title": "Hồ sơ",
+    "account": "Tài khoản",
+    "role": "vai trò",
+    "firstName": "Họ",
+    "lastName": "Tên",
+    "save": "Lưu hồ sơ",
+    "avatarTitle": "Avatar (module Media)",
+    "avatarHint": "API hồ sơ chưa có trường avatar. Upload minh họa luồng media cho avatar sau này.",
+    "preview": "Xem trước",
+    "resendVerification": "Gửi lại email xác minh",
+    "resendSent": "Đã gửi email xác minh (nếu áp dụng)."
+  },
+  "twoFa": {
+    "title": "Xác thực hai yếu tố (2FA)",
+    "status": "Trạng thái",
+    "unknown": "Không rõ",
+    "setupTitle": "Thiết lập",
+    "setupHint": "Bắt đầu → quét QR bằng app xác thực → nhập mã 6 số.",
+    "begin": "Bắt đầu thiết lập",
+    "sharedKey": "Khóa dùng chung",
+    "scanQr": "Quét mã QR",
+    "code": "Mã",
+    "confirm": "Xác nhận",
+    "enabledMsg": "Đã bật 2FA.",
+    "beginFailed": "Bắt đầu 2FA thất bại",
+    "confirmFailed": "Xác nhận 2FA thất bại"
+  },
+  "media": {
+    "title": "Media Lab",
+    "flowTitle": "Luồng upload",
+    "flowHint": "Initiate → PUT presigned → Complete → Poll GET đến Ready.",
+    "runUpload": "Chạy upload",
+    "uploading": "Đang upload…",
+    "delete": "Xóa asset",
+    "asset": "Asset",
+    "status": "Trạng thái"
+  },
+  "google": {
+    "signIn": "Đăng nhập bằng Google",
+    "notConfigured": "Chưa cấu hình Google (đặt NEXT_PUBLIC_GOOGLE_CLIENT_ID).",
+    "failed": "Đăng nhập Google thất bại"
+  },
+  "errors": {
+    "requestFailed": "Yêu cầu thất bại",
+    "concurrencyConflict": "Dữ liệu đã thay đổi. Tải lại và thử lại.",
+    "passwordMismatch": "Mật khẩu không khớp",
+    "passwordMin": "Mật khẩu tối thiểu 8 ký tự"
+  },
+  "validation": {
+    "invalidEmail": "Email không hợp lệ",
+    "required": "Bắt buộc"
+  }
+}

@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Contracts.Administration;
 using Application.Contracts.Authorization;
 using Application.Contracts.Email;
@@ -13,7 +14,11 @@ using Shared.Errors.General;
 
 namespace Application.Modules.Users.Administration.Commands;
 
-public sealed record AdminMarkEmailVerifiedCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
+public sealed record AdminMarkEmailVerifiedCommand(
+    Guid ActingAdminUserId,
+    Guid TargetUserId,
+    uint ExpectedRowVersion,
+    string? ActorIpAddress = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminMarkEmailVerifiedCommandHandler : IRequestHandler<AdminMarkEmailVerifiedCommand, Result<bool, Error>>
@@ -35,6 +40,10 @@ public sealed class AdminMarkEmailVerifiedCommandHandler : IRequestHandler<Admin
         if (target is null)
             return new NotFoundError("User was not found.");
 
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
+
         target.MarkEmailVerified(DateTime.UtcNow);
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserEmailVerified, request.TargetUserId, request.ActorIpAddress, null);
         await _uow.SaveChangesAsync(cancellationToken);
@@ -43,7 +52,11 @@ public sealed class AdminMarkEmailVerifiedCommandHandler : IRequestHandler<Admin
     }
 }
 
-public sealed record AdminResendEmailVerificationCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
+public sealed record AdminResendEmailVerificationCommand(
+    Guid ActingAdminUserId,
+    Guid TargetUserId,
+    uint ExpectedRowVersion,
+    string? ActorIpAddress = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminResendEmailVerificationCommandHandler : IRequestHandler<AdminResendEmailVerificationCommand, Result<bool, Error>>
@@ -71,6 +84,10 @@ public sealed class AdminResendEmailVerificationCommandHandler : IRequestHandler
         if (target is null)
             return new NotFoundError("User was not found.");
 
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
+
         if (target.EmailVerifiedAtUtc is not null)
             return new Error("AlreadyVerified", 400, "Email is already verified.");
 
@@ -81,7 +98,11 @@ public sealed class AdminResendEmailVerificationCommandHandler : IRequestHandler
     }
 }
 
-public sealed record AdminRevokeUserSessionsCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
+public sealed record AdminRevokeUserSessionsCommand(
+    Guid ActingAdminUserId,
+    Guid TargetUserId,
+    uint ExpectedRowVersion,
+    string? ActorIpAddress = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminRevokeUserSessionsCommandHandler : IRequestHandler<AdminRevokeUserSessionsCommand, Result<bool, Error>>
@@ -111,6 +132,10 @@ public sealed class AdminRevokeUserSessionsCommandHandler : IRequestHandler<Admi
         User? target = await _read.GetByIdAsync(request.TargetUserId, cancellationToken: cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
+
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
 
         int revoked = await _write.RevokeAllRefreshTokensForUserAsync(request.TargetUserId, _clock.Now, cancellationToken);
         _audit.Append(

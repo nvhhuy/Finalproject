@@ -4,6 +4,10 @@ Purpose: this file is a strict guide for AI/code assistants when implementing ne
 
 Scope: `src/Backend/` only.
 
+**Cursor:** `.cursor/rules/backend.mdc` mirrors these rules for `src/Backend/**/*`.
+
+**Doc hub:** [`README.md`](./README.md).
+
 ---
 
 ## Non-negotiable architecture rules
@@ -53,6 +57,21 @@ Scope: `src/Backend/` only.
 - Cron jobs: implement `ICronJob`.
 - Queue consumers: inherit `QueueConsumerBackgroundService<TMessage>`.
 - Keep broker-specific details in Infrastructure adapters, not in Application logic.
+- **Only Worker** registers `AddOutboxPublisher` — never on Api.
+- Worker has **no** JWT/`[Authorize]` — see [`MESSAGING_AND_WORKER.md`](./MESSAGING_AND_WORKER.md).
+
+### F) EF LINQ (mandatory)
+
+- Predicates on value-object IDs: `u.Id == UserId.Create(id)` — **never** `u.Id.Value == id` in `IQueryable`.
+- No `DateOnly.FromDateTime` inside SQL-translated `GroupBy`; group by `DateTime.Date`, project in memory.
+- Read context: no `SaveChanges`; writes use tracked entities + `IUnitOfWork`.
+- See [`EF_PITFALLS.md`](./EF_PITFALLS.md).
+
+### G) DataProtection
+
+- Do not commit `local/dataprotection-keys/`.
+- Production requires persistent `DataProtection:KeysDirectory` shared across Api replicas (and Worker if touching encrypted columns).
+- See [`DATA_PROTECTION.md`](./DATA_PROTECTION.md).
 
 ---
 
@@ -82,10 +101,12 @@ Scope: `src/Backend/` only.
 
 When adding a feature, assistant must also:
 
-1. Update relevant backend docs in `docs/backend/` (at least one file).
+1. Update relevant backend docs in `docs/backend/` (at least one file — see [`README.md`](./README.md) maintenance table).
 2. Ensure project builds (`dotnet build src/Backend/Backend.sln`).
-3. Avoid introducing unrelated refactors.
-4. Preserve backward-compatible API behavior unless explicitly asked to break/change it.
+3. Run or add tests for handlers/validators/non-trivial EF queries.
+4. Avoid introducing unrelated refactors.
+5. Preserve backward-compatible API behavior unless explicitly asked to break/change it.
+6. Keep `.cursor/rules/backend.mdc` in sync if conventions change.
 
 ---
 

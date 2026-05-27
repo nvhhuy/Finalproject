@@ -1,0 +1,62 @@
+---
+description: Frontend (Next.js) conventions — i18n, lib/shared, feature API, App Router
+globs: src/Frontend/**/*
+alwaysApply: false
+---
+
+# Frontend rules
+
+Read before editing `src/Frontend/`:
+
+- Onboarding: `docs/frontend/ONBOARDING.md`
+- Features catalog: `docs/frontend/FEATURE_CATALOG.md`
+- Architecture: `docs/frontend/ARCHITECTURE.md`
+- Shared helpers: `docs/frontend/COMMON_LIBRARIES.md`
+- Add/extend features: `docs/frontend/EXTENSIBILITY_GUIDE.md`
+- Full AI checklist: `docs/frontend/LLM_FEATURE_IMPLEMENTATION_RULES.md`
+
+## Architecture
+
+- `app/*` = routes/pages; keep thin — logic in `lib/features` + hooks
+- `lib/features/*` = domain API modules; use `apiRequest` / `apiRaw` from `lib/api/http.ts`
+- `lib/shared/*` must NOT import from `app/*` or `components/*`
+- Authenticated UI under `app/app/*` (wrapped by `RequireAuth`)
+- Dev API: browser calls `/api/v1/...` (proxied via `app/api/[...path]/route.ts`), not direct `https://localhost:7124`
+
+## i18n (required for new UI)
+
+- `useTranslation()` + `t('key')` for all user-visible strings
+- Add keys to `i18n/locales/en.json`, `vi.json`, and `zh.json` together
+- Zod: `createAuthSchemas(t)` or messages via `t()` in schema
+
+## Reuse lib/shared — do not reinvent
+
+```ts
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeOrDash,
+  formatBytes,
+  formatCount,
+  formatRelativeTime,
+  isConcurrencyError,
+  ApiClientError,
+} from '@/lib/shared'
+```
+
+- Dates: never `toLocaleDateString()` in pages
+- Mutations: `idempotent: true` when backend requires it; pass `rowVersion` when required
+
+## Auth
+
+- Tokens via `lib/auth/tokens.ts` + `AuthProvider`
+- Login 2FA: `apiRaw` (HTTP 202); see `auth-api.ts`
+- Hydrate user with `GET /users/profile` — do not duplicate user state logic
+
+## Quality
+
+- Minimal diff; match Tailwind + existing `Button`/`Input`
+- Run `npm run typecheck` in `src/Frontend` after changes
+- Update `docs/frontend/FEATURE_CATALOG.md` when adding routes/features
+- Admin-only features → `src/Admin`, not Frontend
+- No secrets committed; document env in `.env.example` only

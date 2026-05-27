@@ -24,12 +24,15 @@ public sealed class AdminDashboardMetricsQueryHandler : IRequestHandler<AdminDas
         int total = await _read.Users.AsNoTracking().CountAsync(u => u.DeletedAtUtc == null, cancellationToken);
 
         DateTime fromUtc = DateTime.UtcNow.Date.AddDays(-13);
-        List<DailyRegistrationDto> daily = await _read.Users.AsNoTracking()
+        var dailyCounts = await _read.Users.AsNoTracking()
             .Where(u => u.DeletedAtUtc == null && u.RegisteredAtUtc != null && u.RegisteredAtUtc >= fromUtc)
-            .GroupBy(u => DateOnly.FromDateTime(u.RegisteredAtUtc!.Value.Date))
-            .Select(g => new DailyRegistrationDto(g.Key, g.Count()))
+            .GroupBy(u => u.RegisteredAtUtc!.Value.Date)
+            .Select(g => new { Day = g.Key, Count = g.Count() })
             .OrderBy(x => x.Day)
             .ToListAsync(cancellationToken);
+        List<DailyRegistrationDto> daily = dailyCounts
+            .Select(x => new DailyRegistrationDto(DateOnly.FromDateTime(x.Day), x.Count))
+            .ToList();
 
         DateOnly start = DateOnly.FromDateTime(fromUtc);
         DateOnly end = DateOnly.FromDateTime(DateTime.UtcNow.Date);

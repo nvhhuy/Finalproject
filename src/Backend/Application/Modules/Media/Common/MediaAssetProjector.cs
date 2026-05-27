@@ -35,6 +35,7 @@ internal static class MediaAssetProjector
             asset.UploadedAtUtc,
             asset.ProcessedAtUtc,
             variants,
-            asset.ErrorMessage);
+            asset.ErrorMessage,
+            asset.RowVersion);
     }
 }

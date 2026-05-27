@@ -17,7 +17,8 @@ public sealed record UserProfileDto(
     string FirstName,
     string LastName,
     string Role,
-    bool TwoFactorEnabled);
+    bool TwoFactorEnabled,
+    uint RowVersion);
 
 public sealed class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, Result<UserProfileDto, Error>>
 {

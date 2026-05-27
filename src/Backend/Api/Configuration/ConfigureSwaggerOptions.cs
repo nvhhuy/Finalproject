@@ -18,7 +18,7 @@ public sealed class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOption
         {
             options.SwaggerDoc(description.GroupName, new OpenApiInfo
             {
-                Title = $"Wuy Final Project API {description.GroupName.ToUpperInvariant()}",
+                Title = $"API {description.GroupName.ToUpperInvariant()}",
                 Version = description.ApiVersion.ToString(),
                 Description = description.IsDeprecated ? "This API version has been deprecated." : null
             });

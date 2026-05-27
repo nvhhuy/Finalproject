@@ -41,6 +41,7 @@ public sealed class CorsOptions
         "x-api-version",
         "Accept",
         "Accept-Language",
+        "Idempotency-Key",
     };
 
     /// <summary>HTTP methods the SPA is allowed to use cross-origin.</summary>

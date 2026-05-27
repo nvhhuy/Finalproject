@@ -17,7 +17,8 @@ public sealed record MediaAssetDto(
     DateTime? UploadedAtUtc,
     DateTime? ProcessedAtUtc,
     IReadOnlyList<MediaVariantDto> Variants,
-    string? ErrorMessage);
+    string? ErrorMessage,
+    uint RowVersion);
 
 public sealed record MediaVariantDto(
     Guid Id,

@@ -31,7 +31,7 @@ public sealed class ImpersonateUserCommandHandlerTests
         ImpersonateUserCommandHandler handler = BuildHandler(read.Object);
 
         Result<AuthenticationResponse, Error> result = await handler.Handle(
-            new ImpersonateUserCommand(TargetId, AdminId),
+            new ImpersonateUserCommand(TargetId, AdminId, ExpectedRowVersion: 0),
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -50,7 +50,7 @@ public sealed class ImpersonateUserCommandHandlerTests
         ImpersonateUserCommandHandler handler = BuildHandler(read.Object);
 
         Result<AuthenticationResponse, Error> result = await handler.Handle(
-            new ImpersonateUserCommand(TargetId, AdminId),
+            new ImpersonateUserCommand(TargetId, AdminId, ExpectedRowVersion: 0),
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -76,7 +76,7 @@ public sealed class ImpersonateUserCommandHandlerTests
         ImpersonateUserCommandHandler handler = BuildHandler(read.Object, tokens.Object);
 
         Result<AuthenticationResponse, Error> result = await handler.Handle(
-            new ImpersonateUserCommand(TargetId, AdminId),
+            new ImpersonateUserCommand(TargetId, AdminId, ExpectedRowVersion: 0),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);

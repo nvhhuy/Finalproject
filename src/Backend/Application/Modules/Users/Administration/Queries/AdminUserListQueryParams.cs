@@ -5,6 +5,7 @@ public sealed record AdminUserListQueryParams(
     int PageSize,
     string? EmailContains,
     string? UserNameContains,
+    string? Search,
     bool? IsLocked,
     string? Role,
     string? SortBy,

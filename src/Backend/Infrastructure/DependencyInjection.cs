@@ -1,4 +1,4 @@
-﻿using Application.Contracts.Administration;
+using Application.Contracts.Administration;
 using Application.Contracts.Authentication;
 using Application.Contracts.Caching;
 using Application.Contracts.Events;
@@ -90,6 +90,7 @@ public static class DependencyInjection
         services.Configure<FeatureFlagOptions>(configuration.GetSection(FeatureFlagOptions.SectionName));
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped<IFeatureFlagService, FeatureFlagService>();
+        AddAuthenticationServices(services, configuration);
 
         // Media pipeline DI lives in Application.AddApplication; here we just bind the options block.
         Application.DependencyInjection.AddMediaApplicationOptions(services, configuration);
@@ -250,7 +251,11 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
+    /// <summary>
+    /// Token issuance and lockout services shared by Api and Worker hosts. Does not register JWT
+    /// bearer middleware (Worker has no HTTP pipeline).
+    /// </summary>
+    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
     {
         JwtSettings jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
             ?? throw new InvalidOperationException($"Missing configuration section '{JwtSettings.SectionName}'.");
@@ -263,6 +268,14 @@ public static class DependencyInjection
         services.AddScoped<IAuthenticationTokenIssuer, AuthenticationTokenIssuer>();
         services.Configure<AccountLockoutOptions>(configuration.GetSection(AccountLockoutOptions.SectionName));
         services.AddScoped<IFailedLoginTracker, CacheFailedLoginTracker>();
+        return services;
+    }
+
+    public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
+    {
+        // JwtSettings and token services are registered in AddInfrastructureCore via AddAuthenticationServices.
+        JwtSettings jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+            ?? throw new InvalidOperationException($"Missing configuration section '{JwtSettings.SectionName}'.");
 
         services.AddAuthentication(defaultScheme: JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

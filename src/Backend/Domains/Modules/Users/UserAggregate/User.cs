@@ -3,7 +3,7 @@ using Domains.UserAggregate.ValueObjects;
 
 namespace Domains.UserAggregate
 {
-    public class User : AggregateRoot<UserId>, IHasRowVersion
+    public class User : AggregateRoot<UserId>
     {
         public string UserName { get; private set; } = null!;
         public string FirstName { get; private set; } = null!;
@@ -36,11 +36,6 @@ namespace Domains.UserAggregate
         public DateTime? EmailVerifiedAtUtc { get; private set; }
         /// <summary>Account creation time (used for admin metrics).</summary>
         public DateTime? RegisteredAtUtc { get; private set; }
-
-        /// <summary>Optimistic concurrency token; incremented on every successful update.</summary>
-        public uint RowVersion { get; private set; }
-
-        uint IHasRowVersion.RowVersion => RowVersion;
 
         public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
         public ICollection<ExternalUserLogin> ExternalLogins { get; private set; } = new List<ExternalUserLogin>();

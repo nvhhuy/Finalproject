@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Contracts.Administration;
 using Application.Contracts.Authorization;
 using Application.Contracts.Modules.Users.Persistence.Read;
@@ -78,6 +79,7 @@ public sealed record AdminUpdateUserCommand(
     string UserName,
     string Email,
     string Role,
+    uint ExpectedRowVersion,
     string? ActorIpAddress = null) : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminUpdateUserCommandHandler : IRequestHandler<AdminUpdateUserCommand, Result<bool, Error>>
@@ -105,6 +107,10 @@ public sealed class AdminUpdateUserCommandHandler : IRequestHandler<AdminUpdateU
         if (target is null)
             return new NotFoundError("User was not found.");
 
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
+
         User? emailOwner = await _read.GetByEmailAsync(request.Email, cancellationToken: cancellationToken);
         if (emailOwner is not null && emailOwner.Id.Value != request.TargetUserId)
             return new EmailAlreadyInUseError();
@@ -124,7 +130,11 @@ public sealed class AdminUpdateUserCommandHandler : IRequestHandler<AdminUpdateU
     }
 }
 
-public sealed record AdminDeleteUserCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
+public sealed record AdminDeleteUserCommand(
+    Guid ActingAdminUserId,
+    Guid TargetUserId,
+    uint ExpectedRowVersion,
+    string? ActorIpAddress = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminDeleteUserCommandHandler : IRequestHandler<AdminDeleteUserCommand, Result<bool, Error>>
@@ -146,6 +156,10 @@ public sealed class AdminDeleteUserCommandHandler : IRequestHandler<AdminDeleteU
         if (target is null)
             return new NotFoundError("User was not found.");
 
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
+
         target.MarkDeleted();
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserDeleted, request.TargetUserId, request.ActorIpAddress, null);
         await _uow.SaveChangesAsync(cancellationToken);
@@ -154,7 +168,11 @@ public sealed class AdminDeleteUserCommandHandler : IRequestHandler<AdminDeleteU
     }
 }
 
-public sealed record AdminResetTwoFactorCommand(Guid ActingAdminUserId, Guid TargetUserId, string? ActorIpAddress = null)
+public sealed record AdminResetTwoFactorCommand(
+    Guid ActingAdminUserId,
+    Guid TargetUserId,
+    uint ExpectedRowVersion,
+    string? ActorIpAddress = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminResetTwoFactorCommandHandler : IRequestHandler<AdminResetTwoFactorCommand, Result<bool, Error>>
@@ -176,6 +194,10 @@ public sealed class AdminResetTwoFactorCommandHandler : IRequestHandler<AdminRes
         if (target is null)
             return new NotFoundError("User was not found.");
 
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
+
         target.DisableTwoFactor();
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserTwoFactorReset, request.TargetUserId, request.ActorIpAddress, null);
         await _uow.SaveChangesAsync(cancellationToken);
@@ -188,6 +210,7 @@ public sealed record AdminResetPasswordCommand(
     Guid ActingAdminUserId,
     Guid TargetUserId,
     string NewPassword,
+    uint ExpectedRowVersion,
     string? ActorIpAddress = null) : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminResetPasswordCommandHandler : IRequestHandler<AdminResetPasswordCommand, Result<bool, Error>>
@@ -217,6 +240,10 @@ public sealed class AdminResetPasswordCommandHandler : IRequestHandler<AdminRese
         User? target = await _write.GetByIdForUpdateAsync(request.TargetUserId, cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
+
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
 
         target.UpdatePasswordHash(_passwordHasher.HashPassword(target, request.NewPassword));
         await _write.RevokeAllRefreshTokensForUserAsync(request.TargetUserId, _clock.Now, cancellationToken);

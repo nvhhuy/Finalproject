@@ -88,8 +88,9 @@ services:
   # ClamAV daemon for media scanning. The first container start triggers a freshdb download
   # (~250 MB) so allow a few minutes before the daemon becomes ready. Once up, the worker's
   # ClamdMediaScanner can connect on tcp://localhost:3310.
+  # clamav-debian (not clamav/alpine) — multi-arch including arm64 for Apple Silicon.
   clamd:
-    image: clamav/clamav:1.3
+    image: clamav/clamav-debian:1.5.2
     ports:
       - "${CLAMD_PORT:-3310}:3310"
     volumes:
@@ -129,8 +130,41 @@ services:
     depends_on:
       - opensearch
 
+  # ---------------------------------------------------------------------------
+  # Dev UIs — browse Postgres / Redis from the browser (local laptop only).
+  # RabbitMQ, MinIO, MailHog, and OpenSearch already ship their own consoles
+  # (see local/README.md for URLs and default credentials).
+  # ---------------------------------------------------------------------------
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    ports:
+      - "${PGADMIN_PORT:-8080}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-dev@local.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - local_pgadmin:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/pgadmin4/pgpass:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8081}:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+
 volumes:
   local_pgdata: {}
+  local_pgadmin: {}
   local_minio: {}
   local_osdata: {}
   local_clamavdb: {}

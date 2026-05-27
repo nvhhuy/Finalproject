@@ -17,7 +17,7 @@ public sealed partial class UsersController
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest body, CancellationToken cancellationToken)
     {
         Result<bool, Error> result = await Sender.Send(
-            new UpdateMyProfileCommand(CurrentUserId, body.FirstName, body.LastName),
+            new UpdateMyProfileCommand(CurrentUserId, body.FirstName, body.LastName, body.RowVersion),
             cancellationToken);
         return MatchApiEmpty(result);
     }

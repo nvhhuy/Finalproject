@@ -94,14 +94,39 @@ public sealed class OutboxPublisherHostedService : BackgroundService
         ILogger logger,
         CancellationToken cancellationToken)
     {
+        if (!db.Database.IsRelational())
+        {
+            return await ProcessBatchCoreAsync(
+                db, publisher, opts, logger, useSkipLocked: false, cancellationToken);
+        }
+
+        // NpgsqlRetryingExecutionStrategy requires the explicit transaction to live inside
+        // CreateExecutionStrategy().ExecuteAsync — otherwise FOR UPDATE SKIP LOCKED fails.
+        IExecutionStrategy strategy = db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async ct =>
+        {
+            await using IDbContextTransaction transaction =
+                await db.Database.BeginTransactionAsync(ct);
+
+            int count = await ProcessBatchCoreAsync(
+                db, publisher, opts, logger, useSkipLocked: true, ct);
+
+            await transaction.CommitAsync(ct);
+            return count;
+        }, cancellationToken);
+    }
+
+    private static async Task<int> ProcessBatchCoreAsync(
+        ApplicationDbContext db,
+        IMessagePublisher publisher,
+        OutboxOptions opts,
+        ILogger logger,
+        bool useSkipLocked,
+        CancellationToken cancellationToken)
+    {
         DateTime now = DateTime.UtcNow;
-        bool isRelational = db.Database.IsRelational();
 
-        await using IDbContextTransaction? transaction = isRelational
-            ? await db.Database.BeginTransactionAsync(cancellationToken)
-            : null;
-
-        List<OutboxMessage> batch = isRelational
+        List<OutboxMessage> batch = useSkipLocked
             ? await LoadBatchWithSkipLockedAsync(db, opts.BatchSize, now, cancellationToken)
             : await db.OutboxMessages
                 // Pending = not published AND not abandoned AND eligible for next attempt. The
@@ -115,11 +140,7 @@ public sealed class OutboxPublisherHostedService : BackgroundService
                 .ToListAsync(cancellationToken);
 
         if (batch.Count == 0)
-        {
-            if (transaction is not null)
-                await transaction.CommitAsync(cancellationToken);
             return 0;
-        }
 
         foreach (OutboxMessage row in batch)
         {
@@ -158,8 +179,6 @@ public sealed class OutboxPublisherHostedService : BackgroundService
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        if (transaction is not null)
-            await transaction.CommitAsync(cancellationToken);
         return batch.Count;
     }
 

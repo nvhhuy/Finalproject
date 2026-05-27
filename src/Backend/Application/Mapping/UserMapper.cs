@@ -11,6 +11,8 @@ public static partial class UserMapper
 {
     public static partial AdminUserSummaryDto ToAdminSummaryDto(this User user);
 
+    public static partial AdminUserDetailDto ToAdminDetailDto(this User user);
+
     public static partial UserProfileDto ToProfileDto(this User user);
 
     public static partial IReadOnlyList<AdminUserSummaryDto> ToAdminSummaryDtos(this IEnumerable<User> users);

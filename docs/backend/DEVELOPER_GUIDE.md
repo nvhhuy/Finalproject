@@ -10,6 +10,7 @@ The solution already includes patterns many production APIs use:
 
 - **Security:** JWT bearer auth, refresh tokens, optional Google sign-in, 2FA hooks, rate limiting on auth endpoints, security headers, forwarded headers for reverse proxies.
 - **Data:** EF Core with PostgreSQL, optional read connection, migrations, seeding, auditable entities, domain events (including after-commit queue), transactional filter for HTTP actions.
+- **Optimistic concurrency:** `rowVersion` on every `Entity<TId>`; mutating APIs require the client to send the version from the last GET (see **`OPTIMISTIC_CONCURRENCY.md`**).
 
 **Startup (Api):** pending EF migrations are applied when the host is **Development** or when **`Database:ApplyPendingMigrations`** is `true`. A **bootstrap admin** user is seeded when **Development** or **`Seed:Admin:Enabled`** is `true` (see **`Seed:Admin`** in `appsettings`; idempotent on email/username).
 
@@ -376,11 +377,14 @@ The EF migration adds columns and the audit table, then runs SQL to **backfill**
 
 ---
 
-## 10. Optional improvements worth researching later
+## 10. Related deep-dives (implemented patterns)
 
-- **OpenTelemetry** tracing from Api and Worker with W3C trace context propagation into logs.
-- **Outbox pattern** for reliable domain event publication.
-- **Quartz.NET or Hangfire** if cron must survive restarts and run once per cluster.
-- **Contract tests** for public APIs (e.g. Schemathesis against OpenAPI).
+| Topic | Doc |
+|-------|-----|
+| Api ↔ Worker, outbox, RabbitMQ, no JWT on Worker | [`MESSAGING_AND_WORKER.md`](./MESSAGING_AND_WORKER.md) |
+| DataProtection key ring (2FA, deploy) | [`DATA_PROTECTION.md`](./DATA_PROTECTION.md) |
+| EF LINQ pitfalls (`Id.Value`, `DateOnly` GroupBy, retry strategy) | [`EF_PITFALLS.md`](./EF_PITFALLS.md) |
+
+**Already in this solution:** transactional outbox, Quartz cron in Worker, OpenTelemetry registration in `Observability`. Optional later: contract tests (Schemathesis), dedicated notification worker executable.
 
 This guide is the living “how we work” companion to **`BASE_GUIDE.md`**.

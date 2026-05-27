@@ -18,7 +18,7 @@ public sealed class UserWriteRepository : WriteRepositoryBase, IUserWriteReposit
     }
 
     public Task<User?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
-        GetTrackedForUpdateAsync(_context.Users, u => u.Id.Value == id, cancellationToken);
+        GetTrackedForUpdateAsync(_context.Users, u => u.Id == UserId.Create(id), cancellationToken);
 
     public void AddUser(User user) => AddEntity(_context.Users, user);
 

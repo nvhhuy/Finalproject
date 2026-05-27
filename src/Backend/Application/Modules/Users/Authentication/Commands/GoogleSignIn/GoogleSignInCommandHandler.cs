@@ -51,7 +51,7 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
         User? user;
         if (link is not null)
         {
-            user = await _read.Users.FirstOrDefaultAsync(u => u.Id.Value == link.UserId.Value, cancellationToken);
+            user = await _read.Users.FirstOrDefaultAsync(u => u.Id == link.UserId, cancellationToken);
             if (user is null)
                 return new InvalidCredentialsError("Linked user was not found.");
         }

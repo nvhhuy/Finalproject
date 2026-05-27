@@ -17,6 +17,7 @@ public sealed partial class AdminUsersController
         [FromQuery] int pageSize = 20,
         [FromQuery] string? emailContains = null,
         [FromQuery] string? userNameContains = null,
+        [FromQuery] string? search = null,
         [FromQuery] bool? isLocked = null,
         [FromQuery] string? role = null,
         [FromQuery] string? sortBy = null,
@@ -24,8 +25,18 @@ public sealed partial class AdminUsersController
         CancellationToken cancellationToken = default)
     {
         Result<AdminUserListDto, Error> result = await Sender.Send(
-            new AdminListUsersQuery(page, pageSize, emailContains, userNameContains, isLocked, role, sortBy, sortDescending),
+            new AdminListUsersQuery(page, pageSize, emailContains, userNameContains, search, isLocked, role, sortBy, sortDescending),
             cancellationToken);
+        return MatchApi(result);
+    }
+
+    [HttpGet("{userId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<AdminUserDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUser(Guid userId, CancellationToken cancellationToken)
+    {
+        Result<AdminUserDetailDto, Error> result =
+            await Sender.Send(new AdminGetUserByIdQuery(userId), cancellationToken);
         return MatchApi(result);
     }
 }

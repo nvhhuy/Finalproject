@@ -1,0 +1,118 @@
+---
+description: Backend (.NET 8) mandatory conventions — layers, CQRS, EF, outbox, worker, security
+globs: src/Backend/**/*
+alwaysApply: false
+---
+
+# Backend rules (mandatory)
+
+Read **before** editing `src/Backend/`. Hub: `docs/backend/README.md`.
+
+## Required reading by task
+
+| Task | Docs |
+|------|------|
+| New feature | `BASE_GUIDE.md`, `LLM_FEATURE_IMPLEMENTATION_RULES.md`, `MODULE_STRUCTURE.md` |
+| HTTP / auth | `DEVELOPER_GUIDE.md` §2–3, `ARCHITECTURE.md` |
+| DB / migration | `MIGRATION_WORKFLOW.md` |
+| Cache | `CACHE_GUIDE.md` |
+| `rowVersion` / 409 | `OPTIMISTIC_CONCURRENCY.md` |
+| Outbox / Rabbit / Worker | `MESSAGING_AND_WORKER.md` |
+| DataProtection keys | `DATA_PROTECTION.md` |
+| EF LINQ errors | `EF_PITFALLS.md` |
+| Endpoints inventory | `FEATURE_CATALOG.md` |
+
+## Architecture (non-negotiable)
+
+- **Domains** — no references to Infrastructure, Api, or EF.
+- **Application** — commands/queries/handlers; depend on `Application/Contracts` ports only.
+- **Infrastructure** — EF, messaging, email, storage implementations.
+- **Api** — thin HTTP: map to MediatR, return `ApiResponse<T>`; **no business rules** in controllers.
+- **Worker** — cron + queue consumers + **only host that drains outbox**; no JWT middleware.
+
+## Layer placement
+
+```
+Domains/Modules/<Feature>/...
+Application/Modules/<Feature>/...
+Application/Contracts/Modules/<Feature>/...
+Infrastructure/Modules/<Feature>/...
+Api/Controllers/<Feature>/...
+Api/Models/...
+```
+
+## CQRS & persistence
+
+- **Queries** → read side (`IApplicationReadDbContext`, `I*ReadRepository`, `AsNoTracking`).
+- **Commands** → write side (`GetByIdForUpdateAsync` / tracked entity, `IUnitOfWork.SaveChangesAsync`).
+- **Never** mutate entities loaded from read context.
+- **One** `SaveChangesAsync` per command via `IUnitOfWork` (repos stage only).
+- Mutations affecting cached reads → invalidate cache in write repo / `Invalidate*CacheAsync`.
+
+## HTTP (Api)
+
+- Envelope: `ApiResponse<T>` via `ApiControllerBase` (`OkApi`, `MatchApi`, `FailApi`).
+- DTOs only in `Api/Models/` — never expose domain entities on the wire.
+- Protected routes: `[Authorize]` or `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]`.
+- Atomic mutations: `[Transactional]` on action (do not stack with manual `BeginTransaction` without reason).
+- Idempotent writes: `[RequiresIdempotencyKey]` + header `Idempotency-Key` where existing endpoints do.
+- Optimistic concurrency: accept `rowVersion` on mutating admin/profile/media delete — see `OPTIMISTIC_CONCURRENCY.md`.
+
+## EF LINQ (see `EF_PITFALLS.md`)
+
+```csharp
+// GOOD
+u => u.Id == UserId.Create(id)
+
+// BAD — fails translation
+u => u.Id.Value == id
+```
+
+- No `DateOnly.FromDateTime(...)` inside SQL `GroupBy`; group by `DateTime.Date`, map after `ToListAsync`.
+- Explicit transactions: wrap in `CreateExecutionStrategy().ExecuteAsync(...)`.
+
+## Domain events
+
+| Type | Use |
+|------|-----|
+| `ITransactionalDomainEvent` | In-process, after SaveChanges, same transaction |
+| `IAfterCommitDomainEvent` | After `IUnitOfWork.CommitAsync` |
+| `IIntegrationEvent` | Cross-process → **outbox** → RabbitMQ |
+
+- Do **not** register `AddOutboxPublisher` on Api.
+- Integration consumers: **idempotent** on `EventId`.
+
+## Worker
+
+- Register jobs: `services.AddSingleton<ICronJob, YourJob>()` in `Worker/Program.cs`.
+- Queue consumers: inherit `QueueConsumerBackgroundService<TMessage>`; broker code stays in Infrastructure.
+- **No** `[Authorize]` on Worker — security = network + DB/broker secrets.
+- Api does **not** HTTP-call Worker.
+
+## Caching
+
+- DB entity read-through → **repository** (`CachedReadRepositoryBase`).
+- Ephemeral tokens (email verify, password reset, 2FA challenge) → **handler** + `ICacheService`; not in repository.
+
+## Config & secrets
+
+- Never commit real secrets, JWT secrets, or `local/dataprotection-keys/`.
+- Local admin seed (Development): `admin@localhost.com` / `Temp!ChangeMe123` — change in production.
+- `Messaging:RabbitMq:Enabled` defaults **false**; document when enabling for media pipeline.
+
+## Tests & docs (done criteria)
+
+1. `dotnet build src/Backend/Backend.sln`
+2. Add/update tests for non-trivial handlers or EF queries.
+3. Update `docs/backend/FEATURE_CATALOG.md` for new endpoints.
+4. Update at least one backend doc for behavioral/config changes.
+5. **Minimal diff** — no unrelated refactors.
+
+## Forbidden
+
+- `DbContext` in controllers.
+- Business logic in Infrastructure that belongs in Application/Domain.
+- Coupling queue handlers to HTTP types.
+- Skipping cache invalidation after writes.
+- `u.Id.Value ==` in LINQ predicates.
+- Outbox publisher on Api host.

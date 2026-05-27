@@ -19,8 +19,6 @@ Then point `src/Backend/Api/appsettings.Development.json` (or user-secrets) at:
 - MinIO S3-compatible URL and keys from `.env.example`.
 - OpenSearch at `http://localhost:9200` (already referenced in `Api/appsettings.Development.json` Serilog sink). Apply the **5-day index retention** policy from [`opensearch/README.md`](./opensearch/README.md).
 
-OpenSearch Dashboards: http://localhost:5601
-
 Stop:
 
 ```bash
@@ -28,3 +26,30 @@ docker compose down
 ```
 
 Data volumes persist between restarts unless you `docker compose down -v`.
+
+## Dev UIs (browser)
+
+| Service | URL | Login |
+|--------|-----|--------|
+| **Postgres** (pgAdmin 4) | http://localhost:8080 | Email: `dev@local.dev`, Password: `admin` — server **Finalproject (local)** is pre-registered |
+| **Redis** (Redis Commander) | http://localhost:8081 | (no auth — local only) |
+| **RabbitMQ** (built-in) | http://localhost:15672 | `guest` / `guest` |
+| **MinIO** console | http://localhost:9001 | `minio` / `minio123` |
+| **MailHog** | http://localhost:8025 | — |
+| **OpenSearch Dashboards** | http://localhost:5601 | security disabled in dev |
+
+Override UI ports / pgAdmin login in `local/.env`: `PGADMIN_PORT`, `PGADMIN_EMAIL`, `PGADMIN_PASSWORD`, `REDIS_COMMANDER_PORT`.
+
+If you change `POSTGRES_PASSWORD`, update `local/pgadmin/pgpass` to match (format `host:port:*:user:password`).
+
+**ClamAV** has no web UI — check from the host with `nc -zv localhost 3310` or enable `MediaScanner` in the Worker and watch logs. First start downloads virus definitions (~250 MB); allow a few minutes.
+
+## Connection strings (host machine → Docker)
+
+| Service | From IDE / `appsettings.Development.json` |
+|---------|---------------------------------------------|
+| Postgres | `Host=localhost;Port=5432;Database=finalproject;Username=postgres;Password=postgres` |
+| Redis | `localhost:6379` |
+| RabbitMQ | `amqp://guest:guest@localhost:5672` |
+| MinIO (S3 API) | `http://localhost:9000` — keys in `.env.example` |
+| OpenSearch | `http://localhost:9200` |

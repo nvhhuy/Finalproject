@@ -1,0 +1,169 @@
+{
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "System"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "submit": "Submit",
+    "language": "Language",
+    "openApp": "Open App",
+    "login": "Login",
+    "register": "Register",
+    "signOut": "Sign out",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "saved": "Saved",
+    "email": "Email",
+    "password": "Password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "dash": "—"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "twoFa": "2FA",
+    "mediaLab": "Media Lab"
+  },
+  "authLayout": {
+    "tagline": "Production-ready auth, profile, 2FA, and media flows wired to your .NET backend."
+  },
+  "appShell": {
+    "workspace": "Your workspace"
+  },
+  "userMenu": {
+    "openMenu": "Open account menu",
+    "account": "Account",
+    "profile": "Profile settings",
+    "security": "Security & 2FA",
+    "appearance": "Appearance",
+    "language": "Language"
+  },
+  "landing": {
+    "tag": "Base Frontend",
+    "title": "(Code base)",
+    "heroSubtitle": "A modern starter for end-user apps — JWT auth, i18n, typed APIs, and real backend integration.",
+    "getStarted": "Get started free",
+    "featuresTitle": "What you get out of the box",
+    "featureAuth": "Auth (login/register/refresh, Google sign-in, forgot/reset password, verify email)",
+    "featureProfile": "Profile (view + edit) + avatar upload demo",
+    "feature2fa": "2FA setup/confirm + login challenge",
+    "featureMedia": "Media lab: presigned upload → complete → poll status",
+    "featureApi": "Typed API client + idempotency helper"
+  },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "JWT + refresh token. Supports two-factor authentication.",
+    "signIn": "Sign in",
+    "twoFaTitle": "Two-factor code",
+    "twoFaHint": "Enter the code from your authenticator app.",
+    "verify": "Verify",
+    "needAccount": "Need an account?",
+    "forgotPassword": "Forgot password?",
+    "signInFailed": "Sign-in failed",
+    "apiUnreachable": "Cannot reach API. Start backend: cd src/Backend/Api && dotnet run --launch-profile https"
+  },
+  "register": {
+    "title": "Create account",
+    "subtitle": "Uses idempotency key automatically.",
+    "userName": "Username",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "create": "Create account",
+    "backToLogin": "Back to login",
+    "success": "Registered. Check your email if verification is required.",
+    "resendHint": "Did not receive the email?",
+    "resend": "Resend verification"
+  },
+  "forgotPassword": {
+    "title": "Forgot password",
+    "subtitle": "We will send a reset link if the email exists.",
+    "send": "Send reset link",
+    "sent": "If that email is registered, a reset link has been sent.",
+    "backToLogin": "Back to login"
+  },
+  "resetPassword": {
+    "title": "Reset password",
+    "subtitle": "Choose a new password for your account.",
+    "reset": "Reset password",
+    "success": "Password updated. You can sign in now.",
+    "invalidLink": "Invalid or expired reset link.",
+    "backToLogin": "Back to login"
+  },
+  "verifyEmail": {
+    "title": "Verify email",
+    "verifying": "Verifying your email…",
+    "success": "Email verified. You can sign in now.",
+    "failed": "Verification failed.",
+    "missingParams": "Missing token in the link.",
+    "backToLogin": "Back to login"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of your account and quick links.",
+    "signedInAs": "Signed in as",
+    "tip": "Use the nav to test Profile, 2FA, and Media Lab.",
+    "quickProfile": "Edit profile",
+    "quick2fa": "Security / 2FA",
+    "quickMedia": "Media lab"
+  },
+  "profile": {
+    "title": "Profile",
+    "account": "Account",
+    "role": "role",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "save": "Save profile",
+    "avatarTitle": "Avatar (Media module)",
+    "avatarHint": "Profile API has no avatar field yet. Upload demonstrates the media flow for future avatar support.",
+    "preview": "Preview",
+    "resendVerification": "Resend email verification",
+    "resendSent": "Verification email sent if applicable."
+  },
+  "twoFa": {
+    "title": "Two-factor authentication",
+    "status": "Current status",
+    "unknown": "Unknown",
+    "setupTitle": "Setup",
+    "setupHint": "Begin setup → scan QR in authenticator app → enter 6-digit code.",
+    "begin": "Begin setup",
+    "sharedKey": "Shared key",
+    "scanQr": "Scan this QR code",
+    "code": "Code",
+    "confirm": "Confirm",
+    "enabledMsg": "2FA enabled.",
+    "beginFailed": "Begin 2FA failed",
+    "confirmFailed": "Confirm 2FA failed"
+  },
+  "media": {
+    "title": "Media Lab",
+    "flowTitle": "Upload flow",
+    "flowHint": "Initiate → PUT to presigned URL → Complete → Poll GET until Ready.",
+    "runUpload": "Run upload",
+    "uploading": "Uploading…",
+    "delete": "Delete asset",
+    "asset": "Asset",
+    "status": "Status"
+  },
+  "google": {
+    "signIn": "Sign in with Google",
+    "notConfigured": "Google sign-in is not configured (set NEXT_PUBLIC_GOOGLE_CLIENT_ID).",
+    "failed": "Google sign-in failed"
+  },
+  "errors": {
+    "requestFailed": "Request failed",
+    "concurrencyConflict": "This record was changed elsewhere. Refresh and try again.",
+    "passwordMismatch": "Passwords do not match",
+    "passwordMin": "Password must be at least 8 characters"
+  },
+  "validation": {
+    "invalidEmail": "Enter a valid email",
+    "required": "Required"
+  }
+}

@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --color-background: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-foreground: #0f172a;
+  --color-muted: #64748b;
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-soft: #eef2ff;
+  --color-accent-foreground: #4338ca;
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-success-text: #047857;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-danger-text: #b91c1c;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-warning-text: #b45309;
+  --shadow-card: 0 1px 3px rgb(15 23 42 / 0.06), 0 4px 16px rgb(15 23 42 / 0.04);
+  --shadow-elevated: 0 8px 30px rgb(15 23 42 / 0.1);
+  --radius-card: 1rem;
+}
+
+html.dark {
+  --color-background: #0c1222;
+  --color-surface: #151d2e;
+  --color-surface-muted: #1c2738;
+  --color-border: #2a3548;
+  --color-border-strong: #3d4d66;
+  --color-foreground: #f1f5f9;
+  --color-muted: #94a3b8;
+  --color-primary: #818cf8;
+  --color-primary-hover: #a5b4fc;
+  --color-primary-soft: rgb(99 102 241 / 0.22);
+  --color-accent-foreground: #c7d2fe;
+  --color-success: #34d399;
+  --color-success-soft: rgb(16 185 129 / 0.18);
+  --color-success-text: #6ee7b7;
+  --color-danger: #f87171;
+  --color-danger-soft: rgb(248 113 113 / 0.15);
+  --color-danger-text: #fca5a5;
+  --color-warning: #fbbf24;
+  --color-warning-soft: rgb(251 191 36 / 0.15);
+  --color-warning-text: #fcd34d;
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 20px rgb(0 0 0 / 0.25);
+  --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.45);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-foreground);
+  background: var(--color-background);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 28%, transparent);
+}
+
+a {
+  text-decoration: none;
+}
+
+.link {
+  color: var(--color-primary);
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.link:hover {
+  color: var(--color-primary-hover);
+}
+
+.mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgb(99 102 241 / 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(14 165 233 / 0.1), transparent 50%),
+    var(--color-background);
+}
+
+html.dark .mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgb(99 102 241 / 0.1), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(56 189 248 / 0.06), transparent 50%),
+    var(--color-background);
+}
+
+/* Nav & interactive states */
+.nav-link-active {
+  background: var(--color-primary-soft);
+  color: var(--color-accent-foreground);
+}
+
+.nav-link {
+  color: var(--color-muted);
+}
+
+.nav-link:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-foreground);
+}
+
+.menu-section-label {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.theme-option-active {
+  background: var(--color-primary-soft);
+  color: var(--color-accent-foreground);
+  font-weight: 500;
+}
+
+select,
+option {
+  color: var(--color-foreground);
+  background-color: var(--color-surface);
+}
+
+html.dark select option {
+  background-color: var(--color-surface);
+}

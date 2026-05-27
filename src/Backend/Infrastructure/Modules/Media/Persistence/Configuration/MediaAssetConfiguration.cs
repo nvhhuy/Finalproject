@@ -60,7 +60,5 @@ public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
         // ProcessingStartedAtUtc < cutoff). Without it, the scan would touch every row in the
         // table at every cron tick.
         builder.HasIndex(e => new { e.Status, e.ProcessingStartedAtUtc });
-
-        builder.Property(e => e.RowVersion).IsRowVersion();
     }
 }

@@ -1,0 +1,169 @@
+{
+  "theme": {
+    "label": "主题",
+    "light": "浅色",
+    "dark": "深色",
+    "auto": "跟随系统"
+  },
+  "common": {
+    "loading": "加载中…",
+    "save": "保存",
+    "cancel": "取消",
+    "back": "返回",
+    "submit": "提交",
+    "language": "语言",
+    "openApp": "打开应用",
+    "login": "登录",
+    "register": "注册",
+    "signOut": "退出登录",
+    "enabled": "已启用",
+    "disabled": "未启用",
+    "saved": "已保存",
+    "email": "邮箱",
+    "password": "密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认密码",
+    "dash": "—"
+  },
+  "nav": {
+    "dashboard": "概览",
+    "profile": "个人资料",
+    "twoFa": "双因素",
+    "mediaLab": "媒体实验室"
+  },
+  "authLayout": {
+    "tagline": "面向终端用户的认证、资料、双因素与媒体流程，已对接 .NET 后端。"
+  },
+  "appShell": {
+    "workspace": "工作区"
+  },
+  "userMenu": {
+    "openMenu": "打开账户菜单",
+    "account": "账户",
+    "profile": "资料设置",
+    "security": "安全与双因素",
+    "appearance": "外观",
+    "language": "语言"
+  },
+  "landing": {
+    "tag": "基础前端",
+    "title": "(Code base)",
+    "heroSubtitle": "面向终端应用的现代起点 — JWT、多语言、类型化 API 与真实后端集成。",
+    "getStarted": "免费开始",
+    "featuresTitle": "开箱即用功能",
+    "featureAuth": "认证（登录/注册/刷新、Google、忘记/重置密码、邮箱验证）",
+    "featureProfile": "资料（查看+编辑）+ 头像上传演示",
+    "feature2fa": "2FA 设置/确认 + 登录挑战",
+    "featureMedia": "媒体实验室：预签名上传 → 完成 → 轮询状态",
+    "featureApi": "类型化 API 客户端 + 幂等键"
+  },
+  "login": {
+    "title": "登录",
+    "subtitle": "JWT + 刷新令牌，支持双因素认证。",
+    "signIn": "登录",
+    "twoFaTitle": "双因素验证码",
+    "twoFaHint": "请输入验证器应用中的代码。",
+    "verify": "验证",
+    "needAccount": "还没有账号？",
+    "forgotPassword": "忘记密码？",
+    "signInFailed": "登录失败",
+    "apiUnreachable": "无法连接 API。请启动后端：cd src/Backend/Api && dotnet run --launch-profile https"
+  },
+  "register": {
+    "title": "创建账号",
+    "subtitle": "自动发送幂等键请求头。",
+    "userName": "用户名",
+    "firstName": "名",
+    "lastName": "姓",
+    "create": "创建账号",
+    "backToLogin": "返回登录",
+    "success": "注册成功。如需验证请查收邮件。",
+    "resendHint": "没收到邮件？",
+    "resend": "重新发送验证邮件"
+  },
+  "forgotPassword": {
+    "title": "忘记密码",
+    "subtitle": "若邮箱已注册，将发送重置链接。",
+    "send": "发送重置链接",
+    "sent": "若该邮箱已注册，重置链接已发送。",
+    "backToLogin": "返回登录"
+  },
+  "resetPassword": {
+    "title": "重置密码",
+    "subtitle": "为账号设置新密码。",
+    "reset": "重置密码",
+    "success": "密码已更新，可以登录。",
+    "invalidLink": "链接无效或已过期。",
+    "backToLogin": "返回登录"
+  },
+  "verifyEmail": {
+    "title": "验证邮箱",
+    "verifying": "正在验证邮箱…",
+    "success": "邮箱已验证，可以登录。",
+    "failed": "验证失败。",
+    "missingParams": "链接中缺少令牌。",
+    "backToLogin": "返回登录"
+  },
+  "dashboard": {
+    "title": "概览",
+    "subtitle": "账户概览与快捷入口。",
+    "signedInAs": "当前用户",
+    "tip": "使用导航测试资料、2FA 和媒体实验室。",
+    "quickProfile": "编辑资料",
+    "quick2fa": "安全 / 2FA",
+    "quickMedia": "媒体实验室"
+  },
+  "profile": {
+    "title": "个人资料",
+    "account": "账号",
+    "role": "角色",
+    "firstName": "名",
+    "lastName": "姓",
+    "save": "保存资料",
+    "avatarTitle": "头像（媒体模块）",
+    "avatarHint": "资料 API 尚无头像字段。此上传演示后续头像所需的媒体流程。",
+    "preview": "预览",
+    "resendVerification": "重新发送验证邮件",
+    "resendSent": "已发送验证邮件（如适用）。"
+  },
+  "twoFa": {
+    "title": "双因素认证 (2FA)",
+    "status": "当前状态",
+    "unknown": "未知",
+    "setupTitle": "设置",
+    "setupHint": "开始设置 → 用验证器扫描二维码 → 输入 6 位代码。",
+    "begin": "开始设置",
+    "sharedKey": "共享密钥",
+    "scanQr": "扫描此二维码",
+    "code": "验证码",
+    "confirm": "确认",
+    "enabledMsg": "2FA 已启用。",
+    "beginFailed": "开始 2FA 失败",
+    "confirmFailed": "确认 2FA 失败"
+  },
+  "media": {
+    "title": "媒体实验室",
+    "flowTitle": "上传流程",
+    "flowHint": "发起 → PUT 预签名 URL → 完成 → 轮询 GET 直至 Ready。",
+    "runUpload": "执行上传",
+    "uploading": "上传中…",
+    "delete": "删除资源",
+    "asset": "资源",
+    "status": "状态"
+  },
+  "google": {
+    "signIn": "使用 Google 登录",
+    "notConfigured": "未配置 Google（请设置 NEXT_PUBLIC_GOOGLE_CLIENT_ID）。",
+    "failed": "Google 登录失败"
+  },
+  "errors": {
+    "requestFailed": "请求失败",
+    "concurrencyConflict": "记录已被他人修改，请刷新后重试。",
+    "passwordMismatch": "两次密码不一致",
+    "passwordMin": "密码至少 8 个字符"
+  },
+  "validation": {
+    "invalidEmail": "请输入有效邮箱",
+    "required": "必填"
+  }
+}

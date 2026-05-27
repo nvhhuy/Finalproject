@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Contracts.Administration;
 using Application.Contracts.Authorization;
 using Application.Contracts.Modules.Users.Persistence.Write;
@@ -10,7 +11,12 @@ using Shared.Errors.General;
 
 namespace Application.Modules.Users.Administration.Commands;
 
-public sealed record AdminLockUserCommand(Guid TargetUserId, string? Reason, Guid ActingAdminUserId, string? ActorIpAddress = null)
+public sealed record AdminLockUserCommand(
+    Guid TargetUserId,
+    string? Reason,
+    Guid ActingAdminUserId,
+    uint ExpectedRowVersion,
+    string? ActorIpAddress = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminLockUserCommandHandler : IRequestHandler<AdminLockUserCommand, Result<bool, Error>>
@@ -32,6 +38,10 @@ public sealed class AdminLockUserCommandHandler : IRequestHandler<AdminLockUserC
         if (target is null)
             return new NotFoundError("User was not found.");
 
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
+
         target.Lock(request.Reason);
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserLocked, request.TargetUserId, request.ActorIpAddress, request.Reason);
         await _uow.SaveChangesAsync(cancellationToken);
@@ -39,7 +49,11 @@ public sealed class AdminLockUserCommandHandler : IRequestHandler<AdminLockUserC
     }
 }
 
-public sealed record AdminUnlockUserCommand(Guid TargetUserId, Guid ActingAdminUserId, string? ActorIpAddress = null)
+public sealed record AdminUnlockUserCommand(
+    Guid TargetUserId,
+    Guid ActingAdminUserId,
+    uint ExpectedRowVersion,
+    string? ActorIpAddress = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
 public sealed class AdminUnlockUserCommandHandler : IRequestHandler<AdminUnlockUserCommand, Result<bool, Error>>
@@ -60,6 +74,10 @@ public sealed class AdminUnlockUserCommandHandler : IRequestHandler<AdminUnlockU
         User? target = await _write.GetByIdForUpdateAsync(request.TargetUserId, cancellationToken);
         if (target is null)
             return new NotFoundError("User was not found.");
+
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(target, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
 
         target.Unlock();
         _audit.Append(request.ActingAdminUserId, AdminAuditActions.UserUnlocked, request.TargetUserId, request.ActorIpAddress, null);

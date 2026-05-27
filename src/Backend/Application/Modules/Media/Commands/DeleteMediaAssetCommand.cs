@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Contracts.Modules.Media.Persistence;
 using Application.Contracts.Storage;
 using Application.Contracts.Transactions;
@@ -16,7 +17,7 @@ namespace Application.Modules.Media.Commands;
 /// happen first because a DB-only delete would leak orphaned objects forever; if a bucket delete
 /// fails the DB row stays around so an operator can retry.
 /// </summary>
-public sealed record DeleteMediaAssetCommand(Guid MediaAssetId, Guid CallerUserId)
+public sealed record DeleteMediaAssetCommand(Guid MediaAssetId, Guid CallerUserId, uint ExpectedRowVersion)
     : IRequest<Result<bool, Error>>;
 
 public sealed class DeleteMediaAssetCommandValidator : AbstractValidator<DeleteMediaAssetCommand>
@@ -55,6 +56,10 @@ public sealed class DeleteMediaAssetCommandHandler : IRequestHandler<DeleteMedia
 
         if (asset.OwnerUserId != request.CallerUserId)
             return new ForbiddenError("Caller is not the owner of this media asset.");
+
+        Error? conflict = EntityConcurrency.ValidateExpectedVersion(asset, request.ExpectedRowVersion);
+        if (conflict is not null)
+            return conflict;
 
         foreach (string key in asset.Variants.Select(v => v.StorageKey).Append(asset.OriginalKey))
         {
