@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Api.IntegrationTests.Support;
 using Api.Models;
 using Api.Models.Auth;
 
@@ -8,39 +9,40 @@ namespace Api.IntegrationTests;
 [Collection(IntegrationCollection.Name)]
 public sealed class AuthIntegrationTests
 {
-    private readonly PostgresFixture _postgres;
+    private readonly IntegrationAppFixture _fixture;
 
-    public AuthIntegrationTests(PostgresFixture postgres) => _postgres = postgres;
+    public AuthIntegrationTests(IntegrationAppFixture fixture) => _fixture = fixture;
 
     [SkippableFact]
     public async Task Health_returns_ok()
     {
-        Skip.IfNot(_postgres.IsAvailable, "Docker or TEST_DATABASE_CONNECTION_STRING is required.");
-        using CustomWebApplicationFactory factory = new(_postgres.ConnectionString);
-        HttpClient client = factory.CreateClient();
-        HttpResponseMessage response = await client.GetAsync("/health");
+        Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
+        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+
+        HttpResponseMessage response = await app.Client.GetAsync("/health");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [SkippableFact]
     public async Task Register_does_not_issue_tokens_until_email_verified()
     {
-        Skip.IfNot(_postgres.IsAvailable, "Docker or TEST_DATABASE_CONNECTION_STRING is required.");
-        using CustomWebApplicationFactory factory = new(_postgres.ConnectionString);
-        await factory.MigrateAsync();
+        Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
+        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
 
-        HttpClient client = factory.CreateClient();
         string email = $"user-{Guid.NewGuid():N}@test.local";
-        var registerBody = new
+        using HttpRequestMessage register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
         {
-            firstName = "Test",
-            lastName = "User",
-            userName = $"u{Guid.NewGuid():N}"[..12],
-            email,
-            password = "Password123!"
-        };
+            Content = JsonContent.Create(new
+            {
+                firstName = "Test",
+                lastName = "User",
+                userName = $"u{Guid.NewGuid():N}"[..12],
+                email,
+                password = IntegrationTestApp.DefaultPassword,
+            }),
+        }.WithIdempotencyKey();
 
-        HttpResponseMessage registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", registerBody);
+        HttpResponseMessage registerResponse = await app.Client.SendAsync(register);
         registerResponse.EnsureSuccessStatusCode();
         ApiResponse<RegistrationResponseDto>? registerPayload =
             await registerResponse.Content.ReadFromJsonAsync<ApiResponse<RegistrationResponseDto>>();
@@ -48,7 +50,9 @@ public sealed class AuthIntegrationTests
         Assert.True(registerPayload.Success);
         Assert.Contains("verify", registerPayload.Data!.Message, StringComparison.OrdinalIgnoreCase);
 
-        HttpResponseMessage loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "Password123!" });
+        HttpResponseMessage loginResponse = await app.Client.PostAsJsonAsync(
+            "/api/v1/auth/login",
+            new { email, password = IntegrationTestApp.DefaultPassword });
         Assert.Equal(HttpStatusCode.Forbidden, loginResponse.StatusCode);
     }
 }

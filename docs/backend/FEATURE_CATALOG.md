@@ -230,9 +230,12 @@ Not for production use.
 | `Application.Tests` | Handlers, validators, behaviors |
 | `Infrastructure.Tests` | Persistence, interceptors, messaging |
 | `Worker.Tests` | Outbox cleanup, media jobs |
-| `Api.IntegrationTests` | E2E auth (requires Postgres running) |
+| `Api.IntegrationTests` | API E2E: auth, profile, admin, health (Postgres via Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
+| `e2e/` (Playwright) | Browser smoke: Frontend public/app routes + Admin console |
 
 Run unit tests: `dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"`
+
+API E2E: `dotnet test src/Backend/Tests/Api.IntegrationTests/Api.IntegrationTests.csproj` — see [`e2e/README.md`](../../e2e/README.md).
 
 ---
 

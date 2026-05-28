@@ -1,0 +1,52 @@
+---
+description: Tests — API integration (xUnit) and Playwright e2e; Postgres, DataProtection, auth patterns
+globs: e2e/**/*,src/Backend/Tests/**/*,tools/e2e/**/*
+alwaysApply: false
+---
+
+# Test rules
+
+Read before editing `e2e/`, `src/Backend/Tests/`, or `tools/e2e/`:
+
+- Hub: `docs/test/README.md`
+- Run locally: `docs/test/ONBOARDING.md`
+- Inventory: `docs/test/TEST_CATALOG.md`
+- Fixtures / ports / auth: `docs/test/ARCHITECTURE.md`
+- Add tests: `docs/test/EXTENSIBILITY_GUIDE.md`
+- Full AI checklist: `docs/test/LLM_FEATURE_IMPLEMENTATION_RULES.md`
+
+## Two layers
+
+| Layer | Path | When to use |
+|-------|------|-------------|
+| API integration | `src/Backend/Tests/Api.IntegrationTests` | HTTP, auth, DB, admin APIs |
+| Playwright | `e2e/tests/` | UI smoke, routing, forms |
+
+Run: `./tools/e2e/run-api-integration.sh` · `./tools/e2e/run-playwright.sh`
+
+## Playwright auth (non-negotiable)
+
+- **Frontend:** `storageState` from `frontend/auth.setup.ts` (tokens in localStorage)
+- **Admin:** `beforeEach(loginAdminConsole())` — **no** `storageState` (JWT in Zustand memory)
+
+## Environment defaults
+
+- API: `http://localhost:5076` (`E2E_API_URL`) — avoid macOS `:5000` (AirPlay)
+- FE: `:3000` · Admin: `:5174`
+- Credentials: `admin@localhost.com` / `Temp!ChangeMe123`
+- DataProtection: `local/dataprotection-keys` for e2e API webServer
+
+Login 500 / `EncryptedColumnDecryptionException` → DB keys mismatch, not CORS. See `docs/test/ONBOARDING.md` troubleshooting.
+
+## API integration
+
+- Use `IntegrationTestApp`, `CapturingEmailSender`, `CustomWebApplicationFactory`
+- Optional media: `INTEGRATION_MEDIA_ENABLED=true`
+- Existing DB: `TEST_DATABASE_CONNECTION_STRING`
+
+## Quality
+
+- Minimal diff; no unrelated app refactors
+- Update `docs/test/TEST_CATALOG.md` when adding scenarios
+- Prefer `getByRole` / shared `login.ts` helpers in Playwright
+- No secrets, no production DB/keys, no committed `test-results/`

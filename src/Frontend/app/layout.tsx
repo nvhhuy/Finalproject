@@ -36,7 +36,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <ThemeScript />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) inject body attributes before React hydrates */}
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers serverLocale={serverLocale} serverTheme={serverTheme}>
           {children}
         </Providers>

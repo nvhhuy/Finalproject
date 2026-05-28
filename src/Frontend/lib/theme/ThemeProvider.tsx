@@ -59,8 +59,15 @@ export function ThemeProvider({
     [apply],
   );
 
+  // Sync React state with DOM after ThemeScript (avoid fighting pre-hydration class on <html>)
   useEffect(() => {
-    apply(preference);
+    const next = resolveTheme(preference);
+    const domDark = document.documentElement.classList.contains("dark");
+    if ((next === "dark") !== domDark) {
+      apply(preference);
+    } else {
+      setResolved(next);
+    }
   }, [preference, apply]);
 
   useEffect(() => {

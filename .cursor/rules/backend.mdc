@@ -103,7 +103,7 @@ u => u.Id.Value == id
 ## Tests & docs (done criteria)
 
 1. `dotnet build src/Backend/Backend.sln`
-2. Add/update tests for non-trivial handlers or EF queries.
+2. Add/update tests for non-trivial handlers or EF queries — see `docs/test/EXTENSIBILITY_GUIDE.md` and `.cursor/rules/test.mdc` for integration/e2e.
 3. Update `docs/backend/FEATURE_CATALOG.md` for new endpoints.
 4. Update at least one backend doc for behavioral/config changes.
 5. **Minimal diff** — no unrelated refactors.

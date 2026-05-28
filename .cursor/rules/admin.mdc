@@ -51,4 +51,5 @@ import { formSelectClass } from '@/shared/constants/styles'
 - Minimal diff; match existing Tailwind + Card/Button patterns
 - Run `npx tsc -b` in `src/Admin` after changes
 - Update `docs/admin/FEATURE_CATALOG.md` when adding user-facing features
+- UI smoke tests: `e2e/tests/admin/` — auth via `loginAdminConsole()` in `beforeEach` (see `docs/test/ARCHITECTURE.md`)
 - No secrets in code; no refresh token in localStorage

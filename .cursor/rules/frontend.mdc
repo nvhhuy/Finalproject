@@ -58,5 +58,6 @@ import {
 - Minimal diff; match Tailwind + existing `Button`/`Input`
 - Run `npm run typecheck` in `src/Frontend` after changes
 - Update `docs/frontend/FEATURE_CATALOG.md` when adding routes/features
+- UI smoke tests: `e2e/tests/frontend/` — see `docs/test/EXTENSIBILITY_GUIDE.md`
 - Admin-only features → `src/Admin`, not Frontend
 - No secrets committed; document env in `.env.example` only
