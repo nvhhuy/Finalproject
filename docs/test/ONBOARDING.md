@@ -45,7 +45,7 @@ From repo root:
 docker compose -f local/docker-compose.yml up -d postgres
 ```
 
-Playwright UI tests use a dedicated DB (`finalproject_e2e`) by default and create it automatically in `e2e/global-setup.ts`. This keeps local dev data (`finalproject`) clean.
+Playwright UI tests use a dedicated DB (`baseproject_e2e`) by default and create it automatically in `e2e/global-setup.ts`. This keeps local dev data (`baseproject`) clean.
 
 ### 3. Run API integration tests
 
@@ -62,7 +62,7 @@ dotnet test src/Backend/Tests/Api.IntegrationTests/Api.IntegrationTests.csproj
 **Without Docker:** point at an existing database:
 
 ```bash
-export TEST_DATABASE_CONNECTION_STRING="Host=localhost;Port=5432;Database=finalproject;Username=postgres;Password=postgres"
+export TEST_DATABASE_CONNECTION_STRING="Host=localhost;Port=5432;Database=baseproject;Username=postgres;Password=postgres"
 dotnet test src/Backend/Tests/Api.IntegrationTests/Api.IntegrationTests.csproj
 ```
 
@@ -114,13 +114,15 @@ dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"
 | `E2E_ADMIN_URL` | `http://localhost:5174` | Admin baseURL |
 | `E2E_ADMIN_EMAIL` | `admin@localhost.com` | Login helper |
 | `E2E_ADMIN_PASSWORD` | `Temp!ChangeMe123` | Login helper |
-| `E2E_DATABASE_URL` | `Host=localhost;Port=5432;Database=finalproject_e2e;Username=postgres;Password=postgres` | API `webServer` env |
-| `E2E_DATABASE_NAME` | `finalproject_e2e` | DB name used by `global-setup` create/reset |
+| `E2E_DATABASE_URL` | `Host=localhost;Port=5432;Database=baseproject_e2e;Username=postgres;Password=postgres` | API `webServer` env |
+| `E2E_DATABASE_NAME` | `baseproject_e2e` | DB name used by `global-setup` create/reset |
 | `E2E_DROP_DB_AFTER_RUN` | `1` on CI, `0` on local | Drop e2e DB in `global-teardown` |
 | `E2E_SKIP_WEBSERVER` | unset | `1` = do not start API/FE/Admin (you run them) |
 | `E2E_REUSE_SERVERS` | `false` | `true` = reuse existing dev servers on configured ports |
 | `E2E_WEBSERVER_TIMEOUT_MS` | `300000` | Max wait for dev servers |
 | `E2E_POSTGRES_HOST` / `E2E_POSTGRES_PORT` | `localhost` / `5432` | `global-setup` connectivity check |
+| `E2E_POSTGRES_USER` / `E2E_POSTGRES_PASSWORD` | `postgres` / `postgres` | Direct `psql`/`createdb` when `E2E_POSTGRES_CLI=1` |
+| `E2E_POSTGRES_CLI` | `1` on CI | Use `psql` instead of `docker compose exec` |
 
 ### API integration
 
@@ -146,7 +148,7 @@ Not CORS. Encrypted `TwoFactorSecret` in DB was written with **different DataPro
 `e2e/global-setup.ts` resets 2FA columns and deletes bootstrap admin in the dedicated e2e database when `webServer` starts. If it fails (no Docker exec), run manually:
 
 ```bash
-docker compose -f local/docker-compose.yml exec -T postgres psql -U postgres -d finalproject_e2e -c \
+docker compose -f local/docker-compose.yml exec -T postgres psql -U postgres -d baseproject_e2e -c \
   'UPDATE "Users" SET "TwoFactorSecret" = NULL; DELETE FROM "Users" WHERE "Email" = '"'"'admin@localhost.com'"'"';'
 ```
 
@@ -154,8 +156,8 @@ Ensure API uses `local/dataprotection-keys` (Playwright `webServer` sets `DataPr
 
 ### E2E DB cleanup policy
 
-- Default local: keep `finalproject_e2e` for faster reruns/debug.
-- Default CI: drop `finalproject_e2e` after run to avoid leftover state.
+- Default local: keep `baseproject_e2e` for faster reruns/debug.
+- Default CI: drop `baseproject_e2e` after run to avoid leftover state.
 - Override anytime with `E2E_DROP_DB_AFTER_RUN=1` (always drop) or `0` (never drop).
 
 ### Admin authenticated tests redirect to `/login`
@@ -176,12 +178,21 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5174/
 
 ---
 
-## CI notes (high level)
+## CI (GitHub Actions)
 
-- API integration: requires Docker (Testcontainers) or injected `TEST_DATABASE_CONNECTION_STRING`
-- Playwright: install browsers in CI; allow long `webServer` timeout; start Postgres service container
-- Never point tests at production databases or shared DataProtection key paths
-- See [`docs/backend/CI_GITEA_SETUP.md`](../backend/CI_GITEA_SETUP.md) for runner setup; wire test jobs when pipeline is ready
+Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) on pull requests and pushes to `main` / `master`.
+
+| Job | What it runs |
+|-----|----------------|
+| **Backend tests** | Unit tests + `Api.IntegrationTests` against Postgres 16 service |
+| **Backend media integration** | `MediaIntegrationTests` with MinIO + `INTEGRATION_MEDIA_ENABLED=true` |
+| **Playwright E2E** | `./tools/e2e/run-playwright.sh` (Node 20, isolated DB `baseproject_e2e`, dropped after run) |
+
+Local before push: `nvm use` then `./tools/e2e/run-playwright.sh` and `./tools/e2e/run-api-integration.sh`.
+
+Never point tests at production databases or shared DataProtection key paths.
+
+For self-hosted Gitea runners see [`docs/backend/CI_GITEA_SETUP.md`](../backend/CI_GITEA_SETUP.md).
 
 ---
 

@@ -29,7 +29,8 @@
     "dashboard": "概览",
     "profile": "个人资料",
     "twoFa": "双因素",
-    "mediaLab": "媒体实验室"
+    "mediaLab": "媒体实验室",
+    "support": "支持"
   },
   "authLayout": {
     "tagline": "面向终端用户的认证、资料、双因素与媒体流程，已对接 .NET 后端。"
@@ -155,6 +156,30 @@
     "signIn": "使用 Google 登录",
     "notConfigured": "未配置 Google（请设置 NEXT_PUBLIC_GOOGLE_CLIENT_ID）。",
     "failed": "Google 登录失败"
+  },
+  "notifications": {
+    "title": "通知",
+    "toggleAria": "切换通知面板",
+    "empty": "暂无通知。",
+    "markRead": "标记已读",
+    "markAllRead": "全部标记已读",
+    "today": "今天",
+    "open": "打开"
+  },
+  "support": {
+    "title": "支持中心",
+    "description": "创建并跟踪支持工单，实时接收管理员更新。",
+    "newTicket": "创建工单",
+    "myTickets": "我的工单",
+    "subject": "主题",
+    "descriptionInput": "请详细描述你的问题...",
+    "category": "分类",
+    "create": "创建工单",
+    "searchPlaceholder": "搜索工单...",
+    "allStatuses": "全部状态",
+    "selectTicket": "选择工单查看详情。",
+    "replyPlaceholder": "补充回复...",
+    "reply": "发送回复"
   },
   "errors": {
     "requestFailed": "请求失败",

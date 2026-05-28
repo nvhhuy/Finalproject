@@ -10,7 +10,7 @@ const adminUrl = process.env.E2E_ADMIN_URL ?? 'http://localhost:5174';
 const dataProtectionKeys = path.join(repoRoot, 'local/dataprotection-keys');
 const e2eDatabaseUrl =
   process.env.E2E_DATABASE_URL ??
-  'Host=localhost;Port=5432;Database=finalproject_e2e;Username=postgres;Password=postgres';
+  'Host=localhost;Port=5432;Database=baseproject_e2e;Username=postgres;Password=postgres';
 
 const webServerTimeout = Number(process.env.E2E_WEBSERVER_TIMEOUT_MS ?? '300000');
 const reuseExistingServer = process.env.E2E_REUSE_SERVERS === 'true';

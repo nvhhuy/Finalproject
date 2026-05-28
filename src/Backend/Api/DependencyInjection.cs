@@ -1,5 +1,7 @@
 using Api.Authorization;
 using Api.Configuration;
+using Api.Realtime;
+using Application.Contracts.Notifications;
 using Api.ExceptionHandling;
 using Api.Filters;
 using Api.Hubs;
@@ -139,25 +141,24 @@ public static class DependencyInjection
     private static void AddRealtimeServices(IServiceCollection services, IConfiguration configuration)
     {
         RealtimeOptions? opts = configuration.GetSection(RealtimeOptions.SectionName).Get<RealtimeOptions>();
-        if (opts?.Enabled != true)
-            return;
-
-        // Pin SignalR's per-message frame cap explicitly. SignalR defaults to 32 KB but we set it
-        // again here so a future "AddSignalR" tweak elsewhere can't relax the limit silently —
-        // and so operators have one obvious knob to tune for chat / collab payloads. 32 KB is
-        // plenty for control messages; large payloads should flow through the REST + media
-        // pipeline instead of a hub.
-        ISignalRServerBuilder signalR = services.AddSignalR(hub =>
+        if (opts?.Enabled == true)
         {
-            hub.MaximumReceiveMessageSize = 32 * 1024;
-            hub.EnableDetailedErrors = false;
-            // Keep-alive every 15s so dropped connections are detected promptly without saturating
-            // small idle deployments.
-            hub.KeepAliveInterval = TimeSpan.FromSeconds(15);
-            hub.ClientTimeoutInterval = TimeSpan.FromSeconds(45);
-        });
-        if (opts.UseRedisBackplane && !string.IsNullOrWhiteSpace(configuration["Redis:ConnectionString"]))
-            signalR.AddStackExchangeRedis(configuration["Redis:ConnectionString"]!);
+            ISignalRServerBuilder signalR = services.AddSignalR(hub =>
+            {
+                hub.MaximumReceiveMessageSize = 32 * 1024;
+                hub.EnableDetailedErrors = false;
+                hub.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                hub.ClientTimeoutInterval = TimeSpan.FromSeconds(45);
+            });
+            if (opts.UseRedisBackplane && !string.IsNullOrWhiteSpace(configuration["Redis:ConnectionString"]))
+                signalR.AddStackExchangeRedis(configuration["Redis:ConnectionString"]!);
+
+            services.AddSingleton<INotificationDispatcher, SignalRNotificationDispatcher>();
+        }
+        else
+        {
+            services.AddSingleton<INotificationDispatcher, NullNotificationDispatcher>();
+        }
     }
 
     /// <summary>Maps SignalR hubs when <see cref="RealtimeOptions.Enabled"/> is true.</summary>

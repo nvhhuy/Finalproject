@@ -29,7 +29,8 @@
     "dashboard": "Tổng quan",
     "profile": "Hồ sơ",
     "twoFa": "2FA",
-    "mediaLab": "Media Lab"
+    "mediaLab": "Media Lab",
+    "support": "Hỗ trợ"
   },
   "authLayout": {
     "tagline": "Auth, hồ sơ, 2FA và media sẵn sàng kết nối backend .NET của bạn."
@@ -155,6 +156,30 @@
     "signIn": "Đăng nhập bằng Google",
     "notConfigured": "Chưa cấu hình Google (đặt NEXT_PUBLIC_GOOGLE_CLIENT_ID).",
     "failed": "Đăng nhập Google thất bại"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "toggleAria": "Bật tắt bảng thông báo",
+    "empty": "Chưa có thông báo.",
+    "markRead": "Đánh dấu đã đọc",
+    "markAllRead": "Đánh dấu đọc tất cả",
+    "today": "Hôm nay",
+    "open": "Mở"
+  },
+  "support": {
+    "title": "Trung tâm hỗ trợ",
+    "description": "Tạo và theo dõi ticket hỗ trợ với cập nhật realtime từ admin.",
+    "newTicket": "Tạo ticket",
+    "myTickets": "Ticket của tôi",
+    "subject": "Tiêu đề",
+    "descriptionInput": "Mô tả chi tiết vấn đề của bạn...",
+    "category": "Danh mục",
+    "create": "Tạo ticket",
+    "searchPlaceholder": "Tìm ticket...",
+    "allStatuses": "Tất cả trạng thái",
+    "selectTicket": "Chọn ticket để xem chi tiết.",
+    "replyPlaceholder": "Viết phản hồi thêm...",
+    "reply": "Gửi phản hồi"
   },
   "errors": {
     "requestFailed": "Yêu cầu thất bại",

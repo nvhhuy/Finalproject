@@ -1,0 +1,36 @@
+using Application.Contracts.Email;
+using Application.Contracts.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace Worker.Email;
+
+public sealed class EmailSendConsumerService : QueueConsumerBackgroundService<EmailSendMessage>
+{
+    public const string QueueName = "email.send.v1";
+
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<EmailSendConsumerService> _logger;
+
+    public EmailSendConsumerService(
+        IMessageConsumer consumer,
+        IServiceScopeFactory scopeFactory,
+        ILogger<EmailSendConsumerService> logger) : base(consumer, logger)
+    {
+        _scopeFactory = scopeFactory;
+        _logger = logger;
+    }
+
+    protected override string SubscriptionName => QueueName;
+
+    protected override SubscriptionOptions SubscriptionOptions { get; } = new(EnableDeadLetterQueue: true);
+
+    protected override async Task HandleAsync(EmailSendMessage message, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Email worker sending to {To} (event {EventId})", message.To, message.EventId);
+
+        using IServiceScope scope = _scopeFactory.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
+        await sender.SendAsync(message.To, message.Subject, message.HtmlBody, cancellationToken);
+    }
+}

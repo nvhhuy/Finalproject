@@ -8,6 +8,10 @@ import type {
   BooleanSettingDto,
   DeadLetterActionResult,
   DeadLetterMessage,
+  SupportTicketDetailDto,
+  SupportTicketListDto,
+  SupportTicketPriority,
+  SupportTicketStatus,
 } from '@/shared/types/api'
 
 export interface ListUsersParams {
@@ -190,4 +194,62 @@ export function drainDlq(queueName: string, count = 10) {
     `/admin/messaging/dlq/${encodeURIComponent(queueName)}/drain?count=${count}`,
     { method: 'POST', idempotent: true },
   )
+}
+
+export function listSupportTickets(params: {
+  page?: number
+  pageSize?: number
+  search?: string
+  status?: SupportTicketStatus
+  priority?: SupportTicketPriority
+  assignedAdminUserId?: string
+} = {}) {
+  const q = new URLSearchParams()
+  if (params.page) q.set('page', String(params.page))
+  if (params.pageSize) q.set('pageSize', String(params.pageSize))
+  if (params.search) q.set('search', params.search)
+  if (params.status) q.set('status', params.status)
+  if (params.priority) q.set('priority', params.priority)
+  if (params.assignedAdminUserId) q.set('assignedAdminUserId', params.assignedAdminUserId)
+  const query = q.toString()
+  return apiRequest<SupportTicketListDto>(`/admin/support/tickets${query ? `?${query}` : ''}`)
+}
+
+export function getSupportTicketById(ticketId: string) {
+  return apiRequest<SupportTicketDetailDto>(`/admin/support/tickets/${ticketId}`)
+}
+
+export function assignSupportTicket(ticketId: string, assignedAdminUserId: string | null) {
+  return apiRequest<boolean>(`/admin/support/tickets/${ticketId}/assign`, {
+    method: 'POST',
+    body: { assignedAdminUserId },
+    idempotent: true,
+  })
+}
+
+export function changeSupportTicketStatus(ticketId: string, status: SupportTicketStatus) {
+  return apiRequest<boolean>(`/admin/support/tickets/${ticketId}/status`, {
+    method: 'POST',
+    body: { status },
+    idempotent: true,
+  })
+}
+
+export function changeSupportTicketPriority(ticketId: string, priority: SupportTicketPriority) {
+  return apiRequest<boolean>(`/admin/support/tickets/${ticketId}/priority`, {
+    method: 'POST',
+    body: { priority },
+    idempotent: true,
+  })
+}
+
+export function addSupportTicketMessage(
+  ticketId: string,
+  body: { body: string; isInternalNote?: boolean; attachments?: Array<{ storageKey: string; fileName: string; contentType: string; byteSize: number }> },
+) {
+  return apiRequest<boolean>(`/admin/support/tickets/${ticketId}/messages`, {
+    method: 'POST',
+    body,
+    idempotent: true,
+  })
 }

@@ -29,6 +29,7 @@
     "auditLogs": "审计日志",
     "settings": "设置",
     "dlq": "DLQ",
+    "support": "支持工单",
     "signOut": "退出登录"
   },
   "login": {
@@ -213,5 +214,24 @@
     "colTarget": "目标",
     "colDetails": "详情",
     "noEntries": "暂无审计记录。"
+  },
+  "support": {
+    "title": "支持工单",
+    "description": "处理用户支持请求：分配、回复、状态更新。",
+    "searchPlaceholder": "按工单号或主题搜索...",
+    "allStatuses": "全部状态",
+    "allPriorities": "全部优先级",
+    "ticket": "工单",
+    "status": "状态",
+    "priority": "优先级",
+    "updated": "更新时间",
+    "selectTicket": "选择工单查看详情。",
+    "replyPlaceholder": "输入回复...",
+    "reply": "发送回复",
+    "replied": "回复已发送。",
+    "addInternalNote": "作为内部备注发布",
+    "internal": "内部",
+    "unassign": "取消分配",
+    "unassigned": "工单已取消分配。"
   }
 }

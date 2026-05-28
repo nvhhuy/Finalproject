@@ -48,7 +48,9 @@ If you change `POSTGRES_PASSWORD`, update `local/pgadmin/pgpass` to match (forma
 
 | Service | From IDE / `appsettings.Development.json` |
 |---------|---------------------------------------------|
-| Postgres | `Host=localhost;Port=5432;Database=finalproject;Username=postgres;Password=postgres` |
+| Postgres | `Host=localhost;Port=5432;Database=baseproject;Username=postgres;Password=postgres` |
+
+> **Renamed from `finalproject`:** if you have an existing local volume with the old DB name, either keep using `POSTGRES_DB=finalproject` in `local/.env` or recreate: `docker compose down`, remove volume `local_pgdata`, then `up` again (data loss).
 | Redis | `localhost:6379` |
 | RabbitMQ | `amqp://guest:guest@localhost:5672` |
 | MinIO (S3 API) | `http://localhost:9000` — keys in `.env.example` |

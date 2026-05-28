@@ -51,4 +51,11 @@ test.describe('Admin console — authenticated', () => {
     await waitForAdminRouteReady(page);
     await expect(page.getByRole('button', { name: /peek|replay|drain/i }).first()).toBeVisible();
   });
+
+  test('support tickets page loads', async ({ page }) => {
+    await page.getByRole('link', { name: /support tickets|ticket hỗ trợ|支持工单/i }).click();
+    await expect(page).toHaveURL(/\/support/);
+    await waitForAdminRouteReady(page);
+    await expect(page.getByText(/support tickets|ticket hỗ trợ|支持工单/i).first()).toBeVisible();
+  });
 });

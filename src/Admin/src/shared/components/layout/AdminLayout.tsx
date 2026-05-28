@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   MessageSquareWarning,
+  LifeBuoy,
   Settings,
   Users,
   X,
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/audit-logs', labelKey: 'nav.auditLogs', icon: FileText },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
   { to: '/messaging', labelKey: 'nav.dlq', icon: MessageSquareWarning },
+  { to: '/support', labelKey: 'nav.support', icon: LifeBuoy },
 ] as const
 
 export function AdminLayout() {

@@ -23,7 +23,7 @@ PlatformSerilog.RegisterForHostApplicationBuilder(builder, "worker");
 builder.Services.Configure<WorkerSchedulingOptions>(builder.Configuration.GetSection(WorkerSchedulingOptions.SectionName));
 builder.Services.AddApplication();
 builder.Services.AddInfrastructureCore(builder.Configuration);
-builder.Services.AddPlatformOpenTelemetry(builder.Configuration, serviceNameFallback: "finalproject.worker");
+builder.Services.AddPlatformOpenTelemetry(builder.Configuration, serviceNameFallback: "baseproject.worker");
 builder.Services.AddOutboxPublisher(builder.Configuration);
 
 // Production cron jobs. Samples below are gated behind config so they don't pollute the
@@ -34,6 +34,7 @@ builder.Services.AddSingleton<ICronJob, Worker.Media.MediaStorageCleanupJob>();
 builder.Services.AddSingleton<ICronJob, Worker.Outbox.OutboxCleanupJob>();
 builder.Services.AddWorkerScheduling(builder.Configuration);
 builder.Services.AddHostedService<MediaProcessingConsumerService>();
+builder.Services.AddHostedService<Worker.Email.EmailSendConsumerService>();
 
 IConfigurationSection workerSection = builder.Configuration.GetSection(WorkerSchedulingOptions.SectionName);
 if (workerSection.GetValue("EnableSamples", false))

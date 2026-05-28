@@ -1,6 +1,6 @@
 # Testing documentation
 
-Automated tests for the Final Project monorepo: **API integration** (xUnit + `WebApplicationFactory`) and **browser E2E** (Playwright for Frontend + Admin).
+Automated tests for the Base Project monorepo: **API integration** (xUnit + `WebApplicationFactory`) and **browser E2E** (Playwright for Frontend + Admin).
 
 | Layer | Source | Docs |
 |-------|--------|------|
@@ -9,6 +9,11 @@ Automated tests for the Final Project monorepo: **API integration** (xUnit + `We
 | Run scripts | [`tools/e2e/`](../../tools/e2e/) | [ONBOARDING.md](./ONBOARDING.md) |
 
 Stack prerequisites: **Docker**, **.NET 8**, **Node.js 20+**.
+
+Latest CI matrix:
+- `backend`: unit + integration tests
+- `backend-media`: MinIO-backed media integration (`INTEGRATION_MEDIA_ENABLED=true`)
+- `playwright`: full UI e2e against isolated `baseproject_e2e`
 
 ---
 

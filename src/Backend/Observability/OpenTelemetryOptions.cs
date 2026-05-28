@@ -6,7 +6,7 @@ public sealed class OpenTelemetryOptions
     public const string SectionName = "OpenTelemetry";
 
     /// <summary>Logical service name used in <c>service.name</c> attribute and traces.</summary>
-    public string ServiceName { get; set; } = "finalproject";
+    public string ServiceName { get; set; } = "baseproject";
 
     /// <summary>Version reported as <c>service.version</c>.</summary>
     public string? ServiceVersion { get; set; }

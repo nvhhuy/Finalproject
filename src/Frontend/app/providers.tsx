@@ -9,6 +9,7 @@ import type { AppLocale } from "@/i18n/locales";
 import { LocaleSync } from "@/components/i18n/LocaleSync";
 import { ThemeSync } from "@/components/theme/ThemeSync";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { NotificationsProvider } from "@/lib/features/notifications/notifications-context";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 import type { ThemePreference } from "@/lib/theme/theme";
 
@@ -39,7 +40,9 @@ export function Providers({
         <ThemeSync serverPreference={serverTheme} />
         <LocaleSync serverLocale={serverLocale} />
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <NotificationsProvider>{children}</NotificationsProvider>
+          </AuthProvider>
           {process.env.NODE_ENV === "development" ? <LazyReactQueryDevtools initialIsOpen={false} /> : null}
         </QueryClientProvider>
       </ThemeProvider>

@@ -11,7 +11,7 @@ public sealed class RabbitMqOptions
     public string Password { get; set; } = "guest";
     public string VirtualHost { get; set; } = "/";
     /// <summary>Default exchange for publishes when <see cref="MessagePublishContext.TopicOrExchange"/> is empty.</summary>
-    public string DefaultExchange { get; set; } = "finalproject.events";
+    public string DefaultExchange { get; set; } = "baseproject.events";
 
     /// <summary>
     /// Per-channel prefetch count. Without this, RabbitMQ floods one consumer with the whole

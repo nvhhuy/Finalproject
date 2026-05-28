@@ -9,5 +9,5 @@ ENV_NAME="${1:-staging}"
 shift || true
 
 echo "Starting stack ($ENV_NAME)..."
-docker network create finalproject-app 2>/dev/null || true
+docker network create baseproject-app 2>/dev/null || true
 compose_stack "$ENV_NAME" up -d "$@"

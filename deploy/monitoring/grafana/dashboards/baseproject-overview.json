@@ -388,7 +388,7 @@
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
-    "finalproject",
+    "baseproject",
     "infra"
   ],
   "templating": {
@@ -401,7 +401,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "BaseProject Infra Overview",
-  "uid": "finalproject-overview",
+  "uid": "baseproject-overview",
   "version": 1,
   "weekStart": ""
 }

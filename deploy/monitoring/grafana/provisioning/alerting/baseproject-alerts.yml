@@ -2,11 +2,11 @@ apiVersion: 1
 
 groups:
   - orgId: 1
-    name: finalproject-infra
+    name: baseproject-infra
     folder: BaseProject
     interval: 1m
     rules:
-      - uid: finalproject-service-down
+      - uid: baseproject-service-down
         title: ServiceDown
         condition: A
         data:
@@ -33,7 +33,7 @@ groups:
         labels:
           severity: critical
 
-      - uid: finalproject-host-cpu-high
+      - uid: baseproject-host-cpu-high
         title: HighHostCpu
         condition: A
         data:
@@ -60,7 +60,7 @@ groups:
         labels:
           severity: warning
 
-      - uid: finalproject-api-health-fail
+      - uid: baseproject-api-health-fail
         title: ApiHealthProbeFailed
         condition: A
         data:
@@ -87,7 +87,7 @@ groups:
         labels:
           severity: critical
 
-      - uid: finalproject-api-5xx
+      - uid: baseproject-api-5xx
         title: ApiHttp5xxDetected
         condition: A
         data:

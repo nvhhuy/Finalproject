@@ -4,9 +4,10 @@ using Application.Contracts.Caching;
 using Application.Contracts.Events;
 using Application.Contracts.Transactions;
 using Application.Contracts.Email;
+using Application.Contracts.Messaging;
+using Application.Contracts.Notifications;
 using Application.Contracts.ExternalAuth;
 using Application.Contracts.Media;
-using Application.Contracts.Messaging;
 using Application.Contracts.Modules.Media.Persistence;
 using Application.Contracts.Persistence;
 using Application.Contracts.Storage;
@@ -18,6 +19,7 @@ using Application.Contracts.Services;
 using Application.Contracts.FeatureFlags;
 using Application.Contracts.Idempotency;
 using Application.Contracts.Settings;
+using Application.Contracts.Support;
 using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
 using Infrastructure.Administration;
@@ -27,10 +29,13 @@ using Infrastructure.Email;
 using Infrastructure.ExternalAuth;
 using Infrastructure.Media;
 using Infrastructure.Messaging;
+using Infrastructure.Messaging.Outbox;
+using Infrastructure.Modules.Notifications;
 using Infrastructure.Modules.Media.Persistence;
 using Infrastructure.Scheduling;
 using Infrastructure.Persistence.Events;
 using Infrastructure.Modules.Users.Persistence.Repositories;
+using Infrastructure.Modules.Support;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Interceptors;
 using Infrastructure.Services;
@@ -90,6 +95,10 @@ public static class DependencyInjection
         services.Configure<FeatureFlagOptions>(configuration.GetSection(FeatureFlagOptions.SectionName));
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped<IFeatureFlagService, FeatureFlagService>();
+        services.AddScoped<IIntegrationEventOutboxWriter, IntegrationEventOutboxWriter>();
+        services.AddScoped<UserNotificationService>();
+        services.AddScoped<IUserNotificationService>(sp => sp.GetRequiredService<UserNotificationService>());
+        services.AddScoped<IUserNotificationWriter>(sp => sp.GetRequiredService<UserNotificationService>());
         AddAuthenticationServices(services, configuration);
 
         // Media pipeline DI lives in Application.AddApplication; here we just bind the options block.
@@ -128,7 +137,7 @@ public static class DependencyInjection
         // env-var lookup is intentional: ASPNETCORE_ENVIRONMENT is what ASP.NET reads to set
         // IHostEnvironment.EnvironmentName, but we're called before that resolution.
         IDataProtectionBuilder builder = services.AddDataProtection()
-            .SetApplicationName(configuration["DataProtection:ApplicationName"] ?? "finalproject");
+            .SetApplicationName(configuration["DataProtection:ApplicationName"] ?? "baseproject");
 
         string? keysDirectory = configuration["DataProtection:KeysDirectory"];
         if (!string.IsNullOrWhiteSpace(keysDirectory))
@@ -200,7 +209,15 @@ public static class DependencyInjection
         services.Configure<SmtpEmailOptions>(configuration.GetSection(SmtpEmailOptions.SectionName));
         services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
 
-        if (configuration.GetValue($"{SmtpEmailOptions.SectionName}:Enabled", false))
+        bool smtpEnabled = configuration.GetValue($"{SmtpEmailOptions.SectionName}:Enabled", false);
+        bool emailViaOutbox = configuration.GetValue("Email:QueueViaOutbox", true);
+
+        if (smtpEnabled)
+            services.AddSingleton<SmtpEmailSender>();
+
+        if (smtpEnabled && emailViaOutbox)
+            services.AddScoped<IEmailSender, OutboxQueuingEmailSender>();
+        else if (smtpEnabled)
             services.AddSingleton<IEmailSender, SmtpEmailSender>();
         else
             services.AddSingleton<IEmailSender, NullEmailSender>();
@@ -364,6 +381,7 @@ public static class DependencyInjection
         services.AddScoped<IUserWriteRepository, UserWriteRepository>();
         services.AddScoped<IAdminAuditLogWriter, AdminAuditLogWriter>();
         services.AddScoped<IMediaAssetRepository, MediaAssetRepository>();
+        services.AddScoped<ISupportTicketService, SupportTicketService>();
         return services;
     }
 

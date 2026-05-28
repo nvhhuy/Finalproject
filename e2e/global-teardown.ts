@@ -1,34 +1,28 @@
 import { execSync } from 'node:child_process';
 import path from 'node:path';
+import { dropDatabaseIfExists, resolveE2eDatabaseName, useDirectPostgresCli } from './postgres-cli';
 
 const repoRoot = path.resolve(process.cwd(), '..');
-const defaultDatabaseName = 'finalproject_e2e';
-
-function resolveE2eDatabaseName() {
-  const fromConnString = process.env.E2E_DATABASE_URL
-    ?.split(';')
-    .map((part) => part.trim())
-    .find((part) => part.toLowerCase().startsWith('database='))
-    ?.split('=')[1];
-
-  return process.env.E2E_DATABASE_NAME ?? fromConnString ?? defaultDatabaseName;
-}
-
-const e2eDatabaseName = resolveE2eDatabaseName();
+const e2eDatabaseName = resolveE2eDatabaseName('baseproject_e2e');
 const dropDbAfterRun = process.env.E2E_DROP_DB_AFTER_RUN ?? (process.env.CI ? '1' : '0');
+
+function dropE2eDatabaseDocker() {
+  execSync(
+    `docker compose -f local/docker-compose.yml exec -T postgres dropdb -U postgres --if-exists --force "${e2eDatabaseName}"`,
+    { cwd: repoRoot, stdio: 'pipe' },
+  );
+}
 
 function dropE2eDatabase() {
   try {
-    execSync(
-      `docker compose -f local/docker-compose.yml exec -T postgres dropdb -U postgres --if-exists --force "${e2eDatabaseName}"`,
-      { cwd: repoRoot, stdio: 'pipe' },
-    );
+    if (useDirectPostgresCli()) {
+      dropDatabaseIfExists(e2eDatabaseName);
+    } else {
+      dropE2eDatabaseDocker();
+    }
     console.log(`[e2e] Dropped database "${e2eDatabaseName}" after run.`);
   } catch {
-    console.warn(
-      `[e2e] Could not drop DB "${e2eDatabaseName}" automatically. Drop manually if needed:\n` +
-        `  docker compose -f local/docker-compose.yml exec -T postgres dropdb -U postgres --if-exists --force ${e2eDatabaseName}`,
-    );
+    console.warn(`[e2e] Could not drop DB "${e2eDatabaseName}" automatically.`);
   }
 }
 

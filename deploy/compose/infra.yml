@@ -7,7 +7,7 @@
 # From repo root:
 #   cp deploy/env/staging/infra.env.example deploy/env/staging/infra.env
 #   ./deploy/scripts/infra-up.sh staging
-name: finalproject-infra
+name: baseproject-infra
 
 services:
   postgres:
@@ -16,7 +16,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-finalproject}
+      POSTGRES_DB: ${POSTGRES_DB:-baseproject}
     volumes:
       - infra_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -273,7 +273,7 @@ services:
 
 networks:
   app:
-    name: finalproject-app
+    name: baseproject-app
     external: true
   proxy:
     name: proxy

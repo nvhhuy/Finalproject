@@ -29,7 +29,7 @@ namespace Infrastructure.Media;
 /// semaphore caps in-flight scans to prevent ephemeral-port exhaustion on the scanner host;
 /// requests waiting on the semaphore queue rather than failing.</para>
 ///
-/// <para><b>Observability:</b> emits four OTel metrics on the <c>FinalProject.Application</c>
+/// <para><b>Observability:</b> emits four OTel metrics on the <c>BaseProject.Application</c>
 /// meter: <c>clamd_scans_total</c> (counter), <c>clamd_quarantines_total</c> (counter,
 /// signature-labeled), <c>clamd_errors_total</c> (counter, reason-labeled), and
 /// <c>clamd_scan_duration_seconds</c> (histogram).</para>
@@ -37,7 +37,7 @@ namespace Infrastructure.Media;
 public sealed class ClamdMediaScanner : IMediaScanner, IDisposable
 {
     private const int ChunkSize = 64 * 1024;
-    private const string MeterName = "FinalProject.Application";
+    private const string MeterName = "BaseProject.Application";
 
     private static readonly Meter _meter = new(MeterName);
     private static readonly Counter<long> _scansTotal = _meter.CreateCounter<long>(

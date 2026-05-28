@@ -3,6 +3,7 @@ using Application.Modules.Users.Authentication.Common;
 using Application.Contracts.Authentication;
 using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Contracts.Notifications;
 using Application.Contracts.Services;
 using Application.Extensions;
 using Domains.UserAggregate;
@@ -19,6 +20,7 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly ICacheService _cache;
     private readonly IFailedLoginTracker _failedLogins;
+    private readonly IUserNotificationService _notifications;
 
     // Cached PBKDF2 hash used for the "user does not exist" branch so VerifyHashedPassword always
     // runs once per login attempt regardless of whether the email is registered. Without this the
@@ -32,13 +34,15 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
         IAuthenticationTokenIssuer tokens,
         IPasswordHasher<User> passwordHasher,
         ICacheService cache,
-        IFailedLoginTracker failedLogins)
+        IFailedLoginTracker failedLogins,
+        IUserNotificationService notifications)
     {
         _usersRead = usersRead;
         _tokens = tokens;
         _passwordHasher = passwordHasher;
         _cache = cache;
         _failedLogins = failedLogins;
+        _notifications = notifications;
     }
 
     public async Task<Result<AuthenticationResponse, Error>> Handle(LoginQuery request, CancellationToken cancellationToken)
@@ -97,6 +101,20 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
         Result<AuthenticationTokenPair, Error> pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
         if (pair.IsFailure)
             return pair.Error;
+
+        try
+        {
+            await _notifications.CreateAndDispatchAsync(
+                user.Id.Value,
+                "Signed in",
+                "You have a new session on Base Project.",
+                "/app",
+                cancellationToken);
+        }
+        catch
+        {
+            // Login must succeed even if notification persistence or push fails.
+        }
 
         return new AuthenticationResponse(
             user,

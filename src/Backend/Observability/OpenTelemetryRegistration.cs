@@ -14,10 +14,10 @@ namespace Observability;
 public static class OpenTelemetryRegistration
 {
     /// <summary>Custom <c>ActivitySource</c> used by handlers/services for manual spans.</summary>
-    public const string ApplicationActivitySource = "FinalProject.Application";
+    public const string ApplicationActivitySource = "BaseProject.Application";
 
     /// <summary>Custom <c>Meter</c> used by application code for counters/histograms.</summary>
-    public const string ApplicationMeterName = "FinalProject.Application";
+    public const string ApplicationMeterName = "BaseProject.Application";
 
     public static IServiceCollection AddPlatformOpenTelemetry(
         this IServiceCollection services,

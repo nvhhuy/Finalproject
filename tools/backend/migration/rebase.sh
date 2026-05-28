@@ -208,7 +208,7 @@ log_step "Reverting local DB to ${LAST_COMMON}"
 # where __EFMigrationsHistory currently sits. We invoke it explicitly so the
 # next `migrations remove` step finds the snapshot in sync with the DB.
 if ! "${EF_INVOKE[@]}" database update "$LAST_COMMON"; then
-    bail "Failed to revert DB to ${LAST_COMMON}. If your DB is in a bad state, you can drop and re-create it: dropdb finalproject && createdb finalproject"
+    bail "Failed to revert DB to ${LAST_COMMON}. If your DB is in a bad state, you can drop and re-create it: dropdb baseproject && createdb baseproject"
 fi
 log_ok "DB reverted."
 

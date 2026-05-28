@@ -25,7 +25,7 @@ public static class QuartzSchedulingExtensions
 
         services.AddQuartz(q =>
         {
-            q.SchedulerName = configuration["Worker:Quartz:SchedulerName"] ?? "FinalProjectWorker";
+            q.SchedulerName = configuration["Worker:Quartz:SchedulerName"] ?? "BaseProjectWorker";
 
             if (usePersistentStore)
             {

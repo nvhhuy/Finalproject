@@ -29,6 +29,7 @@
     "auditLogs": "Audit logs",
     "settings": "Settings",
     "dlq": "DLQ",
+    "support": "Support tickets",
     "signOut": "Sign out"
   },
   "login": {
@@ -213,5 +214,24 @@
     "colTarget": "Target",
     "colDetails": "Details",
     "noEntries": "No audit entries."
+  },
+  "support": {
+    "title": "Support tickets",
+    "description": "Handle user support requests with assignment, replies, and status updates.",
+    "searchPlaceholder": "Search by ticket number or subject…",
+    "allStatuses": "All statuses",
+    "allPriorities": "All priorities",
+    "ticket": "Ticket",
+    "status": "Status",
+    "priority": "Priority",
+    "updated": "Updated",
+    "selectTicket": "Select a ticket to see details.",
+    "replyPlaceholder": "Write a reply…",
+    "reply": "Send reply",
+    "replied": "Reply sent.",
+    "addInternalNote": "Post as internal note",
+    "internal": "Internal",
+    "unassign": "Unassign",
+    "unassigned": "Ticket unassigned."
   }
 }

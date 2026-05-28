@@ -33,7 +33,7 @@ flowchart TB
 | Concern | API integration | Playwright |
 |---------|-----------------|------------|
 | Host | In-process `WebApplicationFactory<Program>` | Real `dotnet run` + `npm run dev` |
-| Database | Isolated DB per run (container or env string) | Shared local `finalproject` DB |
+| Database | Isolated DB per run (container or env string) | Dedicated local `baseproject_e2e` DB (auto create/reset) |
 | Email | `CapturingEmailSender` (no SMTP) | N/A (UI only) |
 | Auth token | HTTP responses / helper methods | Browser login helpers |
 | Parallelism | xUnit collection fixture (shared factory) | `workers: 1` locally; 2 in CI |

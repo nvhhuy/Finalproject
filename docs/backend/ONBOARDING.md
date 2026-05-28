@@ -60,7 +60,7 @@ Verify: Postgres `5432`, Redis `6379`, RabbitMQ `5672` / UI `15672`, MinIO `9000
 
 Sample file: `src/Backend/Api/appsettings.Development.json`
 
-- Connection string points to `localhost:5432`, database `finalproject`
+- Connection string points to `localhost:5432`, database `baseproject`
 - JWT secret is dev-only (must change in production)
 - `Database:ApplyPendingMigrations: true` — API auto-migrates on start (dev)
 

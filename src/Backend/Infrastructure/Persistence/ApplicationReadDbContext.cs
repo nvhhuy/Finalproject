@@ -1,6 +1,8 @@
 using Application.Contracts.Persistence;
 using Domains.Administration;
 using Domains.MediaAggregate;
+using Domains.Notifications;
+using Domains.Support;
 using Domains.SystemSettings;
 using Domains.UserAggregate;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +32,10 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+    public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
+    public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
+    public DbSet<SupportTicketMessage> SupportTicketMessages => Set<SupportTicketMessage>();
+    public DbSet<SupportTicketAttachment> SupportTicketAttachments => Set<SupportTicketAttachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

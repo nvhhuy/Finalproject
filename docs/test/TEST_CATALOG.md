@@ -79,6 +79,8 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | Auth (register, verify, login, refresh, password) | Yes | Partial (login, register/forgot UI) |
 | User profile | Yes | Profile navigation |
 | 2FA | Via API flows | Setup page smoke |
+| Notifications (in-app + realtime hook) | Yes (`NotificationsController`, query/mark-read) | Implicit by authenticated app requests in frontend suite |
+| Support tickets | Yes (`/support/tickets`, `/admin/support/tickets`) | Not yet covered (recommended next) |
 | Admin users / settings / audit | Yes | Users, settings, dashboard |
 | Media pipeline | Optional (MinIO) | Media lab page smoke |
 | Messaging / DLQ | Admin test (Rabbit off) | — |

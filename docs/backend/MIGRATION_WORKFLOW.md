@@ -198,11 +198,11 @@ Fix (local DB only — never do this in shared environments):
 
 ```bash
 # Option 1: drop + recreate the local DB.
-dropdb finalproject && createdb finalproject
+dropdb baseproject && createdb baseproject
 ./tools/backend/migrate.sh
 
 # Option 2: manually remove the stale row.
-psql -d finalproject -c "DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" = '20260527120000_Foo';"
+psql -d baseproject -c "DELETE FROM \"__EFMigrationsHistory\" WHERE \"MigrationId\" = '20260527120000_Foo';"
 ./tools/backend/migrate.sh
 ```
 

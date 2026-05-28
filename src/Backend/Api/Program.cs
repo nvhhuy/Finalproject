@@ -74,7 +74,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // Must run AFTER AddInfrastructure registers the JwtBearer scheme: PostConfigure unifies the
 // 401/403 response shape with the ApiResponse<T> envelope used by every other endpoint.
 builder.Services.AddJwtEnvelopeErrorResponses();
-builder.Services.AddPlatformOpenTelemetry(builder.Configuration, serviceNameFallback: "finalproject.api");
+builder.Services.AddPlatformOpenTelemetry(builder.Configuration, serviceNameFallback: "baseproject.api");
 
 var app = builder.Build();
 

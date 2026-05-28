@@ -112,6 +112,62 @@ export interface DeadLetterActionResult {
   count: number
 }
 
+export type SupportTicketStatus = 'Open' | 'PendingUser' | 'PendingSupport' | 'Resolved' | 'Closed'
+export type SupportTicketPriority = 'Low' | 'Normal' | 'High' | 'Urgent'
+
+export interface SupportTicketAttachmentDto {
+  id: string
+  fileName: string
+  contentType: string
+  byteSize: number
+  storageKey: string
+}
+
+export interface SupportTicketMessageDto {
+  id: string
+  authorUserId: string
+  body: string
+  isInternalNote: boolean
+  createdAtUtc: string
+  attachments: SupportTicketAttachmentDto[]
+}
+
+export interface SupportTicketSummaryDto {
+  id: string
+  ticketNumber: string
+  subject: string
+  category: string | null
+  priority: SupportTicketPriority
+  status: SupportTicketStatus
+  assignedAdminUserId: string | null
+  createdAtUtc: string
+  updatedAtUtc: string
+}
+
+export interface SupportTicketDetailDto {
+  id: string
+  ticketNumber: string
+  createdByUserId: string
+  assignedAdminUserId: string | null
+  subject: string
+  description: string
+  category: string | null
+  priority: SupportTicketPriority
+  status: SupportTicketStatus
+  createdAtUtc: string
+  updatedAtUtc: string
+  firstResponseAtUtc: string | null
+  closedAtUtc: string | null
+  messages: SupportTicketMessageDto[]
+}
+
+export interface SupportTicketListDto {
+  items: SupportTicketSummaryDto[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
 export const USER_ROLES = ['User', 'Admin'] as const
 export type UserRole = (typeof USER_ROLES)[number]
 

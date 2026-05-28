@@ -1,5 +1,7 @@
 using Domains.Administration;
 using Domains.MediaAggregate;
+using Domains.Notifications;
+using Domains.Support;
 using Domains.UserAggregate;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,4 +19,8 @@ public interface IApplicationReadDbContext
     DbSet<ExternalUserLogin> ExternalLogins { get; }
     DbSet<AdminAuditLog> AdminAuditLogs { get; }
     DbSet<MediaAsset> MediaAssets { get; }
+    DbSet<UserNotification> UserNotifications { get; }
+    DbSet<SupportTicket> SupportTickets { get; }
+    DbSet<SupportTicketMessage> SupportTicketMessages { get; }
+    DbSet<SupportTicketAttachment> SupportTicketAttachments { get; }
 }

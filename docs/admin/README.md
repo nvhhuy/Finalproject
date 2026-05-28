@@ -1,6 +1,6 @@
 # Admin Console documentation
 
-Internal administrator UI for the Final Project backend. Source: [`src/Admin/`](../../src/Admin/).
+Internal administrator UI for the Base Project backend. Source: [`src/Admin/`](../../src/Admin/).
 
 Stack: **Vite 8 · React 19 · TypeScript · TanStack Query · Zustand · i18next · Tailwind CSS 4**.
 

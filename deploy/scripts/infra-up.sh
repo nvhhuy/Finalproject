@@ -13,7 +13,7 @@ ENV_NAME="${1:-staging}"
 shift || true
 COMPOSE_ARGS=("$@")
 
-docker network create finalproject-app 2>/dev/null || true
+docker network create baseproject-app 2>/dev/null || true
 docker network create proxy 2>/dev/null || true
 echo "Starting infra stack ($ENV_NAME)..."
 compose_infra "$ENV_NAME" "${COMPOSE_ARGS[@]}" up -d

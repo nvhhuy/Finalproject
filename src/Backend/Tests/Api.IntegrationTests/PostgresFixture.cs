@@ -19,7 +19,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         DataProtectionKeysDirectory = Path.Combine(
             Path.GetTempPath(),
-            "finalproject-api-integration-tests",
+            "baseproject-api-integration-tests",
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(DataProtectionKeysDirectory);
         string? external = Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING");

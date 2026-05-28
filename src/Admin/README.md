@@ -1,6 +1,6 @@
 # Admin Console
 
-Internal administrator UI for the Final Project backend. Built with **Vite + React 19 + TypeScript**.
+Internal administrator UI for the Base Project backend. Built with **Vite + React 19 + TypeScript**.
 
 **Full documentation:** [`docs/admin/`](../../docs/admin/README.md) — onboarding, features, architecture, extensibility, AI rules.
 

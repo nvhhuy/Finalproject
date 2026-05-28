@@ -47,4 +47,16 @@ test.describe('Frontend — authenticated app', () => {
     await waitForFrontendAppShell(page);
     await expect(page.getByText(/media|upload/i).first()).toBeVisible();
   });
+
+  test('support center create ticket flow works', async ({ page }) => {
+    await page.goto('/app/support');
+    await waitForFrontendAppShell(page);
+    await expect(page.getByText(/support|ticket/i).first()).toBeVisible();
+
+    await page.getByPlaceholder(/subject|tiêu đề|主题/i).fill(`E2E ticket ${Date.now()}`);
+    await page.getByPlaceholder(/describe|mô tả|描述/i).fill('Support request created by Playwright test.');
+    await page.getByRole('button', { name: /create ticket|tạo ticket|创建工单/i }).click();
+
+    await expect(page.locator('text=/SUP-\\d{8}-\\d{5}/').first()).toBeVisible({ timeout: 15_000 });
+  });
 });

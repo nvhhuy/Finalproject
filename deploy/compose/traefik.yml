@@ -2,7 +2,7 @@
 # From repo root:
 #   docker network create proxy 2>/dev/null || true
 #   docker compose -f deploy/compose/traefik.yml --env-file deploy/env/shared/traefik.env up -d
-name: finalproject-traefik
+name: baseproject-traefik
 
 services:
   traefik:

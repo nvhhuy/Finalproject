@@ -27,6 +27,10 @@ const AuditLogsPage = lazyNamedRoute(
   'AuditLogsPage',
 )
 const DlqPage = lazyNamedRoute(() => import('@/features/messaging/DlqPage'), 'DlqPage')
+const SupportTicketsPage = lazyNamedRoute(
+  () => import('@/features/support/SupportTicketsPage'),
+  'SupportTicketsPage',
+)
 
 function suspense(element: ReactNode) {
   return <Suspense fallback={<RouteFallback />}>{element}</Suspense>
@@ -51,6 +55,7 @@ export const router = createBrowserRouter([
       { path: 'audit-logs', element: suspense(<AuditLogsPage />) },
       { path: 'settings', element: suspense(<SettingsPage />) },
       { path: 'messaging', element: suspense(<DlqPage />) },
+      { path: 'support', element: suspense(<SupportTicketsPage />) },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

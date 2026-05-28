@@ -5,7 +5,7 @@
       "Group": "Development",
       "Host": "postgres",
       "Port": 5432,
-      "MaintenanceDB": "finalproject",
+      "MaintenanceDB": "baseproject",
       "Username": "postgres",
       "SSLMode": "prefer",
       "PassFile": "/pgadmin4/pgpass"

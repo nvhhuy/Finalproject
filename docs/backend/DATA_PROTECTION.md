@@ -27,7 +27,7 @@ Implementation: `Infrastructure/DependencyInjection.cs` → `AddDataProtection()
 
 ```json
 "DataProtection": {
-  "ApplicationName": "finalproject",
+  "ApplicationName": "baseproject",
   "KeysDirectory": "",
   "AllowEphemeralKeys": false
 }
@@ -56,7 +56,7 @@ Implementation: `Infrastructure/DependencyInjection.cs` → `AddDataProtection()
 
 ```json
 "DataProtection": {
-  "ApplicationName": "finalproject",
+  "ApplicationName": "baseproject",
   "KeysDirectory": "../../../local/dataprotection-keys"
 }
 ```
@@ -76,7 +76,7 @@ First run **creates** XML files automatically (`key-*.xml`).
 
 ## Server / production deployment
 
-1. Provision a **persistent volume** (e.g. `/var/finalproject/dataprotection-keys`).
+1. Provision a **persistent volume** (e.g. `/var/baseproject/dataprotection-keys`).
 2. Set `DataProtection:KeysDirectory` via environment or secret store for **Api and Worker** if both touch encrypted columns.
 3. **Backup** the key ring with the same rigor as DB backups — losing keys means **permanent loss** of decrypt ability for existing ciphertext.
 4. All Api replicas must share the **same** key ring (shared volume, blob store, or Redis).

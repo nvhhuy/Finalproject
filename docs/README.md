@@ -26,6 +26,7 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 | Operator setting up Gitea CI runners | [`backend/CI_GITEA_SETUP.md`](./backend/CI_GITEA_SETUP.md) |
 | Operator planning production deploy | [`deploy/README.md`](./deploy/README.md) → [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md) |
 | Engineer adding API or Playwright tests | [`test/EXTENSIBILITY_GUIDE.md`](./test/EXTENSIBILITY_GUIDE.md) + [`.cursor/rules/test.mdc`](../.cursor/rules/test.mdc) |
+| CI quality gates (PR / main) | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 
 ---
 

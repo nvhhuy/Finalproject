@@ -86,7 +86,7 @@ Config: `Messaging:RabbitMq` in `appsettings`.
 |-----|---------------|-------|
 | `Enabled` | **`false`** | Api + Worker use `NullMessagePublisher` / `NullMessageConsumer` |
 | `Host` / `Port` | `localhost` / `5672` | Docker: `local/docker-compose.yml` |
-| `DefaultExchange` | `finalproject.events` | Topic exchange |
+| `DefaultExchange` | `baseproject.events` | Topic exchange |
 
 When `Enabled: false`:
 

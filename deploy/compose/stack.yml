@@ -7,7 +7,7 @@
 #   ./deploy/scripts/infra-up.sh production
 #   ./deploy/scripts/migrate.sh production
 #   ./deploy/scripts/up.sh production
-name: finalproject
+name: baseproject
 
 x-api-env: &api-env
   ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
@@ -19,7 +19,7 @@ x-api-env: &api-env
   JwtSettings__Issuer: ${JWT_ISSUER}
   JwtSettings__Audience: ${JWT_AUDIENCE}
   Redis__ConnectionString: ${REDIS_CONNECTION_STRING}
-  DataProtection__KeysDirectory: /var/finalproject/dataprotection-keys
+  DataProtection__KeysDirectory: /var/baseproject/dataprotection-keys
   DataProtection__AllowEphemeralKeys: "false"
   Database__ApplyPendingMigrations: "false"
   Seed__Admin__Enabled: ${SEED_ADMIN_ENABLED:-false}
@@ -36,6 +36,9 @@ x-api-env: &api-env
   Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
   Messaging__RabbitMq__UserName: ${RABBITMQ_USER:-guest}
   Messaging__RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+  Email__QueueViaOutbox: ${EMAIL_QUEUE_VIA_OUTBOX:-true}
+  Realtime__Enabled: ${REALTIME_ENABLED:-true}
+  Realtime__UseRedisBackplane: ${REALTIME_USE_REDIS_BACKPLANE:-true}
 
 x-traefik-api-labels: &traefik-api-labels
   traefik.enable: "true"
@@ -44,7 +47,7 @@ x-traefik-api-labels: &traefik-api-labels
 
 services:
   api:
-    image: ${IMAGE_REGISTRY:-finalproject}/api:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-baseproject}/api:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: deploy/docker/api/Dockerfile
@@ -52,7 +55,7 @@ services:
     environment:
       <<: *api-env
     volumes:
-      - dataprotection_keys:/var/finalproject/dataprotection-keys
+      - dataprotection_keys:/var/baseproject/dataprotection-keys
     networks:
       - app
       - proxy
@@ -68,7 +71,7 @@ services:
       traefik.http.routers.api-admin.priority: "100"
 
   worker:
-    image: ${IMAGE_REGISTRY:-finalproject}/worker:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-baseproject}/worker:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: deploy/docker/worker/Dockerfile
@@ -76,8 +79,9 @@ services:
     environment:
       <<: *api-env
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      Worker__Quartz__UsePersistentStore: ${WORKER_QUARTZ_USE_PERSISTENT_STORE:-true}
     volumes:
-      - dataprotection_keys:/var/finalproject/dataprotection-keys
+      - dataprotection_keys:/var/baseproject/dataprotection-keys
     networks:
       - app
     depends_on:
@@ -85,7 +89,7 @@ services:
         condition: service_started
 
   frontend:
-    image: ${IMAGE_REGISTRY:-finalproject}/frontend:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-baseproject}/frontend:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: deploy/docker/frontend/Dockerfile
@@ -111,7 +115,7 @@ services:
       traefik.http.services.frontend.loadbalancer.server.port: "3000"
 
   admin:
-    image: ${IMAGE_REGISTRY:-finalproject}/admin:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-baseproject}/admin:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: deploy/docker/admin/Dockerfile
@@ -129,7 +133,7 @@ services:
 
   migrate:
     profiles: ["tools"]
-    image: ${IMAGE_REGISTRY:-finalproject}/migrate:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-baseproject}/migrate:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: deploy/docker/migrate/Dockerfile
@@ -143,7 +147,7 @@ networks:
   proxy:
     external: true
   app:
-    name: finalproject-app
+    name: baseproject-app
 
 volumes:
   dataprotection_keys:

@@ -35,7 +35,7 @@ public sealed class BeginTwoFactorSetupCommandHandler : IRequestHandler<BeginTwo
         user.SetTwoFactorPendingSecret(base32);
         await _uow.SaveChangesAsync(cancellationToken);
 
-        const string issuer = "FinalProject";
+        const string issuer = "BaseProject";
         string uri =
             $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(user.Email)}?secret={base32}&issuer={Uri.EscapeDataString(issuer)}";
 

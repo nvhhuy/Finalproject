@@ -1,25 +1,19 @@
 import { execSync } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
+import {
+  ensureDatabaseExists,
+  resetE2eAuthData,
+  resolveE2eDatabaseName,
+  useDirectPostgresCli,
+} from './postgres-cli';
 
 const repoRoot = path.resolve(process.cwd(), '..');
 
 const postgresHost = process.env.E2E_POSTGRES_HOST ?? 'localhost';
 const postgresPort = Number(process.env.E2E_POSTGRES_PORT ?? '5432');
 const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'admin@localhost.com';
-const defaultDatabaseName = 'finalproject_e2e';
-
-function resolveE2eDatabaseName() {
-  const fromConnString = process.env.E2E_DATABASE_URL
-    ?.split(';')
-    .map((part) => part.trim())
-    .find((part) => part.toLowerCase().startsWith('database='))
-    ?.split('=')[1];
-
-  return process.env.E2E_DATABASE_NAME ?? fromConnString ?? defaultDatabaseName;
-}
-
-const e2eDatabaseName = resolveE2eDatabaseName();
+const e2eDatabaseName = resolveE2eDatabaseName('baseproject_e2e');
 
 function canConnect(host: string, port: number, timeoutMs = 3_000): Promise<boolean> {
   return new Promise((resolve) => {
@@ -35,40 +29,53 @@ function canConnect(host: string, port: number, timeoutMs = 3_000): Promise<bool
   });
 }
 
-/** Clears encrypted 2FA columns and bootstrap admin so API seed + login work with dev DataProtection keys. */
-function resetAuthDataForE2e() {
+function ensureE2eDatabaseExistsDocker() {
+  const databaseName = e2eDatabaseName.replace(/'/g, "''");
+  execSync(
+    `docker compose -f local/docker-compose.yml exec -T postgres sh -lc "createdb -U postgres '${databaseName}' >/dev/null 2>&1 || true"`,
+    { cwd: repoRoot, stdio: 'pipe' },
+  );
+}
+
+function resetAuthDataForE2eDocker() {
   const email = adminEmail.replace(/'/g, "''");
   const databaseName = e2eDatabaseName.replace(/'/g, "''");
   const sql =
     `UPDATE "Users" SET "TwoFactorSecret" = NULL; DELETE FROM "Users" WHERE "Email" = '${email}';`;
-
-  try {
-    execSync(
-      `docker compose -f local/docker-compose.yml exec -T postgres psql -U postgres -d "${databaseName}" -v ON_ERROR_STOP=1 -c "${sql}"`,
-      { cwd: repoRoot, stdio: 'pipe' },
-    );
-    console.log(`[e2e] Reset auth data in "${databaseName}" (2FA secrets + bootstrap admin).`);
-  } catch {
-    console.warn(
-      `[e2e] Could not reset DB "${e2eDatabaseName}" via docker compose. If login fails with DataProtection errors, run:\n` +
-        `  docker compose -f local/docker-compose.yml exec -T postgres psql -U postgres -d ${e2eDatabaseName} -c "UPDATE \\"Users\\" SET \\"TwoFactorSecret\\" = NULL; DELETE FROM \\"Users\\" WHERE \\"Email\\" = '${adminEmail}';"`,
-    );
-  }
+  execSync(
+    `docker compose -f local/docker-compose.yml exec -T postgres psql -U postgres -d "${databaseName}" -v ON_ERROR_STOP=1 -c "${sql}"`,
+    { cwd: repoRoot, stdio: 'pipe' },
+  );
 }
 
 /** Ensures Playwright uses a dedicated DB to avoid polluting local dev data. */
 function ensureE2eDatabaseExists() {
-  const databaseName = e2eDatabaseName.replace(/'/g, "''");
   try {
-    execSync(
-      `docker compose -f local/docker-compose.yml exec -T postgres sh -lc "createdb -U postgres '${databaseName}' >/dev/null 2>&1 || true"`,
-      { cwd: repoRoot, stdio: 'pipe' },
-    );
-    console.log(`[e2e] Ensured dedicated database "${databaseName}" exists.`);
+    if (useDirectPostgresCli()) {
+      ensureDatabaseExists(e2eDatabaseName);
+    } else {
+      ensureE2eDatabaseExistsDocker();
+    }
+    console.log(`[e2e] Ensured dedicated database "${e2eDatabaseName}" exists.`);
   } catch {
     console.warn(
-      `[e2e] Could not auto-create DB "${e2eDatabaseName}". Create it manually if missing:\n` +
-        `  docker compose -f local/docker-compose.yml exec -T postgres createdb -U postgres ${e2eDatabaseName}`,
+      `[e2e] Could not auto-create DB "${e2eDatabaseName}". Create it manually if missing.`,
+    );
+  }
+}
+
+/** Clears encrypted 2FA columns and bootstrap admin so API seed + login work with dev DataProtection keys. */
+function resetAuthDataForE2e() {
+  try {
+    if (useDirectPostgresCli()) {
+      resetE2eAuthData(e2eDatabaseName, adminEmail);
+    } else {
+      resetAuthDataForE2eDocker();
+    }
+    console.log(`[e2e] Reset auth data in "${e2eDatabaseName}" (2FA secrets + bootstrap admin).`);
+  } catch {
+    console.warn(
+      `[e2e] Could not reset DB "${e2eDatabaseName}". If login fails with DataProtection errors, reset manually or set E2E_POSTGRES_CLI=1 with psql available.`,
     );
   }
 }
@@ -80,7 +87,7 @@ export default async function globalSetup() {
   }
 
   console.log(
-    `[e2e] webServer mode: reuseExistingServer=${process.env.E2E_REUSE_SERVERS === 'true'}, db=${e2eDatabaseName}`,
+    `[e2e] webServer mode: reuseExistingServer=${process.env.E2E_REUSE_SERVERS === 'true'}, db=${e2eDatabaseName}, postgresCli=${useDirectPostgresCli()}`,
   );
 
   const postgresUp = await canConnect(postgresHost, postgresPort);

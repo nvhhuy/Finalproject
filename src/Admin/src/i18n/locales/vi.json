@@ -29,6 +29,7 @@
     "auditLogs": "Nhật ký audit",
     "settings": "Cài đặt",
     "dlq": "DLQ",
+    "support": "Ticket hỗ trợ",
     "signOut": "Đăng xuất"
   },
   "login": {
@@ -213,5 +214,24 @@
     "colTarget": "Đích",
     "colDetails": "Chi tiết",
     "noEntries": "Không có mục audit."
+  },
+  "support": {
+    "title": "Ticket hỗ trợ",
+    "description": "Xử lý ticket hỗ trợ người dùng: phân công, phản hồi, cập nhật trạng thái.",
+    "searchPlaceholder": "Tìm theo mã ticket hoặc tiêu đề...",
+    "allStatuses": "Tất cả trạng thái",
+    "allPriorities": "Tất cả mức ưu tiên",
+    "ticket": "Ticket",
+    "status": "Trạng thái",
+    "priority": "Ưu tiên",
+    "updated": "Cập nhật",
+    "selectTicket": "Chọn ticket để xem chi tiết.",
+    "replyPlaceholder": "Nhập phản hồi...",
+    "reply": "Gửi phản hồi",
+    "replied": "Đã gửi phản hồi.",
+    "addInternalNote": "Đăng dưới dạng ghi chú nội bộ",
+    "internal": "Nội bộ",
+    "unassign": "Bỏ phân công",
+    "unassigned": "Đã bỏ phân công ticket."
   }
 }

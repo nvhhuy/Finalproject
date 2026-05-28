@@ -1,4 +1,4 @@
-# Final project
+# Base Project
 
 Full-stack monorepo: .NET 8 API + Worker, Next.js frontend, React admin console, Docker-based local infra and production deploy assets.
 
@@ -54,6 +54,10 @@ cd src/Admin && npm install && npm run dev      # http://localhost:5174
 ## Tests
 
 API integration + Playwright: [`docs/test/ONBOARDING.md`](./docs/test/ONBOARDING.md) — quick commands in [`e2e/README.md`](./e2e/README.md).
+
+**CI:** GitHub Actions [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs backend tests + Playwright on PRs and `main`.
+
+**Node:** use `nvm use` (see [`.nvmrc`](./.nvmrc)) before Playwright — requires Node 20+.
 
 ```bash
 ./tools/e2e/run-api-integration.sh

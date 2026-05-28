@@ -29,7 +29,8 @@
     "dashboard": "Dashboard",
     "profile": "Profile",
     "twoFa": "2FA",
-    "mediaLab": "Media Lab"
+    "mediaLab": "Media Lab",
+    "support": "Support"
   },
   "authLayout": {
     "tagline": "Production-ready auth, profile, 2FA, and media flows wired to your .NET backend."
@@ -155,6 +156,30 @@
     "signIn": "Sign in with Google",
     "notConfigured": "Google sign-in is not configured (set NEXT_PUBLIC_GOOGLE_CLIENT_ID).",
     "failed": "Google sign-in failed"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "toggleAria": "Toggle notifications panel",
+    "empty": "No notifications yet.",
+    "markRead": "Mark read",
+    "markAllRead": "Mark all read",
+    "today": "Today",
+    "open": "Open"
+  },
+  "support": {
+    "title": "Support center",
+    "description": "Open and track support tickets with live updates from the admin team.",
+    "newTicket": "Create a ticket",
+    "myTickets": "My tickets",
+    "subject": "Subject",
+    "descriptionInput": "Describe your issue in detail...",
+    "category": "Category",
+    "create": "Create ticket",
+    "searchPlaceholder": "Search tickets...",
+    "allStatuses": "All statuses",
+    "selectTicket": "Select a ticket to view details.",
+    "replyPlaceholder": "Write a follow-up reply...",
+    "reply": "Send reply"
   },
   "errors": {
     "requestFailed": "Request failed",

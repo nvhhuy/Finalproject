@@ -1,6 +1,7 @@
 using Application.Contracts.Authentication;
 using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Contracts.Notifications;
 using Application.Contracts.Services;
 using Application.Modules.Users.Authentication.Common;
 using Application.Modules.Users.Authentication.Queries;
@@ -147,7 +148,8 @@ public sealed class LoginQueryHandlerTests
             Mock.Of<IAuthenticationTokenIssuer>(),
             Mock.Of<IPasswordHasher<User>>(),
             Mock.Of<ICacheService>(),
-            tracker.Object);
+            tracker.Object,
+            Mock.Of<IUserNotificationService>());
 
         Result<AuthenticationResponse, Error> result =
             await handler.Handle(new LoginQuery("ghost@example.com", "x"), CancellationToken.None);
@@ -194,6 +196,7 @@ public sealed class LoginQueryHandlerTests
             issuer ?? Mock.Of<IAuthenticationTokenIssuer>(),
             passwordHasher.Object,
             Mock.Of<ICacheService>(),
-            tracker ?? Mock.Of<IFailedLoginTracker>());
+            tracker ?? Mock.Of<IFailedLoginTracker>(),
+            Mock.Of<IUserNotificationService>());
     }
 }

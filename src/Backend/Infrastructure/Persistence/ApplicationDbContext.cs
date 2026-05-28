@@ -1,5 +1,7 @@
 using Domains.Administration;
 using Domains.MediaAggregate;
+using Domains.Notifications;
+using Domains.Support;
 using Domains.UserAggregate;
 using Domains.SystemSettings;
 using Infrastructure.Idempotency;
@@ -25,6 +27,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+    public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
+    public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
+    public DbSet<SupportTicketMessage> SupportTicketMessages => Set<SupportTicketMessage>();
+    public DbSet<SupportTicketAttachment> SupportTicketAttachments => Set<SupportTicketAttachment>();
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
