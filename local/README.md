@@ -31,7 +31,7 @@ Data volumes persist between restarts unless you `docker compose down -v`.
 
 | Service | URL | Login |
 |--------|-----|--------|
-| **Postgres** (pgAdmin 4) | http://localhost:8080 | Email: `dev@local.dev`, Password: `admin` — server **Finalproject (local)** is pre-registered |
+| **Postgres** (pgAdmin 4) | http://localhost:8080 | Email: `dev@local.dev`, Password: `admin` — server **BaseProject (local)** is pre-registered |
 | **Redis** (Redis Commander) | http://localhost:8081 | (no auth — local only) |
 | **RabbitMQ** (built-in) | http://localhost:15672 | `guest` / `guest` |
 | **MinIO** console | http://localhost:9001 | `minio` / `minio123` |

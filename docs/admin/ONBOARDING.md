@@ -7,7 +7,7 @@ Helps new developers **run Admin locally in ~15 minutes** and know **what to rea
 ## Where am I in the repo?
 
 ```
-Finalproject/
+BaseProject/
 ├── src/Admin/              ← Admin Console (Vite + React)
 ├── src/Backend/Api/        ← API that Admin calls
 ├── local/docker-compose.yml
@@ -66,7 +66,7 @@ Backend `Cors:AllowedOrigins` must include `http://localhost:5174` (already in `
 
 | Field | Value |
 |-------|-------|
-| Email | `admin@localhost` |
+| Email | `admin@localhost.com` |
 | Password | `Temp!ChangeMe123` |
 
 Only accounts with **Admin** role can complete the login flow. If 2FA is enabled on the admin user, follow the verification screen.

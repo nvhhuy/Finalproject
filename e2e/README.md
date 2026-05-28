@@ -64,14 +64,15 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5174/
 ```
 
-If API stays `000` or connection refused → start Postgres (`docker compose -f local/docker-compose.yml up -d postgres`) and run `./tools/backend/migrate.sh`.
+If API stays `000` or connection refused → start Postgres (`docker compose -f local/docker-compose.yml up -d postgres`).
 
-Playwright starts the API, Frontend, and Admin dev servers automatically (unless you already run them — see `E2E_REUSE_SERVERS` below). **Postgres must be running** and migrated:
+Playwright starts the API, Frontend, and Admin dev servers automatically (unless you already run them — see `E2E_REUSE_SERVERS` below). **Postgres must be running**:
 
 ```bash
 docker compose -f local/docker-compose.yml up -d postgres
-./tools/backend/migrate.sh
 ```
+
+By default, Playwright uses an isolated DB (`finalproject_e2e`) and creates it automatically from `global-setup`. The API webServer applies migrations on startup in `Development`.
 
 Environment overrides:
 
@@ -83,8 +84,10 @@ Environment overrides:
 | `E2E_ADMIN_EMAIL` | `admin@localhost.com` |
 | `E2E_ADMIN_PASSWORD` | `Temp!ChangeMe123` |
 | `E2E_SKIP_WEBSERVER` | set to `1` to use already-running servers |
-| `E2E_REUSE_SERVERS` | set to `true` to reuse dev servers on :3000 / :5174 (must proxy to `E2E_API_URL`) |
-| `E2E_DATABASE_URL` | local Postgres connection string for API webServer |
+| `E2E_REUSE_SERVERS` | `true` = Playwright reuses API/FE/Admin if already listening (must proxy to `E2E_API_URL`); default `false` starts fresh servers |
+| `E2E_DATABASE_URL` | `Host=localhost;Port=5432;Database=finalproject_e2e;Username=postgres;Password=postgres` |
+| `E2E_DATABASE_NAME` | `finalproject_e2e` (used by `global-setup` create/reset helpers) |
+| `E2E_DROP_DB_AFTER_RUN` | `1` on CI, `0` on local (drop e2e DB in global teardown) |
 
 Run a single app:
 
@@ -92,3 +95,9 @@ Run a single app:
 npm run test:frontend
 npm run test:admin
 ```
+
+Database lifecycle:
+
+- `global-setup` ensures `finalproject_e2e` exists.
+- On CI, `global-teardown` drops that DB by default (`E2E_DROP_DB_AFTER_RUN=1`) to keep runners clean.
+- On local, DB is kept by default for faster reruns/debug (`E2E_DROP_DB_AFTER_RUN=0`).

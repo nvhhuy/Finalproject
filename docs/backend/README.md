@@ -2,6 +2,8 @@
 
 Table of contents for `src/Backend/` (Api, Application, Domains, Infrastructure, Worker, Observability, Tests).
 
+**Repo-wide context:** [`../OVERVIEW.md`](../OVERVIEW.md) — architecture, production/security posture, local vs deploy.
+
 **Cursor rule:** `.cursor/rules/backend.mdc` — agents and developers working under `src/Backend/**` should follow it.
 
 ---

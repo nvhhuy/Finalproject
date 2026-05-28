@@ -1,0 +1,54 @@
+---
+description: Deployment conventions — Docker runtime, Traefik routing, env file separation, rollout safety
+globs: deploy/**/*,docs/deploy/**/*,.github/workflows/**/*,tools/**/*deploy*
+alwaysApply: false
+---
+
+# Deploy rules
+
+Read before editing deployment-related files:
+
+- `docs/deploy/README.md`
+- `docs/deploy/ARCHITECTURE.md`
+- `docs/deploy/OPTIONS.md`
+- `docs/deploy/ENVIRONMENT_STRATEGY.md`
+- `docs/deploy/CHECKLIST.md`
+
+## Runtime baseline (mandatory)
+
+- All production options run on Docker.
+- Traefik is the edge proxy for both options.
+- Api and Worker are separate services with separate lifecycle.
+- Worker must remain private-only (no public route).
+
+## Routing baseline
+
+- Prefer same-origin browser calls with `/api` path routing to Api.
+- Avoid introducing cross-origin API calls unless project requirements explicitly demand a separate public API domain.
+
+## Environment management
+
+- Split env files by environment (`development`, `staging`, `production`) and optionally `shared`.
+- Commit only `.env.example` templates; never commit real secrets.
+- Keep env key naming consistent and avoid hidden override chains.
+
+## Deployment safety
+
+- Run DB migration before rolling out new Api/Worker versions.
+- Keep rollback references (previous image tags) documented.
+- Use health checks (`/health/live`, `/health/ready`) as release gates.
+
+## CI/CD expectations
+
+- Option 1 (automated): CI tests/build -> image publish -> migration -> rollout.
+- Option 2 (manual): operator-run scripted flow with the same migration/health gates.
+- Do not bypass tests and migration checks for convenience.
+
+## Repo layout (when adding deploy code)
+
+- Dockerfiles under `deploy/docker/<service>/` with build `context: ../..` (repo root).
+- Application source stays in `src/` — do not duplicate app code under `deploy/`.
+- Compose files: `deploy/compose/stack.yml`, `deploy/compose/traefik.yml`.
+- Infra compose: `deploy/compose/infra.yml` (shared services).
+- Use `deploy/scripts/*.sh` for migrate/up/build entrypoints.
+- Commit only `*.env.example`; real `*.env` stays gitignored under `deploy/env/`.

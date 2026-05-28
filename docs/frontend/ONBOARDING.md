@@ -7,7 +7,7 @@ Helps new developers **run the Frontend locally in ~15 minutes** and know **what
 ## Where am I in the repo?
 
 ```
-Finalproject/
+BaseProject/
 ├── src/Frontend/           ← Next.js app (this file)
 ├── src/Backend/Api/        ← API
 ├── src/Admin/              ← Admin SPA (operators)

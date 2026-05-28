@@ -1,0 +1,149 @@
+# Application stack — Api, Worker, Frontend, Admin.
+# From repo root:
+#   cp deploy/env/shared/app.common.env.example deploy/env/shared/app.common.env
+#   cp deploy/env/shared/traefik.env.example deploy/env/shared/traefik.env
+#   cp deploy/env/production/app.env.example deploy/env/production/app.env
+#   ./deploy/scripts/traefik-up.sh
+#   ./deploy/scripts/infra-up.sh production
+#   ./deploy/scripts/migrate.sh production
+#   ./deploy/scripts/up.sh production
+name: finalproject
+
+x-api-env: &api-env
+  ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+  ASPNETCORE_URLS: http://+:8080
+  AllowedHosts: ${ALLOWED_HOSTS}
+  ConnectionStrings__DatabaseConnectionString: ${DATABASE_CONNECTION_STRING}
+  ConnectionStrings__DatabaseReadConnectionString: ${DATABASE_READ_CONNECTION_STRING:-${DATABASE_CONNECTION_STRING}}
+  JwtSettings__Secret: ${JWT_SECRET}
+  JwtSettings__Issuer: ${JWT_ISSUER}
+  JwtSettings__Audience: ${JWT_AUDIENCE}
+  Redis__ConnectionString: ${REDIS_CONNECTION_STRING}
+  DataProtection__KeysDirectory: /var/finalproject/dataprotection-keys
+  DataProtection__AllowEphemeralKeys: "false"
+  Database__ApplyPendingMigrations: "false"
+  Seed__Admin__Enabled: ${SEED_ADMIN_ENABLED:-false}
+  ReverseProxy__KnownNetworks__0: ${REVERSE_PROXY_KNOWN_NETWORK:-172.16.0.0/12}
+  ReverseProxy__ForwardLimit: "2"
+  PasswordReset__PublicAppBaseUrl: https://${APP_HOST}
+  ObjectStorage__ServiceUrl: ${OBJECT_STORAGE_SERVICE_URL:-}
+  ObjectStorage__AccessKey: ${OBJECT_STORAGE_ACCESS_KEY:-}
+  ObjectStorage__SecretKey: ${OBJECT_STORAGE_SECRET_KEY:-}
+  ObjectStorage__Bucket: ${OBJECT_STORAGE_BUCKET:-media}
+  ObjectStorage__UsePresignedDownloads: ${OBJECT_STORAGE_USE_PRESIGNED:-true}
+  Messaging__RabbitMq__Enabled: ${RABBITMQ_ENABLED:-false}
+  Messaging__RabbitMq__Host: ${RABBITMQ_HOST:-rabbitmq}
+  Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+  Messaging__RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+  Messaging__RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+
+x-traefik-api-labels: &traefik-api-labels
+  traefik.enable: "true"
+  traefik.docker.network: proxy
+  traefik.http.services.api.loadbalancer.server.port: "8080"
+
+services:
+  api:
+    image: ${IMAGE_REGISTRY:-finalproject}/api:${IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+    volumes:
+      - dataprotection_keys:/var/finalproject/dataprotection-keys
+    networks:
+      - app
+      - proxy
+    labels:
+      <<: *traefik-api-labels
+      traefik.http.routers.api-app.rule: Host(`${APP_HOST}`) && PathPrefix(`/api`)
+      traefik.http.routers.api-app.entrypoints: websecure
+      traefik.http.routers.api-app.tls.certresolver: le
+      traefik.http.routers.api-app.priority: "100"
+      traefik.http.routers.api-admin.rule: Host(`${ADMIN_HOST}`) && PathPrefix(`/api`)
+      traefik.http.routers.api-admin.entrypoints: websecure
+      traefik.http.routers.api-admin.tls.certresolver: le
+      traefik.http.routers.api-admin.priority: "100"
+
+  worker:
+    image: ${IMAGE_REGISTRY:-finalproject}/worker:${IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+    volumes:
+      - dataprotection_keys:/var/finalproject/dataprotection-keys
+    networks:
+      - app
+    depends_on:
+      api:
+        condition: service_started
+
+  frontend:
+    image: ${IMAGE_REGISTRY:-finalproject}/frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/frontend/Dockerfile
+      args:
+        API_PROXY_TARGET: http://api:8080
+    restart: unless-stopped
+    environment:
+      API_PROXY_TARGET: http://api:8080
+      NODE_ENV: production
+    networks:
+      - app
+      - proxy
+    depends_on:
+      api:
+        condition: service_started
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.frontend.rule: Host(`${APP_HOST}`)
+      traefik.http.routers.frontend.entrypoints: websecure
+      traefik.http.routers.frontend.tls.certresolver: le
+      traefik.http.routers.frontend.priority: "1"
+      traefik.http.services.frontend.loadbalancer.server.port: "3000"
+
+  admin:
+    image: ${IMAGE_REGISTRY:-finalproject}/admin:${IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/admin/Dockerfile
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.admin.rule: Host(`${ADMIN_HOST}`)
+      traefik.http.routers.admin.entrypoints: websecure
+      traefik.http.routers.admin.tls.certresolver: le
+      traefik.http.routers.admin.priority: "1"
+      traefik.http.services.admin.loadbalancer.server.port: "80"
+
+  migrate:
+    profiles: ["tools"]
+    image: ${IMAGE_REGISTRY:-finalproject}/migrate:${IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/migrate/Dockerfile
+    environment:
+      ConnectionStrings__DatabaseConnectionString: ${DATABASE_CONNECTION_STRING}
+    networks:
+      - app
+    restart: "no"
+
+networks:
+  proxy:
+    external: true
+  app:
+    name: finalproject-app
+
+volumes:
+  dataprotection_keys:

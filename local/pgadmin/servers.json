@@ -1,7 +1,7 @@
 {
   "Servers": {
     "1": {
-      "Name": "Finalproject (local)",
+      "Name": "BaseProject (local)",
       "Group": "Development",
       "Host": "postgres",
       "Port": 5432,

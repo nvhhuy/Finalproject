@@ -1,6 +1,6 @@
 # Production Readiness & Scalability Report
 
-**Date:** 2026-05-27  
+**Date:** 2026-05-27 (summary also in [`../OVERVIEW.md`](../OVERVIEW.md))  
 **Scope:** `src/Backend` (Api + Worker + Infrastructure)  
 **Verdict:** **Production-viable baseline with clear scale paths** — suitable for controlled launch; several items remain for high-traffic / multi-tenant production.
 

@@ -7,7 +7,7 @@ Get **API integration** and **Playwright** tests running locally in ~20 minutes.
 ## Where tests live
 
 ```
-Finalproject/
+BaseProject/
 ├── src/Backend/Tests/Api.IntegrationTests/   ← HTTP integration (xUnit)
 ├── e2e/                                      ← Playwright (Frontend + Admin)
 ├── tools/e2e/                                ← Convenience scripts
@@ -43,8 +43,9 @@ From repo root:
 
 ```bash
 docker compose -f local/docker-compose.yml up -d postgres
-./tools/backend/migrate.sh
 ```
+
+Playwright UI tests use a dedicated DB (`finalproject_e2e`) by default and create it automatically in `e2e/global-setup.ts`. This keeps local dev data (`finalproject`) clean.
 
 ### 3. Run API integration tests
 
@@ -113,8 +114,11 @@ dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"
 | `E2E_ADMIN_URL` | `http://localhost:5174` | Admin baseURL |
 | `E2E_ADMIN_EMAIL` | `admin@localhost.com` | Login helper |
 | `E2E_ADMIN_PASSWORD` | `Temp!ChangeMe123` | Login helper |
-| `E2E_DATABASE_URL` | local Postgres connection string | API `webServer` env |
+| `E2E_DATABASE_URL` | `Host=localhost;Port=5432;Database=finalproject_e2e;Username=postgres;Password=postgres` | API `webServer` env |
+| `E2E_DATABASE_NAME` | `finalproject_e2e` | DB name used by `global-setup` create/reset |
+| `E2E_DROP_DB_AFTER_RUN` | `1` on CI, `0` on local | Drop e2e DB in `global-teardown` |
 | `E2E_SKIP_WEBSERVER` | unset | `1` = do not start API/FE/Admin (you run them) |
+| `E2E_REUSE_SERVERS` | `false` | `true` = reuse existing dev servers on configured ports |
 | `E2E_WEBSERVER_TIMEOUT_MS` | `300000` | Max wait for dev servers |
 | `E2E_POSTGRES_HOST` / `E2E_POSTGRES_PORT` | `localhost` / `5432` | `global-setup` connectivity check |
 
@@ -131,7 +135,7 @@ dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"
 
 ### Playwright: `Timed out waiting … from config.webServer`
 
-- Postgres not running → `docker compose -f local/docker-compose.yml up -d postgres` + `./tools/backend/migrate.sh`
+- Postgres not running → `docker compose -f local/docker-compose.yml up -d postgres`
 - Port conflict → free `5076`, `3000`, `5174` or change env URLs consistently
 - Increase timeout: `E2E_WEBSERVER_TIMEOUT_MS=600000 npm test`
 
@@ -139,14 +143,20 @@ dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"
 
 Not CORS. Encrypted `TwoFactorSecret` in DB was written with **different DataProtection keys** than the e2e API uses.
 
-`e2e/global-setup.ts` resets 2FA columns and deletes bootstrap admin when `webServer` starts. If it fails (no Docker exec), run manually:
+`e2e/global-setup.ts` resets 2FA columns and deletes bootstrap admin in the dedicated e2e database when `webServer` starts. If it fails (no Docker exec), run manually:
 
 ```bash
-docker compose -f local/docker-compose.yml exec -T postgres psql -U postgres -d finalproject -c \
+docker compose -f local/docker-compose.yml exec -T postgres psql -U postgres -d finalproject_e2e -c \
   'UPDATE "Users" SET "TwoFactorSecret" = NULL; DELETE FROM "Users" WHERE "Email" = '"'"'admin@localhost.com'"'"';'
 ```
 
 Ensure API uses `local/dataprotection-keys` (Playwright `webServer` sets `DataProtection__KeysDirectory`).
+
+### E2E DB cleanup policy
+
+- Default local: keep `finalproject_e2e` for faster reruns/debug.
+- Default CI: drop `finalproject_e2e` after run to avoid leftover state.
+- Override anytime with `E2E_DROP_DB_AFTER_RUN=1` (always drop) or `0` (never drop).
 
 ### Admin authenticated tests redirect to `/login`
 

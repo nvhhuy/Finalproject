@@ -7,7 +7,7 @@ This guide helps new developers **get the project running in ~30 minutes** and k
 ## Where am I in the repo?
 
 ```
-Finalproject/
+BaseProject/
 ├── src/Backend/          ← API, Application, Domains, Infrastructure, Worker
 ├── src/Frontend/         ← (if present) SPA client
 ├── local/docker-compose.yml

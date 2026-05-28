@@ -17,7 +17,7 @@ Internal administrator UI for the Final Project backend. Built with **Vite + Rea
 
 Default seeded admin (Development):
 
-- Email: `admin@localhost`
+- Email: `admin@localhost.com`
 - Password: `Temp!ChangeMe123`
 
 ## Development
