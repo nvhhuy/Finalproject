@@ -9,6 +9,7 @@ using Observability;
 using Serilog;
 using Worker;
 using Worker.Media;
+using Worker.Settings;
 
 #if DEBUG
 // IDE/Rider often launch bin/Debug/.../Worker without DOTNET_ENVIRONMENT (defaults to Production
@@ -32,6 +33,8 @@ builder.Services.AddOutboxPublisher(builder.Configuration);
 builder.Services.AddSingleton<ICronJob, Worker.Media.StaleMediaRecoveryJob>();
 builder.Services.AddSingleton<ICronJob, Worker.Media.MediaStorageCleanupJob>();
 builder.Services.AddSingleton<ICronJob, Worker.Outbox.OutboxCleanupJob>();
+builder.Services.AddSingleton<ICronJob, SystemSettingsBackupJob>();
+builder.Services.AddSingleton<ICronJob, DatabaseBackupJob>();
 builder.Services.AddWorkerScheduling(builder.Configuration);
 builder.Services.AddHostedService<MediaProcessingConsumerService>();
 builder.Services.AddHostedService<Worker.Email.EmailSendConsumerService>();

@@ -78,4 +78,15 @@ public sealed class WorkerSchedulingOptions
 
     /// <summary>Max rows deleted per cleanup tick. Bounds lock duration on large backlogs.</summary>
     public int OutboxCleanupBatchSize { get; init; } = 5_000;
+
+    /// <summary>
+    /// Cron for system-settings backup snapshots; default daily at 01:15 UTC so it runs before
+    /// most heavy maintenance windows and leaves room for retries.
+    /// </summary>
+    public string SystemSettingsBackupCronExpression { get; init; } = "15 1 * * *";
+
+    /// <summary>
+    /// Cron for full PostgreSQL logical backups; default daily at 01:45 UTC.
+    /// </summary>
+    public string DatabaseBackupCronExpression { get; init; } = "45 1 * * *";
 }

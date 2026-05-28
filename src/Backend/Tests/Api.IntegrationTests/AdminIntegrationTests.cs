@@ -216,4 +216,46 @@ public sealed class AdminIntegrationTests
             dlqPeek.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable or HttpStatusCode.BadRequest,
             $"Unexpected DLQ status: {dlqPeek.StatusCode}");
     }
+
+    [SkippableFact]
+    public async Task Admin_can_configure_system_and_database_backup_settings()
+    {
+        Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
+        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+
+        AuthResponseDto admin = await app.LoginAdminAsync();
+        using HttpClient adminClient = app.Client.WithBearer(admin.AccessToken);
+
+        HttpResponseMessage getSystemBackup = await adminClient.GetAsync("/api/v1/admin/settings/system-backup");
+        getSystemBackup.EnsureSuccessStatusCode();
+        ApiResponse<SystemBackupSettingsDto>? systemBackupBefore =
+            await getSystemBackup.ReadApiAsync<SystemBackupSettingsDto>();
+        Assert.NotNull(systemBackupBefore?.Data);
+
+        HttpResponseMessage putSystemBackup = await adminClient.PutAsJsonAsync(
+            "/api/v1/admin/settings/system-backup",
+            new SetSystemBackupSettingsRequest(Enabled: true, RetentionDays: 9));
+        putSystemBackup.EnsureSuccessStatusCode();
+        ApiResponse<SystemBackupSettingsDto>? systemBackupAfter =
+            await putSystemBackup.ReadApiAsync<SystemBackupSettingsDto>();
+        Assert.NotNull(systemBackupAfter?.Data);
+        Assert.True(systemBackupAfter.Data.Enabled);
+        Assert.Equal(9, systemBackupAfter.Data.RetentionDays);
+
+        HttpResponseMessage getDatabaseBackup = await adminClient.GetAsync("/api/v1/admin/settings/database-backup");
+        getDatabaseBackup.EnsureSuccessStatusCode();
+        ApiResponse<DatabaseBackupSettingsDto>? databaseBackupBefore =
+            await getDatabaseBackup.ReadApiAsync<DatabaseBackupSettingsDto>();
+        Assert.NotNull(databaseBackupBefore?.Data);
+
+        HttpResponseMessage putDatabaseBackup = await adminClient.PutAsJsonAsync(
+            "/api/v1/admin/settings/database-backup",
+            new SetDatabaseBackupSettingsRequest(Enabled: true, RetentionDays: 5));
+        putDatabaseBackup.EnsureSuccessStatusCode();
+        ApiResponse<DatabaseBackupSettingsDto>? databaseBackupAfter =
+            await putDatabaseBackup.ReadApiAsync<DatabaseBackupSettingsDto>();
+        Assert.NotNull(databaseBackupAfter?.Data);
+        Assert.True(databaseBackupAfter.Data.Enabled);
+        Assert.Equal(5, databaseBackupAfter.Data.RetentionDays);
+    }
 }

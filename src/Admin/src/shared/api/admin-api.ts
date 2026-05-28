@@ -8,10 +8,16 @@ import type {
   BooleanSettingDto,
   DeadLetterActionResult,
   DeadLetterMessage,
+  DatabaseBackupItemDto,
+  DatabaseBackupSettingsDto,
+  RunDatabaseBackupResponse,
+  RunSystemBackupResponse,
   SupportTicketDetailDto,
   SupportTicketListDto,
   SupportTicketPriority,
   SupportTicketStatus,
+  SystemBackupItemDto,
+  SystemBackupSettingsDto,
 } from '@/shared/types/api'
 
 export interface ListUsersParams {
@@ -158,6 +164,66 @@ export function setAllowPublicRegister(value: boolean) {
   return apiRequest<BooleanSettingDto>('/admin/settings/allow-public-register', {
     method: 'PUT',
     body: { value },
+  })
+}
+
+export function getSystemBackupSettings() {
+  return apiRequest<SystemBackupSettingsDto>('/admin/settings/system-backup')
+}
+
+export function setSystemBackupSettings(body: { enabled: boolean; retentionDays: number }) {
+  return apiRequest<SystemBackupSettingsDto>('/admin/settings/system-backup', {
+    method: 'PUT',
+    body,
+  })
+}
+
+export function runSystemBackupNow() {
+  return apiRequest<RunSystemBackupResponse>('/admin/settings/system-backup/run', {
+    method: 'POST',
+    idempotent: true,
+  })
+}
+
+export function listSystemBackupHistory(take = 20) {
+  return apiRequest<SystemBackupItemDto[]>(`/admin/settings/system-backup/history?take=${take}`)
+}
+
+export function restoreSystemBackup(key: string, confirmation: string) {
+  return apiRequest<boolean>('/admin/settings/system-backup/restore', {
+    method: 'POST',
+    body: { key, confirmation },
+    idempotent: true,
+  })
+}
+
+export function getDatabaseBackupSettings() {
+  return apiRequest<DatabaseBackupSettingsDto>('/admin/settings/database-backup')
+}
+
+export function setDatabaseBackupSettings(body: { enabled: boolean; retentionDays: number }) {
+  return apiRequest<DatabaseBackupSettingsDto>('/admin/settings/database-backup', {
+    method: 'PUT',
+    body,
+  })
+}
+
+export function runDatabaseBackupNow() {
+  return apiRequest<RunDatabaseBackupResponse>('/admin/settings/database-backup/run', {
+    method: 'POST',
+    idempotent: true,
+  })
+}
+
+export function listDatabaseBackupHistory(take = 20) {
+  return apiRequest<DatabaseBackupItemDto[]>(`/admin/settings/database-backup/history?take=${take}`)
+}
+
+export function restoreDatabaseBackup(key: string, confirmation: string) {
+  return apiRequest<boolean>('/admin/settings/database-backup/restore', {
+    method: 'POST',
+    body: { key, confirmation },
+    idempotent: true,
   })
 }
 

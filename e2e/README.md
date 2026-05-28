@@ -7,7 +7,7 @@ Two layers cover the monorepo features:
 | Layer | Path | Scope |
 |-------|------|--------|
 | **API integration** | `src/Backend/Tests/Api.IntegrationTests` | Auth, profile, admin, health (Postgres via Testcontainers) |
-| **Browser (Playwright)** | `e2e/` | Frontend + Admin UI smoke flows (including notifications fetch path) |
+| **Browser (Playwright)** | `e2e/` | Frontend + Admin UI flows (auth, app shell, support, settings, admin navigation) |
 
 ## Prerequisites
 
@@ -91,7 +91,7 @@ Environment overrides:
 | `E2E_DATABASE_NAME` | `baseproject_e2e` (used by `global-setup` create/reset helpers) |
 | `E2E_DROP_DB_AFTER_RUN` | `1` on CI, `0` on local (drop e2e DB in global teardown) |
 
-Support Ticket flows are available in the app/admin now, but Playwright specs for ticket lifecycle are not added yet.
+Playwright naming convention is now domain-based (e.g. `frontend/support.spec.ts`, `admin/settings.spec.ts`) so file names match test intent.
 
 Run a single app:
 

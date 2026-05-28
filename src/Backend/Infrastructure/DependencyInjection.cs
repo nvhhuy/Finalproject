@@ -91,6 +91,9 @@ public static class DependencyInjection
         });
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IAppSettingsService, AppSettingsService>();
+        services.AddScoped<ISystemSettingsBackupService, SystemSettingsBackupService>();
+        services.AddScoped<ISystemDatabaseBackupService, SystemDatabaseBackupService>();
+        services.Configure<DatabaseBackupOptions>(configuration.GetSection(DatabaseBackupOptions.SectionName));
         services.Configure<IdempotencyOptions>(configuration.GetSection(IdempotencyOptions.SectionName));
         services.Configure<FeatureFlagOptions>(configuration.GetSection(FeatureFlagOptions.SectionName));
         services.AddScoped<IIdempotencyService, IdempotencyService>();

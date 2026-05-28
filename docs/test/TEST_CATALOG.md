@@ -8,9 +8,9 @@ Inventory of automated tests as of the current baseline. Update this file when a
 
 | Layer | Project / folder | Approx. specs | Requires |
 |-------|------------------|---------------|----------|
-| API integration | `Api.IntegrationTests` | 14 active + 1 optional skip | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
-| Playwright — Frontend | `e2e/tests/frontend/` | 7 (+ 1 setup) | Postgres + migrated DB; Playwright `webServer` |
-| Playwright — Admin | `e2e/tests/admin/` | 5 | Same as Frontend |
+| API integration | `Api.IntegrationTests` | 15 active + 1 optional skip | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
+| Playwright — Frontend | `e2e/tests/frontend/` | 9 (+ 1 setup) | Postgres + migrated DB; Playwright `webServer` |
+| Playwright — Admin | `e2e/tests/admin/` | 6 | Same as Frontend |
 
 ---
 
@@ -42,8 +42,9 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | File | Describe block | Coverage |
 |------|----------------|----------|
 | `auth.setup.ts` | setup `authenticate` | Saves `playwright/.auth/frontend.json` after login |
-| `auth.spec.ts` | Frontend — public auth | Landing links; login to `/app`; register; forgot-password |
-| `auth.spec.ts` | Frontend — authenticated app | Dashboard/profile nav; 2FA setup page; media lab page (uses `storageState`) |
+| `public-auth.spec.ts` | Frontend — public auth | Landing links; login to `/app`; register; forgot-password |
+| `app-shell.spec.ts` | Frontend — authenticated app shell | Dashboard/profile nav; 2FA setup page; media lab page (uses `storageState`) |
+| `support.spec.ts` | Frontend — support center | Create support ticket; search by ticket number; reply flow |
 
 **Auth pattern:** tokens in **localStorage** → `storageState` works for authenticated project.
 
@@ -56,8 +57,10 @@ Inventory of automated tests as of the current baseline. Update this file when a
 
 | File | Describe block | Coverage |
 |------|----------------|----------|
-| `console.spec.ts` | Admin console — public | Login page; login reaches dashboard |
-| `console.spec.ts` | Admin console — authenticated | Dashboard metrics; users list; settings; audit logs link |
+| `public-auth.spec.ts` | Admin console — public auth | Login page; login reaches dashboard |
+| `navigation.spec.ts` | Admin console — navigation | Dashboard metrics; audit logs + DLQ navigation |
+| `settings.spec.ts` | Admin console — settings | Users list → settings; public-register toggle; backup controls |
+| `support.spec.ts` | Admin console — support tickets | Support route, search/filter controls, empty-state detail panel |
 
 **Auth pattern:** `accessToken` in **Zustand memory** → each authenticated test uses `beforeEach(loginAdminConsole())`; **no** `storageState` project.
 
@@ -80,8 +83,8 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | User profile | Yes | Profile navigation |
 | 2FA | Via API flows | Setup page smoke |
 | Notifications (in-app + realtime hook) | Yes (`NotificationsController`, query/mark-read) | Implicit by authenticated app requests in frontend suite |
-| Support tickets | Yes (`/support/tickets`, `/admin/support/tickets`) | Not yet covered (recommended next) |
-| Admin users / settings / audit | Yes | Users, settings, dashboard |
+| Support tickets | Yes (`/support/tickets`, `/admin/support/tickets`) | Yes (frontend create/search/reply + admin support page controls) |
+| Admin users / settings / audit | Yes | Users, settings (including backup controls), dashboard, audit navigation |
 | Media pipeline | Optional (MinIO) | Media lab page smoke |
 | Messaging / DLQ | Admin test (Rabbit off) | — |
 

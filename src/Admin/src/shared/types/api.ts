@@ -96,6 +96,40 @@ export interface BooleanSettingDto {
   value: boolean
 }
 
+export interface SystemBackupSettingsDto {
+  enabled: boolean
+  retentionDays: number
+}
+
+export interface SystemBackupItemDto {
+  key: string
+  createdAtUtc: string
+  byteSize: number
+}
+
+export interface RunSystemBackupResponse {
+  key: string
+  createdAtUtc: string
+  byteSize: number
+}
+
+export interface DatabaseBackupSettingsDto {
+  enabled: boolean
+  retentionDays: number
+}
+
+export interface DatabaseBackupItemDto {
+  key: string
+  createdAtUtc: string
+  byteSize: number
+}
+
+export interface RunDatabaseBackupResponse {
+  key: string
+  createdAtUtc: string
+  byteSize: number
+}
+
 export interface DeadLetterMessage {
   deliveryTag: number
   originalRoutingKey: string | null

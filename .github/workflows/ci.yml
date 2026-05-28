@@ -10,6 +10,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  admin-quality:
+    name: Admin quality checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: src/Admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: src/Admin
+
+      - name: Lint
+        run: npm run lint
+        working-directory: src/Admin
+
+      - name: Build
+        run: npm run build
+        working-directory: src/Admin
+
   backend:
     name: Backend tests
     runs-on: ubuntu-latest

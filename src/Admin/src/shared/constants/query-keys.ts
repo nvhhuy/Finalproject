@@ -10,6 +10,10 @@ export const queryKeys = {
   },
   settings: {
     allowPublicRegister: () => ['admin', 'settings', 'allow-public-register'] as const,
+    systemBackup: () => ['admin', 'settings', 'system-backup'] as const,
+    systemBackupHistory: (take = 20) => ['admin', 'settings', 'system-backup', 'history', take] as const,
+    databaseBackup: () => ['admin', 'settings', 'database-backup'] as const,
+    databaseBackupHistory: (take = 20) => ['admin', 'settings', 'database-backup', 'history', take] as const,
   },
   auditLogs: {
     list: (page: number, targetUserId: string) =>

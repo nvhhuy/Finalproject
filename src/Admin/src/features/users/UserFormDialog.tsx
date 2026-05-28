@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   createUserFormSchemas,
@@ -38,46 +38,38 @@ export function UserFormDialog({
 }: UserFormDialogProps) {
   const { t } = useTranslation()
   const schemas = useMemo(() => createUserFormSchemas(t), [t])
-
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [userName, setUserName] = useState('')
-  const [email, setEmail] = useState('')
-  const [role, setRole] = useState<string>('User')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!open) return
-    if (mode === 'edit' && detail) {
-      setFirstName(detail.firstName)
-      setLastName(detail.lastName)
-      setUserName(detail.userName)
-      setEmail(detail.email)
-      setRole(detail.role)
-    } else if (mode === 'create') {
-      setFirstName('')
-      setLastName('')
-      setUserName('')
-      setEmail('')
-      setRole('User')
-    }
-    setPassword('')
-    setError(null)
-  }, [open, mode, detail])
+  const seed = mode === 'edit' && detail
+    ? {
+        firstName: detail.firstName,
+        lastName: detail.lastName,
+        userName: detail.userName,
+        email: detail.email,
+        role: detail.role,
+      }
+    : {
+        firstName: '',
+        lastName: '',
+        userName: '',
+        email: '',
+        role: 'User',
+      }
+  const formKey = `${mode}-${detail?.id ?? 'new'}-${open ? 'open' : 'closed'}`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (mode === 'edit' && detailLoading) return
+    const form = e.currentTarget as HTMLFormElement
+    const formData = new FormData(form)
 
     const values = {
-      firstName,
-      lastName,
-      userName,
-      email,
-      role: role as (typeof USER_ROLES)[number],
-      password,
+      firstName: String(formData.get('firstName') ?? '').trim(),
+      lastName: String(formData.get('lastName') ?? '').trim(),
+      userName: String(formData.get('userName') ?? '').trim(),
+      email: String(formData.get('email') ?? '').trim(),
+      role: String(formData.get('role') ?? 'User') as (typeof USER_ROLES)[number],
+      password: String(formData.get('password') ?? ''),
     }
     const schema = mode === 'create' ? schemas.create : schemas.base
     const parsed = schema.safeParse(values)
@@ -108,33 +100,33 @@ export function UserFormDialog({
       {mode === 'edit' && detailLoading ? (
         <p className="text-sm text-slate-400">{t('users.loadingUser')}</p>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label={t('users.firstName')}
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              name="firstName"
+              defaultValue={seed.firstName}
               required
             />
             <Input
               label={t('users.lastName')}
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              name="lastName"
+              defaultValue={seed.lastName}
               required
             />
           </div>
           <Input
             label={t('users.username')}
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
+            name="userName"
+            defaultValue={seed.userName}
             required
           />
           <Input
             label={t('login.email')}
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            name="email"
+            defaultValue={seed.email}
             required
           />
           <div className="space-y-1.5">
@@ -143,8 +135,8 @@ export function UserFormDialog({
             </label>
             <select
               id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
+              name="role"
+              defaultValue={seed.role}
               className={cn(formSelectClass, 'w-full')}
             >
               {USER_ROLES.map((r) => (
@@ -158,8 +150,7 @@ export function UserFormDialog({
             <Input
               label={t('users.password')}
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
               required
               autoComplete="new-password"
             />

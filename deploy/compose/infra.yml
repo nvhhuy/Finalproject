@@ -138,6 +138,29 @@ services:
       traefik.http.routers.opensearch-dashboards.middlewares: observability-auth
       traefik.http.services.opensearch-dashboards.loadbalancer.server.port: "5601"
 
+  opensearch-retention-init:
+    profiles: ["observability"]
+    image: curlimages/curl:8.8.0
+    restart: "no"
+    depends_on:
+      opensearch:
+        condition: service_started
+    environment:
+      OPENSEARCH_LOG_RETENTION_DAYS: ${OPENSEARCH_LOG_RETENTION_DAYS:-7}
+    entrypoint: >
+      /bin/sh -c "
+      set -eu;
+      until curl -fsS http://opensearch:9200 >/dev/null; do sleep 2; done;
+      curl -fsS -X PUT 'http://opensearch:9200/_plugins/_ism/policies/baseproject-log-retention' \
+        -H 'Content-Type: application/json' \
+        -d '{\"policy\":{\"description\":\"Delete logs older than configured retention\",\"default_state\":\"hot\",\"states\":[{\"name\":\"hot\",\"actions\":[],\"transitions\":[{\"state_name\":\"delete\",\"conditions\":{\"min_index_age\":\"'"$${OPENSEARCH_LOG_RETENTION_DAYS}"'d\"}}]},{\"name\":\"delete\",\"actions\":[{\"delete\":{}}],\"transitions\":[]}]}}';
+      curl -fsS -X PUT 'http://opensearch:9200/_index_template/baseproject-log-template' \
+        -H 'Content-Type: application/json' \
+        -d '{\"index_patterns\":[\"logs-*\"],\"template\":{\"settings\":{\"plugins.index_state_management.policy_id\":\"baseproject-log-retention\"}},\"priority\":100}';
+      echo 'OpenSearch 7d retention policy ensured.';
+      "
+    networks: [app]
+
   postgres-exporter:
     profiles: ["monitoring"]
     image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0

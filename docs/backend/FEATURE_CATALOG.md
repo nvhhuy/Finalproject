@@ -80,6 +80,16 @@ All write operations are audited via `IAdminAuditLogWriter` (same transaction as
 |---------|----------|
 | Read public registration toggle | `GET /api/v1/admin/settings/allow-public-register` |
 | Enable/disable public registration | `PUT /api/v1/admin/settings/allow-public-register` |
+| Read system settings backup config | `GET /api/v1/admin/settings/system-backup` |
+| Update system settings backup config | `PUT /api/v1/admin/settings/system-backup` |
+| Run system settings backup now | `POST /api/v1/admin/settings/system-backup/run` |
+| List system settings backups | `GET /api/v1/admin/settings/system-backup/history` |
+| Restore system settings backup | `POST /api/v1/admin/settings/system-backup/restore` |
+| Read database backup config | `GET /api/v1/admin/settings/database-backup` |
+| Update database backup config | `PUT /api/v1/admin/settings/database-backup` |
+| Run database backup now | `POST /api/v1/admin/settings/database-backup/run` |
+| List database backups | `GET /api/v1/admin/settings/database-backup/history` |
+| Restore database backup | `POST /api/v1/admin/settings/database-backup/restore` |
 | View audit log (paginated) | `GET /api/v1/admin/audit-logs` |
 | Dashboard metrics (user counts, …) | `GET /api/v1/admin/metrics/dashboard` |
 
@@ -154,6 +164,8 @@ Peek/replay/drain are audit-logged.
 | `StaleMediaRecoveryJob` | Cron | Stuck Processing assets |
 | `MediaStorageCleanupJob` | Cron | Clean orphan object storage |
 | `OutboxCleanupJob` | Cron | Outbox processed/abandoned retention |
+| `SystemSettingsBackupJob` | Cron | Periodic app-settings snapshot + retention cleanup |
+| `DatabaseBackupJob` | Cron | Periodic PostgreSQL logical backup (`pg_dump`) + retention cleanup |
 | `SampleCronJob` | Cron | Dev sample (`Worker:EnableSamples`) |
 | `SampleQueueConsumerService` | Queue | Dev sample |
 

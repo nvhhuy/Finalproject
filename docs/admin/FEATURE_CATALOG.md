@@ -15,8 +15,9 @@ Catalog of **existing** Admin Console features — routes, behavior, and corresp
 | `/audit-logs` | Audit log table | Admin |
 | `/settings` | Runtime toggles | Admin |
 | `/messaging` | DLQ peek / replay / drain | Admin |
+| `/support` | Support tickets operations | Admin |
 
-Nav sidebar: Dashboard, Users, Audit logs, Settings, DLQ.
+Nav sidebar: Dashboard, Users, Audit logs, Settings, DLQ, Support tickets.
 
 ---
 
@@ -87,6 +88,10 @@ Concurrency: see [`docs/backend/OPTIMISTIC_CONCURRENCY.md`](../backend/OPTIMISTI
 | Setting | UI control | API |
 |---------|------------|-----|
 | Allow public registration | Checkbox | `GET/PUT` allow-public-register admin settings |
+| System settings backup (toggle + retention) | Checkbox + number input | `GET/PUT /api/v1/admin/settings/system-backup` |
+| System settings backup run/history/restore | Buttons + list | `POST /run`, `GET /history`, `POST /restore` under `/api/v1/admin/settings/system-backup` |
+| Database backup (toggle + retention) | Checkbox + number input | `GET/PUT /api/v1/admin/settings/database-backup` |
+| Database backup run/history/restore | Buttons + list | `POST /run`, `GET /history`, `POST /restore` under `/api/v1/admin/settings/database-backup` |
 
 Admin **does not** expose end-user registration UI — only toggles whether the **public Frontend** may call `POST /auth/register`.
 

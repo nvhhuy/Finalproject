@@ -162,7 +162,7 @@ Ensure API uses `local/dataprotection-keys` (Playwright `webServer` sets `DataPr
 
 ### Admin authenticated tests redirect to `/login`
 
-Admin stores **accessToken in Zustand memory only** — Playwright `storageState` cannot restore it. Authenticated admin specs must call `loginAdminConsole()` in `beforeEach` (see `e2e/tests/admin/console.spec.ts`).
+Admin stores **accessToken in Zustand memory only** — Playwright `storageState` cannot restore it. Authenticated admin specs must call `loginAdminConsole()` in `beforeEach` (see `e2e/tests/admin/*.spec.ts`).
 
 ### Frontend authenticated tests fail on setup
 
