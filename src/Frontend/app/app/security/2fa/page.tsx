@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { QrCode } from "@/components/auth/QrCode";
+import { LazyQrCode } from "@/lib/ui/lazy-components";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -90,7 +90,7 @@ export default function TwoFactorPage() {
             <div className="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-start">
               <div className="grid gap-3">
                 <p className="text-sm font-medium text-[var(--color-foreground)]">{t("twoFa.scanQr")}</p>
-                <QrCode value={setup.otpAuthUri} />
+                <LazyQrCode value={setup.otpAuthUri} />
               </div>
               <div className="grid gap-4">
                 <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3">

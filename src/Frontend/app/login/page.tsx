@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { LazyGoogleSignInButton } from "@/lib/ui/lazy-components";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -117,8 +118,8 @@ function LoginForm() {
                   <span className="bg-[var(--color-surface)] px-2 text-[var(--color-muted)]">or</span>
                 </div>
               </div>
-              <Suspense fallback={null}>
-                <GoogleSignInButton />
+              <Suspense fallback={<Skeleton className="h-10 w-full rounded-lg" />}>
+                <LazyGoogleSignInButton />
               </Suspense>
               <div className="flex flex-wrap justify-between gap-2 text-sm text-[var(--color-muted)]">
                 <span>

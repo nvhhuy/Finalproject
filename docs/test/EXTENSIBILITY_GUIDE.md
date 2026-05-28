@@ -67,13 +67,17 @@ var token = auth.AccessToken;
 | Frontend | `e2e/tests/frontend/*.spec.ts` | Public: no setup; Authenticated: `storageState` from `auth.setup.ts` |
 | Admin | `e2e/tests/admin/*.spec.ts` | Public: none; Authenticated: `beforeEach(loginAdminConsole())` |
 
-### 2. Reuse login helpers
+### 2. Reuse login and lazy-load helpers
 
 ```ts
 import { loginFrontend, loginAdminConsole } from '../helpers/login';
+import { waitForFrontendAppShell, waitForFrontendLanding, waitForAdminRouteReady } from '../helpers/lazy';
 ```
 
-Do not duplicate selectors across specs — extend `login.ts` if login UI changes.
+- Frontend: wait for `LazyAppShell` / `LazyPublicShell` (skeletons have no nav links)
+- Admin: wait for `RouteFallback` (`role="status"`, `aria-busy`) to clear after navigation
+
+Do not duplicate selectors — extend `login.ts` or `lazy.ts` if loading UI changes.
 
 ### 3. Selectors
 

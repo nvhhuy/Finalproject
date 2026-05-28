@@ -18,7 +18,7 @@ Read before editing `src/Admin/`:
 - `features/*` = pages/screens only; may import `shared/*`, `i18n/*`, `config/*`
 - `shared/*` must NOT import from `features/*`
 - API: extend `shared/api/admin-api.ts` + types in `shared/types/api.ts`; use `apiRequest` from `client.ts`
-- Routes: `app/router.tsx`; nav: `AdminLayout` `navItems`
+- Routes: `app/router.tsx` — **lazy** via `lazyNamedRoute` + `suspense()`; nav: `AdminLayout` `navItems`
 
 ## i18n (required for new UI)
 

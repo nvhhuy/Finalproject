@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { waitForAdminRouteReady } from '../helpers/lazy';
 import { loginAdminConsole } from '../helpers/login';
 
 test.describe('Admin console — public', () => {
@@ -29,21 +30,25 @@ test.describe('Admin console — authenticated', () => {
   test('users list and settings', async ({ page }) => {
     await page.getByRole('link', { name: /^users$/i }).click();
     await expect(page).toHaveURL(/\/users/);
+    await waitForAdminRouteReady(page);
     await expect(page.getByRole('table').or(page.getByRole('heading', { name: /users/i })).first()).toBeVisible({
       timeout: 15_000,
     });
 
     await page.getByRole('link', { name: /settings/i }).click();
     await expect(page).toHaveURL(/\/settings/);
+    await waitForAdminRouteReady(page);
     await expect(page.getByText(/public registration|allow/i).first()).toBeVisible();
   });
 
   test('audit logs and DLQ pages load', async ({ page }) => {
     await page.getByRole('link', { name: /audit/i }).click();
     await expect(page).toHaveURL(/audit-logs/);
+    await waitForAdminRouteReady(page);
 
     await page.getByRole('link', { name: /dlq/i }).click();
     await expect(page).toHaveURL(/messaging/);
+    await waitForAdminRouteReady(page);
     await expect(page.getByRole('button', { name: /peek|replay|drain/i }).first()).toBeVisible();
   });
 });

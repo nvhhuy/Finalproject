@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { waitForAdminRouteReady, waitForFrontendAppShell } from './lazy';
 
 const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'admin@localhost.com';
 const adminPassword = process.env.E2E_ADMIN_PASSWORD ?? 'Temp!ChangeMe123';
@@ -28,6 +29,7 @@ export async function loginFrontend(page: Page, email = adminEmail, password = a
   await loginApi;
 
   await expect(page).toHaveURL(/\/app/, { timeout: 30_000 });
+  await waitForFrontendAppShell(page);
 }
 
 export async function loginAdminConsole(page: Page, email = adminEmail, password = adminPassword) {
@@ -42,6 +44,8 @@ export async function loginAdminConsole(page: Page, email = adminEmail, password
   await loginApi;
 
   await expect(page).not.toHaveURL(/\/login$/, { timeout: 30_000 });
+  await waitForAdminRouteReady(page);
+  await expect(page.locator('nav')).toBeVisible({ timeout: 15_000 });
 }
 
 export { adminEmail, adminPassword };

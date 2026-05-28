@@ -108,6 +108,8 @@ export default function MediaLabPage() {
               <img
                 src={mediaApi.bestRenderableUrl(asset)!}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="max-h-80 w-auto rounded-xl border border-[var(--color-border)] object-contain bg-[var(--color-surface-muted)]"
               />
             ) : null}

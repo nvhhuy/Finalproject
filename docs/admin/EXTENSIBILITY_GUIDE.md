@@ -44,15 +44,20 @@ features/<feature>/
   MyFeatureFormDialog.tsx   # optional
 ```
 
-### 4. Route
+### 4. Route (lazy-loaded)
 
 ```ts
 // app/router.tsx
-import { MyFeaturePage } from '@/features/my-feature/MyFeaturePage'
+const MyFeaturePage = lazyNamedRoute(
+  () => import('@/features/my-feature/MyFeaturePage'),
+  'MyFeaturePage',
+)
 
 // inside ProtectedRoute children:
-{ path: 'my-feature', element: <MyFeaturePage /> },
+{ path: 'my-feature', element: suspense(<MyFeaturePage />) },
 ```
+
+Pages use **named exports** (`export function MyFeaturePage`). Do not static-import feature pages in `router.tsx` — that defeats code splitting.
 
 ### 5. Navigation
 

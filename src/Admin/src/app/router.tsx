@@ -1,18 +1,41 @@
+import { Suspense, type ReactNode } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AdminLayout } from '@/shared/components/layout/AdminLayout'
 import { ProtectedRoute } from '@/shared/components/layout/ProtectedRoute'
-import { LoginPage } from '@/features/auth/LoginPage'
-import { DashboardPage } from '@/features/dashboard/DashboardPage'
-import { UsersPage } from '@/features/users/UsersPage'
-import { UserDetailPage } from '@/features/users/UserDetailPage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
-import { AuditLogsPage } from '@/features/audit/AuditLogsPage'
-import { DlqPage } from '@/features/messaging/DlqPage'
+import { RouteFallback } from '@/shared/components/layout/RouteFallback'
+import { lazyNamedRoute } from '@/shared/lib/lazy-route'
+
+const LoginPage = lazyNamedRoute(
+  () => import('@/features/auth/LoginPage'),
+  'LoginPage',
+)
+const DashboardPage = lazyNamedRoute(
+  () => import('@/features/dashboard/DashboardPage'),
+  'DashboardPage',
+)
+const UsersPage = lazyNamedRoute(() => import('@/features/users/UsersPage'), 'UsersPage')
+const UserDetailPage = lazyNamedRoute(
+  () => import('@/features/users/UserDetailPage'),
+  'UserDetailPage',
+)
+const SettingsPage = lazyNamedRoute(
+  () => import('@/features/settings/SettingsPage'),
+  'SettingsPage',
+)
+const AuditLogsPage = lazyNamedRoute(
+  () => import('@/features/audit/AuditLogsPage'),
+  'AuditLogsPage',
+)
+const DlqPage = lazyNamedRoute(() => import('@/features/messaging/DlqPage'), 'DlqPage')
+
+function suspense(element: ReactNode) {
+  return <Suspense fallback={<RouteFallback />}>{element}</Suspense>
+}
 
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <LoginPage />,
+    element: suspense(<LoginPage />),
   },
   {
     path: '/',
@@ -22,12 +45,12 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: 'users', element: <UsersPage /> },
-      { path: 'users/:userId', element: <UserDetailPage /> },
-      { path: 'audit-logs', element: <AuditLogsPage /> },
-      { path: 'settings', element: <SettingsPage /> },
-      { path: 'messaging', element: <DlqPage /> },
+      { index: true, element: suspense(<DashboardPage />) },
+      { path: 'users', element: suspense(<UsersPage />) },
+      { path: 'users/:userId', element: suspense(<UserDetailPage />) },
+      { path: 'audit-logs', element: suspense(<AuditLogsPage />) },
+      { path: 'settings', element: suspense(<SettingsPage />) },
+      { path: 'messaging', element: suspense(<DlqPage />) },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

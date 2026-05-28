@@ -133,6 +133,15 @@ Do not swallow errors silently except where UX explicitly allows (e.g. optional 
 
 Admin has no SSR — SEO not applicable.
 
+### Code splitting (lazy routes)
+
+Feature pages are loaded with `React.lazy` via `lazyNamedRoute()` in `app/router.tsx`. Shell pieces (`AdminLayout`, `ProtectedRoute`, providers) stay in the main chunk; each route becomes its own async chunk on first navigation.
+
+- Fallback UI: `RouteFallback` (spinner + `common.loading`)
+- New pages: register with `lazyNamedRoute(() => import('...'), 'ExportName')` + `suspense(<Page />)`
+
+Run `npm run build` and inspect `dist/assets/` to verify chunk files.
+
 ---
 
 ## Alignment with backend

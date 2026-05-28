@@ -165,6 +165,8 @@ export default function ProfilePage() {
               <img
                 src={avatarUrl}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="h-20 w-20 rounded-full border-2 border-[var(--color-border)] object-cover shadow-md ring-2 ring-[var(--color-primary-soft)]"
               />
               <p className="text-sm text-[var(--color-muted)]">{t("profile.preview")}</p>

@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { waitForFrontendAppShell, waitForFrontendLanding } from '../helpers/lazy';
 import { loginFrontend } from '../helpers/login';
 
 test.describe('Frontend — public auth', () => {
   test('landing page links to login and register', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('link', { name: /get started|register/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /login/i }).first()).toBeVisible();
+    await waitForFrontendLanding(page);
   });
 
   test('login with seeded admin reaches app dashboard', async ({ page }) => {
@@ -29,6 +29,7 @@ test.describe('Frontend — authenticated app', () => {
 
   test('dashboard and profile navigation', async ({ page }) => {
     await page.goto('/app');
+    await waitForFrontendAppShell(page);
     await expect(page.getByText(/workspace|dashboard/i).first()).toBeVisible();
     await page.getByRole('link', { name: /profile/i }).first().click();
     await expect(page).toHaveURL(/\/app\/profile/);
@@ -37,11 +38,13 @@ test.describe('Frontend — authenticated app', () => {
 
   test('2FA setup page loads', async ({ page }) => {
     await page.goto('/app/security/2fa');
+    await waitForFrontendAppShell(page);
     await expect(page.getByRole('button', { name: /begin|enable|setup/i }).first()).toBeVisible();
   });
 
   test('media lab page loads', async ({ page }) => {
     await page.goto('/app/media');
+    await waitForFrontendAppShell(page);
     await expect(page.getByText(/media|upload/i).first()).toBeVisible();
   });
 });
