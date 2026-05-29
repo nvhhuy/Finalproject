@@ -53,3 +53,5 @@ Traefik route definitions must stay in versioned compose files to keep deploymen
 - Health probes:
   - liveness: `/health/live`
   - readiness: `/health/ready`
+
+For replica counts, env prerequisites (Redis backplane, Quartz store), and tier-by-tier growth, see [`SCALING.md`](./SCALING.md).

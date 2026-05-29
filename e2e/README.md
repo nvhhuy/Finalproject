@@ -93,6 +93,28 @@ Environment overrides:
 
 Playwright naming convention is now domain-based (e.g. `frontend/support.spec.ts`, `admin/settings.spec.ts`) so file names match test intent.
 
+### E2E stability (ports / CI)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `E2E_PREPARE_PORTS` | `0` local, `1` in CI via `run-playwright.sh` | Wait for or free ports `5076`, `3000`, `5174` before tests |
+| `E2E_REUSE_SERVERS` | `false` in Playwright job | Skip starting duplicate API/FE/Admin when servers already running |
+| `E2E_STABLE_PARALLEL` | `true` in CI | Allows parallel test files when combined with `E2E_WORKERS=2` |
+| `E2E_WORKERS` | `2` in CI, `1` local | Playwright worker count; set `1` if parallel runs flake |
+| `E2E_CLEAN_PORTS` | `0` local, `1` in CI prepare step | Kill listeners on 5076/3000/5174 only (not arbitrary ports) |
+
+If Playwright fails with **port already in use**, stop local dev servers on those ports or run:
+
+```bash
+E2E_CLEAN_PORTS=1 bash tools/e2e/prepare-ports.sh
+```
+
+If you already run API/Frontend/Admin manually, use:
+
+```bash
+E2E_REUSE_SERVERS=true E2E_SKIP_WEBSERVER=1 npm test
+```
+
 Run a single app:
 
 ```bash

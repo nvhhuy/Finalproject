@@ -140,6 +140,8 @@ Example log line:
   - `--profile monitoring` for Prometheus/Grafana/Uptime Kuma/exporters
   - `--profile observability` for OpenSearch + Dashboards
 
+Scaling (Api/Worker replicas, read replica, managed DB): [`docs/deploy/SCALING.md`](../docs/deploy/SCALING.md).
+
 ## Monitoring defaults included
 
 - Grafana dashboard (provisioned):

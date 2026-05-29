@@ -25,6 +25,7 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 | Engineer debugging migrations/CI drift | [`backend/MIGRATION_WORKFLOW.md`](./backend/MIGRATION_WORKFLOW.md) |
 | Operator setting up Gitea CI runners | [`backend/CI_GITEA_SETUP.md`](./backend/CI_GITEA_SETUP.md) |
 | Operator planning production deploy | [`deploy/README.md`](./deploy/README.md) → [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md) |
+| Operator scaling Api/Worker or moving to managed DB | [`deploy/SCALING.md`](./deploy/SCALING.md) |
 | Engineer adding API or Playwright tests | [`test/EXTENSIBILITY_GUIDE.md`](./test/EXTENSIBILITY_GUIDE.md) + [`.cursor/rules/test.mdc`](../.cursor/rules/test.mdc) |
 | CI quality gates (PR / main) | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 
@@ -38,6 +39,7 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 | Backend scale, idempotency, gaps | [`backend/PRODUCTION_READINESS_REPORT.md`](./backend/PRODUCTION_READINESS_REPORT.md) |
 | DataProtection keys (required in prod) | [`backend/DATA_PROTECTION.md`](./backend/DATA_PROTECTION.md) |
 | Deploy topology & edge security | [`deploy/ARCHITECTURE.md`](./deploy/ARCHITECTURE.md) |
+| Scaling (Api/Worker, DB, tiers) | [`deploy/SCALING.md`](./deploy/SCALING.md) |
 | Pre/post deploy checklist | [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md) |
 | Env file strategy | [`deploy/ENVIRONMENT_STRATEGY.md`](./deploy/ENVIRONMENT_STRATEGY.md) |
 

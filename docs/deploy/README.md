@@ -27,6 +27,7 @@ Implementation lives under [`deploy/`](../../deploy/):
 ## Required reading
 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — network and service topology
+- [`SCALING.md`](./SCALING.md) — scale tiers, Api/Worker replicas, DB and managed services
 - [`OPTIONS.md`](./OPTIONS.md) — exact flow for Option 1 and Option 2
 - [`ENVIRONMENT_STRATEGY.md`](./ENVIRONMENT_STRATEGY.md) — env file split and secret handling
 - [`CHECKLIST.md`](./CHECKLIST.md) — pre/post deploy checks

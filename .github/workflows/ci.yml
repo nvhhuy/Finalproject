@@ -190,7 +190,12 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client lsof
+
+      - name: Prepare Playwright ports
+        env:
+          E2E_CLEAN_PORTS: '1'
+        run: bash tools/e2e/prepare-ports.sh
 
       - name: Run Playwright
         env:
@@ -199,6 +204,9 @@ jobs:
           E2E_POSTGRES_HOST: localhost
           E2E_POSTGRES_USER: postgres
           E2E_POSTGRES_PASSWORD: postgres
+          E2E_PREPARE_PORTS: '1'
+          E2E_STABLE_PARALLEL: '1'
+          E2E_WORKERS: '2'
         run: ./tools/e2e/run-playwright.sh
 
       - name: Upload Playwright report on failure

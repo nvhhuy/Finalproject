@@ -19,10 +19,14 @@ export default defineConfig({
   testDir: './tests',
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
-  fullyParallel: false,
+  fullyParallel: process.env.E2E_STABLE_PARALLEL === 'true',
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : 1,
+  workers: (() => {
+    const fromEnv = process.env.E2E_WORKERS;
+    if (fromEnv) return Number.parseInt(fromEnv, 10);
+    return process.env.CI ? 1 : 1;
+  })(),
   reporter: [['list'], ['html', { open: 'never' }]],
   timeout: 60_000,
   use: {

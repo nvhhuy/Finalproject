@@ -110,6 +110,11 @@ dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `E2E_API_URL` | `http://localhost:5076` | API base for webServer health check |
+| `E2E_PREPARE_PORTS` | `0` | `1` in CI (via `tools/e2e/run-playwright.sh`) — free/wait for ports 5076/3000/5174 |
+| `E2E_REUSE_SERVERS` | `false` | Skip Playwright webServer when stack already running |
+| `E2E_STABLE_PARALLEL` | `true` in CI | Parallel test files when combined with `E2E_WORKERS=2` |
+| `E2E_WORKERS` | `2` in CI, `1` local | Playwright worker count; set `1` if parallel runs flake |
+| `E2E_CLEAN_PORTS` | `0` local, `1` in CI prepare step | Stop listeners on 5076/3000/5174 only |
 | `E2E_FRONTEND_URL` | `http://localhost:3000` | Frontend baseURL |
 | `E2E_ADMIN_URL` | `http://localhost:5174` | Admin baseURL |
 | `E2E_ADMIN_EMAIL` | `admin@localhost.com` | Login helper |
@@ -138,7 +143,8 @@ dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"
 ### Playwright: `Timed out waiting … from config.webServer`
 
 - Postgres not running → `docker compose -f local/docker-compose.yml up -d postgres`
-- Port conflict → free `5076`, `3000`, `5174` or change env URLs consistently
+- Port conflict (another dev server on 5076/3000/5174) → run `bash tools/e2e/prepare-ports.sh` or `E2E_CLEAN_PORTS=1 bash tools/e2e/prepare-ports.sh`
+- Reuse already-running stack without health check → `E2E_REUSE_SERVERS=true E2E_SKIP_WEBSERVER=1 npm test` (see `tools/e2e/wait-for-e2e-health.sh`)
 - Increase timeout: `E2E_WEBSERVER_TIMEOUT_MS=600000 npm test`
 
 ### Login API 500 / `EncryptedColumnDecryptionException`
