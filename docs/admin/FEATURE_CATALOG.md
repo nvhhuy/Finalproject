@@ -16,9 +16,12 @@ Catalog of **existing** Admin Console features — routes, behavior, and corresp
 | `/settings` | Runtime toggles | Admin |
 | `/messaging` | DLQ peek / replay / drain | Admin |
 | `/support` | Support tickets operations | Admin |
+| `/notifications` | Broadcast in-app announcement to all members | Admin |
 | `/plans` | Subscription plan catalog (create, edit, delete) | Admin |
+| `/tenants` | Tenant list, create, assign/change subscription plan | Admin |
+| `/invoices` | Platform billing invoices (paginated) | Admin |
 
-Nav sidebar: Dashboard, Users, Plans, Audit logs, Settings, DLQ, Support tickets.
+Nav sidebar: Dashboard, Users, Announcements, Plans, Tenants, Invoices, Audit logs, Settings, DLQ, Support tickets.
 
 ## Subscription plans
 
@@ -30,6 +33,18 @@ Nav sidebar: Dashboard, Users, Plans, Audit logs, Settings, DLQ, Support tickets
 | Delete plan | Only when no subscriptions reference the plan; otherwise deactivate |
 
 API: `GET/POST/PUT/DELETE /api/v1/platform/plans`.
+
+## Tenants
+
+| Capability | Notes |
+|------------|-------|
+| List tenants | Paginated table; shows slug, status, owner link, subscription plan/status |
+| Create tenant | Modal: slug, display name, owner user ID (must exist), optional branding |
+| Assign / change plan | Modal; active plans only; calls platform subscription API |
+
+API: `GET/POST /api/v1/platform/tenants`, `GET/POST /api/v1/platform/tenants/{id}/subscription`.
+
+**Workflow:** Create user (owner) → create tenant → assign plan so entitlements apply.
 
 ---
 
@@ -134,6 +149,19 @@ Requires RabbitMQ enabled on API. API: `/api/v1/admin/messaging/dlq/...`.
 
 ---
 
+## Member announcements (`/notifications`)
+
+| Capability | Notes |
+|------------|-------|
+| Compose title, body, optional link | Link must be a relative path (e.g. `/app/settings`) |
+| Send to all active members | Role `User`, not locked/deleted/closed |
+| Confirmation | Browser confirm before send |
+| Audit | `notifications.member_broadcast` with recipient count |
+
+API: `POST /api/v1/admin/notifications/broadcast` (idempotent). Live SignalR delivery is retried by the worker for pending rows.
+
+---
+
 ## Internationalization (i18n)
 
 | Locale | Code | File |
@@ -160,11 +188,22 @@ Requires RabbitMQ enabled on API. API: `/api/v1/admin/messaging/dlq/...`.
 
 ---
 
+## Billing invoices
+
+| Capability | Notes |
+|------------|-------|
+| List invoices | Paginated; tenant ID, status, amount, provider |
+
+API: `GET /api/v1/platform/invoices`.
+
+---
+
 ## Explicitly not in Admin
 
 - Public user self-service (profile, media upload UI for end users)
 - Admin self-registration
 - Multi-tenant org switcher
+- Tenant suspend/activate or delete (API not exposed yet)
 - Real-time websockets / live audit stream
 - Role management UI beyond assigning User/Admin on user form
 

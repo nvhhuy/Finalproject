@@ -31,7 +31,13 @@ export const queryKeys = {
   },
   invoices: {
     all: () => ['admin', 'invoices'] as const,
-    list: () => ['admin', 'invoices', 'list'] as const,
+    list: (page: number) => ['admin', 'invoices', 'list', page] as const,
+  },
+  tenants: {
+    all: () => ['admin', 'tenants'] as const,
+    list: (page: number) => ['admin', 'tenants', 'list', page] as const,
+    subscription: (tenantId: string | null | undefined) =>
+      ['admin', 'tenants', tenantId, 'subscription'] as const,
   },
   support: {
     all: () => ['admin', 'support'] as const,

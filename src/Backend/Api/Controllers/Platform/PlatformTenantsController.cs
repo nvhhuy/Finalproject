@@ -1,7 +1,9 @@
 using Api.Authorization;
 using Api.Controllers.Base;
 using Api.Models;
+using Api.Models.Billing;
 using Api.Models.Tenancy;
+using Application.Modules.Billing;
 using Application.Modules.Tenancy;
 using Asp.Versioning;
 using MediatR;
@@ -43,5 +45,27 @@ public sealed class PlatformTenantsController : ApiControllerBase
                 request.PublicDescription),
             cancellationToken);
         return MatchApi(result, dto => OkApi(TenantApiMapping.ToResponse(dto)));
+    }
+
+    [HttpGet("{tenantId:guid}/subscription")]
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSubscription(Guid tenantId, CancellationToken cancellationToken = default)
+    {
+        Result<SubscriptionSummaryDto, Error> result =
+            await Sender.Send(new GetTenantSubscriptionQuery(tenantId), cancellationToken);
+        return MatchApi(result, dto => OkApi(BillingApiMapping.ToResponse(dto)));
+    }
+
+    [HttpPost("{tenantId:guid}/subscription")]
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> AssignSubscription(
+        Guid tenantId,
+        [FromBody] AssignTenantSubscriptionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        Result<SubscriptionSummaryDto, Error> result = await Sender.Send(
+            new AdminAssignTenantSubscriptionCommand(tenantId, request.PlanCode),
+            cancellationToken);
+        return MatchApi(result, dto => OkApi(BillingApiMapping.ToResponse(dto)));
     }
 }

@@ -22,6 +22,8 @@ import type {
   SystemBackupSettingsDto,
   PlanDto,
   BillingInvoiceDto,
+  TenantSummaryDto,
+  SubscriptionSummaryDto,
 } from '@/shared/types/api'
 
 export interface ListUsersParams {
@@ -373,11 +375,49 @@ export function listPlatformInvoices(page = 1, pageSize = 50) {
   return apiRequest<BillingInvoiceDto[]>(`/platform/invoices?page=${page}&pageSize=${pageSize}`)
 }
 
+export function listTenants(page = 1, pageSize = 20) {
+  return apiRequest<TenantSummaryDto[]>(`/platform/tenants?page=${page}&pageSize=${pageSize}`)
+}
+
+export function createTenant(body: {
+  slug: string
+  displayName: string
+  ownerUserId: string
+  publicTagline?: string | null
+  publicDescription?: string | null
+}) {
+  return apiRequest<TenantSummaryDto>('/platform/tenants', { method: 'POST', body, idempotent: true })
+}
+
+export function getTenantSubscription(tenantId: string) {
+  return apiRequest<SubscriptionSummaryDto>(`/platform/tenants/${tenantId}/subscription`)
+}
+
+export function assignTenantSubscription(tenantId: string, planCode: string) {
+  return apiRequest<SubscriptionSummaryDto>(`/platform/tenants/${tenantId}/subscription`, {
+    method: 'POST',
+    body: { planCode },
+    idempotent: true,
+  })
+}
+
 export function addSupportTicketMessage(
   ticketId: string,
   body: { body: string; isInternalNote?: boolean; attachments?: Array<{ storageKey: string; fileName: string; contentType: string; byteSize: number }> },
 ) {
   return apiRequest<boolean>(`/admin/support/tickets/${ticketId}/messages`, {
+    method: 'POST',
+    body,
+    idempotent: true,
+  })
+}
+
+export function broadcastMemberNotification(body: {
+  title: string
+  body: string
+  linkUrl?: string | null
+}) {
+  return apiRequest<{ recipientCount: number }>('/admin/notifications/broadcast', {
     method: 'POST',
     body,
     idempotent: true,

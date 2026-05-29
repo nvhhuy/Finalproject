@@ -336,3 +336,127 @@ public sealed class GetTenantSubscriptionQueryHandler : IRequestHandler<GetTenan
         return row;
     }
 }
+
+/// <summary>Platform admin: assign or change the subscription plan for an existing tenant.</summary>
+public sealed record AdminAssignTenantSubscriptionCommand(Guid TenantId, string PlanCode)
+    : IRequest<Result<SubscriptionSummaryDto, Error>>, IRequireAdmin;
+
+public sealed class AdminAssignTenantSubscriptionCommandValidator : AbstractValidator<AdminAssignTenantSubscriptionCommand>
+{
+    public AdminAssignTenantSubscriptionCommandValidator()
+    {
+        RuleFor(x => x.TenantId).NotEmpty();
+        RuleFor(x => x.PlanCode).NotEmpty().MaximumLength(64);
+    }
+}
+
+public sealed class AdminAssignTenantSubscriptionCommandHandler
+    : IRequestHandler<AdminAssignTenantSubscriptionCommand, Result<SubscriptionSummaryDto, Error>>
+{
+    private readonly IPlanStore _plans;
+    private readonly ISubscriptionStore _subscriptions;
+    private readonly IBillingInvoiceIssuer _invoices;
+    private readonly IApplicationReadDbContext _db;
+    private readonly IUnitOfWork _uow;
+    private readonly IDateTimeProvider _clock;
+
+    public AdminAssignTenantSubscriptionCommandHandler(
+        IPlanStore plans,
+        ISubscriptionStore subscriptions,
+        IBillingInvoiceIssuer invoices,
+        IApplicationReadDbContext db,
+        IUnitOfWork uow,
+        IDateTimeProvider clock)
+    {
+        _plans = plans;
+        _subscriptions = subscriptions;
+        _invoices = invoices;
+        _db = db;
+        _uow = uow;
+        _clock = clock;
+    }
+
+    public async Task<Result<SubscriptionSummaryDto, Error>> Handle(
+        AdminAssignTenantSubscriptionCommand request,
+        CancellationToken cancellationToken)
+    {
+        string planCode = Plan.NormalizeCode(request.PlanCode);
+        Plan? plan = await _plans.GetByCodeAsync(planCode, activeOnly: true, cancellationToken);
+        if (plan is null)
+            return new NotFoundError("Plan not found or inactive.");
+
+        TenantId tenantId = TenantId.Create(request.TenantId);
+        bool tenantExists = await _db.Tenants.AsNoTracking().AnyAsync(t => t.Id == tenantId, cancellationToken);
+        if (!tenantExists)
+            return new NotFoundError("Tenant was not found.");
+
+        Subscription? subscription = await _subscriptions.GetByTenantForUpdateAsync(tenantId, cancellationToken);
+        if (subscription is null)
+        {
+            subscription = plan.TrialDays > 0
+                ? Subscription.CreateTrialing(tenantId, plan.Id, plan.TrialDays, _clock.Now)
+                : Subscription.CreateActive(tenantId, plan.Id, _clock.Now);
+            _plans.Add(subscription);
+            await _uow.SaveChangesAsync(cancellationToken);
+
+            await _invoices.IssueSubscriptionInvoiceAsync(
+                request.TenantId,
+                subscription.Id,
+                plan.Id,
+                "manual",
+                cancellationToken);
+        }
+        else
+        {
+            bool planChanged = subscription.PlanId != plan.Id;
+            if (subscription.Status == SubscriptionStatus.Canceled)
+                subscription.Activate(_clock.Now);
+
+            if (planChanged)
+            {
+                subscription.ChangePlan(plan.Id, _clock.Now);
+                if (subscription.Status == SubscriptionStatus.PastDue)
+                    subscription.Activate(_clock.Now);
+            }
+
+            await _uow.SaveChangesAsync(cancellationToken);
+
+            if (planChanged)
+            {
+                await _invoices.IssuePlanChangeInvoiceAsync(
+                    request.TenantId,
+                    subscription.Id,
+                    plan.Id,
+                    "manual",
+                    cancellationToken);
+            }
+        }
+
+        return await LoadSummaryAsync(subscription.Id, cancellationToken);
+    }
+
+    private async Task<Result<SubscriptionSummaryDto, Error>> LoadSummaryAsync(
+        Guid subscriptionId,
+        CancellationToken cancellationToken)
+    {
+        SubscriptionSummaryDto? row = await (
+            from s in _db.Subscriptions.AsNoTracking()
+            join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
+            where s.Id == subscriptionId
+            select new SubscriptionSummaryDto(
+                s.Id,
+                s.TenantId.Value,
+                s.PlanId,
+                p.Code,
+                p.Name,
+                s.Status.ToString(),
+                s.CurrentPeriodStartUtc,
+                s.CurrentPeriodEndUtc,
+                s.Status == SubscriptionStatus.Trialing || s.Status == SubscriptionStatus.Active))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (row is null)
+            return new NotFoundError("Subscription summary was not found.");
+        return row;
+    }
+}

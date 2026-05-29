@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Activity,
+  Building2,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -13,6 +14,7 @@ import {
   Receipt,
   Settings,
   Users,
+  Bell,
   X,
 } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
@@ -23,7 +25,9 @@ import { LanguageSwitcher } from '@/shared/components/layout/LanguageSwitcher'
 const navItems = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
   { to: '/users', labelKey: 'nav.users', icon: Users },
+  { to: '/notifications', labelKey: 'nav.notifications', icon: Bell },
   { to: '/plans', labelKey: 'nav.plans', icon: CreditCard },
+  { to: '/tenants', labelKey: 'nav.tenants', icon: Building2 },
   { to: '/invoices', labelKey: 'nav.invoices', icon: Receipt },
   { to: '/audit-logs', labelKey: 'nav.auditLogs', icon: FileText },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },

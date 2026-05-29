@@ -23,4 +23,6 @@ public static class AdminAuditActions
     public const string MessagingDeadLetterPeeked = "messaging.dlq_peeked";
     public const string MessagingDeadLetterReplayed = "messaging.dlq_replayed";
     public const string MessagingDeadLetterDrained = "messaging.dlq_drained";
+
+    public const string MemberNotificationBroadcast = "notifications.member_broadcast";
 }

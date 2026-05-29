@@ -92,6 +92,7 @@ All write operations are audited via `IAdminAuditLogWriter` (same transaction as
 | Restore database backup | `POST /api/v1/admin/settings/database-backup/restore` |
 | View audit log (paginated) | `GET /api/v1/admin/audit-logs` |
 | Dashboard metrics (user counts, …) | `GET /api/v1/admin/metrics/dashboard` |
+| Broadcast in-app announcement to all active members | `POST /api/v1/admin/notifications/broadcast` |
 
 **App settings:** `AppSettings` table + `IAppSettingsService` — extend with new keys using the existing pattern.
 

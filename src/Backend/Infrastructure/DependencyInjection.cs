@@ -110,6 +110,7 @@ public static class DependencyInjection
         services.AddScoped<UserNotificationService>();
         services.AddScoped<IUserNotificationService>(sp => sp.GetRequiredService<UserNotificationService>());
         services.AddScoped<IUserNotificationWriter>(sp => sp.GetRequiredService<UserNotificationService>());
+        services.AddScoped<IMemberNotificationBroadcaster, MemberNotificationBroadcaster>();
         AddAuthenticationServices(services, configuration);
 
         // Media pipeline DI lives in Application.AddApplication; here we just bind the options block.

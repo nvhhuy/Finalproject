@@ -15,7 +15,11 @@ public sealed record TenantSummaryResponse(
     string DisplayName,
     string Status,
     Guid OwnerUserId,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string? SubscriptionPlanCode,
+    string? SubscriptionStatus);
+
+public sealed record AssignTenantSubscriptionRequest(string PlanCode);
 
 public sealed record TenantPublicResponse(
     Guid Id,
@@ -78,7 +82,15 @@ public sealed record TenantSsoPublicResponse(
 public static class TenantApiMapping
 {
     public static TenantSummaryResponse ToResponse(Application.Modules.Tenancy.TenantSummaryDto dto) =>
-        new(dto.Id, dto.Slug, dto.DisplayName, dto.Status, dto.OwnerUserId, dto.CreatedAtUtc);
+        new(
+            dto.Id,
+            dto.Slug,
+            dto.DisplayName,
+            dto.Status,
+            dto.OwnerUserId,
+            dto.CreatedAtUtc,
+            dto.SubscriptionPlanCode,
+            dto.SubscriptionStatus);
 
     public static TenantPublicResponse ToResponse(Application.Modules.Tenancy.TenantPublicDto dto) =>
         new(dto.Id, dto.Slug, dto.DisplayName, dto.PublicTagline, dto.PublicDescription);

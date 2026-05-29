@@ -1,11 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { listPlatformInvoices } from '@/shared/api/admin-api'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { PageContent } from '@/shared/components/layout/PageContent'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
+import { DataTablePagination } from '@/shared/components/patterns/DataTablePagination'
 import { Card, CardBody } from '@/shared/components/ui/Card'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { formatDateTimeOrDash } from '@/shared/lib'
 import type { BillingInvoiceDto } from '@/shared/types/api'
+
+const PAGE_SIZE = 50
 
 function formatAmount(inv: BillingInvoiceDto) {
   if (inv.currency === 'CREDITS') return `${inv.amountCredits ?? 0} credits`
@@ -20,12 +26,14 @@ function formatAmount(inv: BillingInvoiceDto) {
 
 export function InvoicesPage() {
   const { t } = useTranslation()
+  const { page, setPage } = usePagination()
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.invoices.list(),
-    queryFn: () => listPlatformInvoices(),
+    queryKey: queryKeys.invoices.list(page),
+    queryFn: () => listPlatformInvoices(page, PAGE_SIZE),
   })
 
   const invoices = data ?? []
+  const hasNextPage = invoices.length === PAGE_SIZE
 
   return (
     <PageContent>
@@ -36,12 +44,14 @@ export function InvoicesPage() {
 
       <Card>
         <CardBody className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-700 text-slate-400">
                 <th className="py-2 pr-4">{t('invoices.number')}</th>
+                <th className="py-2 pr-4">{t('invoices.tenant')}</th>
                 <th className="py-2 pr-4">{t('invoices.description')}</th>
                 <th className="py-2 pr-4">{t('invoices.amount')}</th>
+                <th className="py-2 pr-4">{t('invoices.status')}</th>
                 <th className="py-2 pr-4">{t('invoices.provider')}</th>
                 <th className="py-2">{t('invoices.issued')}</th>
               </tr>
@@ -49,7 +59,7 @@ export function InvoicesPage() {
             <tbody>
               {invoices.length === 0 && !isLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-4 text-slate-400">
+                  <td colSpan={7} className="py-4 text-slate-400">
                     {t('invoices.empty')}
                   </td>
                 </tr>
@@ -57,16 +67,32 @@ export function InvoicesPage() {
               {invoices.map((inv) => (
                 <tr key={inv.id} className="border-b border-slate-800">
                   <td className="py-2 pr-4 font-mono text-xs text-white">{inv.invoiceNumber}</td>
+                  <td className="py-2 pr-4">
+                    {inv.tenantId ? (
+                      <Link to="/tenants" className="font-mono text-xs text-sky-400 hover:underline">
+                        {inv.tenantId.slice(0, 8)}…
+                      </Link>
+                    ) : (
+                      <span className="text-slate-500">{t('common.dash')}</span>
+                    )}
+                  </td>
                   <td className="py-2 pr-4 text-slate-300">{inv.description}</td>
                   <td className="py-2 pr-4 text-white">{formatAmount(inv)}</td>
+                  <td className="py-2 pr-4 text-slate-400">{inv.status}</td>
                   <td className="py-2 pr-4 text-slate-400">{inv.provider}</td>
-                  <td className="py-2 text-slate-400">{new Date(inv.issuedAtUtc).toLocaleString()}</td>
+                  <td className="py-2 text-slate-400">{formatDateTimeOrDash(inv.issuedAtUtc)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </CardBody>
       </Card>
+
+      <DataTablePagination
+        page={page}
+        totalPages={hasNextPage ? page + 1 : page}
+        onPageChange={setPage}
+      />
     </PageContent>
   )
 }

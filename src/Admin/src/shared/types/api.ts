@@ -19,6 +19,10 @@ export interface ApiMeta {
   timestampUtc?: string | null
 }
 
+export interface BroadcastMemberNotificationResponse {
+  recipientCount: number
+}
+
 export interface AuthResponseDto {
   userId: string
   userName: string
@@ -92,6 +96,29 @@ export interface BillingInvoiceDto {
   status: string
   provider: string
   issuedAtUtc: string
+}
+
+export interface TenantSummaryDto {
+  id: string
+  slug: string
+  displayName: string
+  status: string
+  ownerUserId: string
+  createdAtUtc: string
+  subscriptionPlanCode: string | null
+  subscriptionStatus: string | null
+}
+
+export interface SubscriptionSummaryDto {
+  id: string
+  tenantId: string
+  planId: string
+  planCode: string
+  planName: string
+  status: string
+  currentPeriodStartUtc: string
+  currentPeriodEndUtc: string
+  allowsWriteAccess: boolean
 }
 
 export interface AdminUserListDto {
