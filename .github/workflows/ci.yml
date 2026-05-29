@@ -18,10 +18,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
           cache-dependency-path: src/Admin/package-lock.json
 
@@ -112,8 +112,8 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install PostgreSQL client and AWS CLI
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client awscli
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Start MinIO
         run: |
@@ -177,12 +177,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
-          cache-dependency-path: e2e/package-lock.json
+          cache-dependency-path: |
+            e2e/package-lock.json
+            src/Frontend/package-lock.json
+            src/Admin/package-lock.json
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
@@ -191,6 +194,14 @@ jobs:
 
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client lsof
+
+      - name: Install Frontend dependencies
+        run: npm ci
+        working-directory: src/Frontend
+
+      - name: Install Admin dependencies
+        run: npm ci
+        working-directory: src/Admin
 
       - name: Prepare Playwright ports
         env:
