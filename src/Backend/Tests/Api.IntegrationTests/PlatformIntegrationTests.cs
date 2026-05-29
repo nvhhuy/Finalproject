@@ -8,15 +8,18 @@ public sealed class PlatformIntegrationTests
 {
     private readonly IntegrationAppFixture _fixture;
 
-    public PlatformIntegrationTests(IntegrationAppFixture fixture) => _fixture = fixture;
+    public PlatformIntegrationTests(IntegrationAppFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [SkippableFact]
     public async Task Health_live_returns_ok()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        HttpResponseMessage response = await app.Client.GetAsync("/health/live");
+        var response = await app.Client.GetAsync("/health/live");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
@@ -24,10 +27,9 @@ public sealed class PlatformIntegrationTests
     public async Task Health_ready_returns_ok_when_database_is_up()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        HttpResponseMessage response = await app.Client.GetAsync("/health/ready");
+        var response = await app.Client.GetAsync("/health/ready");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
-
 }

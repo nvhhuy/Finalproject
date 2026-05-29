@@ -5,12 +5,7 @@ using Application.Contracts.Services;
 using Application.Contracts.Transactions;
 using Application.Contracts.Wallet;
 using Domains.Billing;
-using FluentValidation;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Billing;
 
@@ -33,17 +28,20 @@ public sealed class ListCreditPackagesQueryHandler
 {
     private readonly IApplicationReadDbContext _db;
 
-    public ListCreditPackagesQueryHandler(IApplicationReadDbContext db) => _db = db;
+    public ListCreditPackagesQueryHandler(IApplicationReadDbContext db)
+    {
+        _db = db;
+    }
 
     public async Task<Result<IReadOnlyList<CreditPackageDto>, Error>> Handle(
         ListCreditPackagesQuery request,
         CancellationToken cancellationToken)
     {
-        IQueryable<CreditPackage> q = _db.CreditPackages.AsNoTracking();
+        var q = _db.CreditPackages.AsNoTracking();
         if (request.ActiveOnly)
             q = q.Where(p => p.IsActive);
 
-        List<CreditPackageDto> rows = await q
+        var rows = await q
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.Name)
             .Select(p => new CreditPackageDto(
@@ -85,9 +83,9 @@ public sealed class CreateCreditPackageCommandValidator : AbstractValidator<Crea
 public sealed class CreateCreditPackageCommandHandler
     : IRequestHandler<CreateCreditPackageCommand, Result<CreditPackageDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
     private readonly ICreditPackageStore _packages;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public CreateCreditPackageCommandHandler(ICreditPackageStore packages, IUnitOfWork uow, IDateTimeProvider clock)
     {
@@ -100,11 +98,11 @@ public sealed class CreateCreditPackageCommandHandler
         CreateCreditPackageCommand request,
         CancellationToken cancellationToken)
     {
-        string code = CreditPackage.NormalizeCode(request.Code);
+        var code = CreditPackage.NormalizeCode(request.Code);
         if (await _packages.CodeExistsAsync(code, cancellationToken))
             return new ValidationError(nameof(request.Code), "Credit package code already exists.");
 
-        CreditPackage package = CreditPackage.Create(
+        var package = CreditPackage.Create(
             code,
             request.Name,
             request.Description,
@@ -118,8 +116,9 @@ public sealed class CreateCreditPackageCommandHandler
         return ToDto(package);
     }
 
-    internal static CreditPackageDto ToDto(CreditPackage package) =>
-        new(
+    internal static CreditPackageDto ToDto(CreditPackage package)
+    {
+        return new CreditPackageDto(
             package.Id,
             package.Code,
             package.Name,
@@ -129,6 +128,7 @@ public sealed class CreateCreditPackageCommandHandler
             package.CreditsAmount,
             package.IsActive,
             package.SortOrder);
+    }
 }
 
 public sealed record UpdateCreditPackageCommand(
@@ -154,9 +154,9 @@ public sealed class UpdateCreditPackageCommandValidator : AbstractValidator<Upda
 public sealed class UpdateCreditPackageCommandHandler
     : IRequestHandler<UpdateCreditPackageCommand, Result<CreditPackageDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
     private readonly ICreditPackageStore _packages;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public UpdateCreditPackageCommandHandler(ICreditPackageStore packages, IUnitOfWork uow, IDateTimeProvider clock)
     {
@@ -169,7 +169,7 @@ public sealed class UpdateCreditPackageCommandHandler
         UpdateCreditPackageCommand request,
         CancellationToken cancellationToken)
     {
-        CreditPackage? package = await _packages.GetByIdForUpdateAsync(request.PackageId, cancellationToken);
+        var package = await _packages.GetByIdForUpdateAsync(request.PackageId, cancellationToken);
         if (package is null)
             return new NotFoundError("Credit package was not found.");
 
@@ -186,7 +186,10 @@ public sealed class UpdateCreditPackageCommandHandler
         return ToDto(package);
     }
 
-    private static CreditPackageDto ToDto(CreditPackage package) => CreateCreditPackageCommandHandler.ToDto(package);
+    private static CreditPackageDto ToDto(CreditPackage package)
+    {
+        return CreateCreditPackageCommandHandler.ToDto(package);
+    }
 }
 
 public sealed record DeleteCreditPackageCommand(Guid PackageId)
@@ -204,9 +207,10 @@ public sealed class DeleteCreditPackageCommandHandler
         _uow = uow;
     }
 
-    public async Task<Result<bool, Error>> Handle(DeleteCreditPackageCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool, Error>> Handle(DeleteCreditPackageCommand request,
+        CancellationToken cancellationToken)
     {
-        CreditPackage? package = await _packages.GetByIdForUpdateAsync(request.PackageId, cancellationToken);
+        var package = await _packages.GetByIdForUpdateAsync(request.PackageId, cancellationToken);
         if (package is null)
             return new NotFoundError("Credit package was not found.");
 
@@ -217,7 +221,7 @@ public sealed class DeleteCreditPackageCommandHandler
 }
 
 /// <summary>
-/// Fulfills a credit package purchase (MVP: immediate wallet credit; production should gate on payment webhook).
+///     Fulfills a credit package purchase (MVP: immediate wallet credit; production should gate on payment webhook).
 /// </summary>
 public sealed record PurchaseCreditPackageCommand(Guid UserId, string PackageCode, string IdempotencyKey)
     : IRequest<Result<WalletBalanceDto, Error>>;
@@ -247,8 +251,8 @@ public sealed class PurchaseCreditPackageCommandHandler
         PurchaseCreditPackageCommand request,
         CancellationToken cancellationToken)
     {
-        string code = CreditPackage.NormalizeCode(request.PackageCode);
-        CreditPackage? package = await _packages.GetByCodeAsync(code, activeOnly: true, cancellationToken);
+        var code = CreditPackage.NormalizeCode(request.PackageCode);
+        var package = await _packages.GetByCodeAsync(code, true, cancellationToken);
         if (package is null)
             return new NotFoundError("Credit package was not found or is inactive.");
 
@@ -260,7 +264,7 @@ public sealed class PurchaseCreditPackageCommandHandler
             package.PriceCents,
             package.Currency,
             request.IdempotencyKey,
-            provider: "manual",
+            "manual",
             cancellationToken);
     }
 }

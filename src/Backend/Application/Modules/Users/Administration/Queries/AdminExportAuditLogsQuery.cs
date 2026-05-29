@@ -3,11 +3,7 @@ using System.Text;
 using Application.Contracts.Authorization;
 using Application.Contracts.Persistence;
 using Domains.Administration;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Users.Administration.Queries;
 
@@ -24,13 +20,16 @@ public sealed class AdminExportAuditLogsQueryHandler
 {
     private readonly IApplicationReadDbContext _read;
 
-    public AdminExportAuditLogsQueryHandler(IApplicationReadDbContext read) => _read = read;
+    public AdminExportAuditLogsQueryHandler(IApplicationReadDbContext read)
+    {
+        _read = read;
+    }
 
     public async Task<Result<AdminAuditExportDto, Error>> Handle(
         AdminExportAuditLogsQuery request,
         CancellationToken cancellationToken)
     {
-        int maxRows = Math.Clamp(request.MaxRows, 1, 50_000);
+        var maxRows = Math.Clamp(request.MaxRows, 1, 50_000);
         if (request.FromUtc is not null && request.ToUtc is not null && request.FromUtc > request.ToUtc)
             return new ValidationError("dateRange", "FromUtc must be before ToUtc.");
 
@@ -42,9 +41,9 @@ public sealed class AdminExportAuditLogsQueryHandler
         if (request.ToUtc is not null)
             query = query.Where(a => a.CreatedAtUtc <= request.ToUtc.Value);
 
-        List<AdminAuditLog> rows = await query.Take(maxRows).ToListAsync(cancellationToken);
-        string csv = BuildCsv(rows);
-        string fileName = $"admin-audit-{DateTime.UtcNow:yyyyMMdd-HHmmss}Z.csv";
+        var rows = await query.Take(maxRows).ToListAsync(cancellationToken);
+        var csv = BuildCsv(rows);
+        var fileName = $"admin-audit-{DateTime.UtcNow:yyyyMMdd-HHmmss}Z.csv";
         return new AdminAuditExportDto(Encoding.UTF8.GetBytes(csv), fileName, "text/csv; charset=utf-8");
     }
 
@@ -52,7 +51,7 @@ public sealed class AdminExportAuditLogsQueryHandler
     {
         var sb = new StringBuilder();
         sb.AppendLine("id,createdAtUtc,action,actorUserId,targetUserId,ipAddress,details");
-        foreach (AdminAuditLog row in rows)
+        foreach (var row in rows)
         {
             sb.Append(Csv(row.Id.ToString()));
             sb.Append(',');
@@ -78,7 +77,7 @@ public sealed class AdminExportAuditLogsQueryHandler
         if (string.IsNullOrEmpty(value))
             return "";
 
-        string escaped = value.Replace("\"", "\"\"", StringComparison.Ordinal);
+        var escaped = value.Replace("\"", "\"\"", StringComparison.Ordinal);
         return $"\"{escaped}\"";
     }
 }

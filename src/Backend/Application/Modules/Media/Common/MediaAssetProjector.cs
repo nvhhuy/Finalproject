@@ -5,8 +5,8 @@ using Domains.MediaAggregate;
 namespace Application.Modules.Media.Common;
 
 /// <summary>
-/// Builds the API-facing <see cref="MediaAssetDto"/> from a tracked <see cref="MediaAsset"/>.
-/// Resolves variant storage keys into public/CDN URLs via <see cref="IObjectStorage"/>.
+///     Builds the API-facing <see cref="MediaAssetDto" /> from a tracked <see cref="MediaAsset" />.
+///     Resolves variant storage keys into public/CDN URLs via <see cref="IObjectStorage" />.
 /// </summary>
 internal static class MediaAssetProjector
 {

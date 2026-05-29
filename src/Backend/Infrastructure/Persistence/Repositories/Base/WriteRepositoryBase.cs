@@ -1,14 +1,16 @@
+using System.Linq.Expressions;
 using Application.Contracts.Caching;
 using Infrastructure.Modules.Users.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace Infrastructure.Persistence.Repositories.Base;
 
 /// <summary>
-/// Base for write-side repositories: invalidate read cache after mutations.
-/// Call <see cref="InvalidateUserLookupAsync"/> (or <see cref="RemoveCacheKeysAsync"/>) after <c>SaveChanges</c> when the aggregate identity (id/email/username) may already be cached on the read side.
-/// New entities: invalidating by id/email/username is safe (removes nothing if keys were never set) and keeps behavior consistent if list or negative caches are added later.
+///     Base for write-side repositories: invalidate read cache after mutations.
+///     Call <see cref="InvalidateUserLookupAsync" /> (or <see cref="RemoveCacheKeysAsync" />) after <c>SaveChanges</c>
+///     when the aggregate identity (id/email/username) may already be cached on the read side.
+///     New entities: invalidating by id/email/username is safe (removes nothing if keys were never set) and keeps behavior
+///     consistent if list or negative caches are added later.
 /// </summary>
 public abstract class WriteRepositoryBase : RepositoryCacheBase
 {
@@ -16,7 +18,8 @@ public abstract class WriteRepositoryBase : RepositoryCacheBase
     {
     }
 
-    protected Task InvalidateUserLookupAsync(Guid? id, string? email, string? userName, CancellationToken cancellationToken)
+    protected Task InvalidateUserLookupAsync(Guid? id, string? email, string? userName,
+        CancellationToken cancellationToken)
     {
         List<string> keys = new(3);
         if (id is not null)
@@ -32,10 +35,14 @@ public abstract class WriteRepositoryBase : RepositoryCacheBase
     protected static Task<TEntity?> GetTrackedForUpdateAsync<TEntity>(
         DbSet<TEntity> set,
         Expression<Func<TEntity, bool>> predicate,
-        CancellationToken cancellationToken = default) where TEntity : class =>
-        set.FirstOrDefaultAsync(predicate, cancellationToken);
+        CancellationToken cancellationToken = default) where TEntity : class
+    {
+        return set.FirstOrDefaultAsync(predicate, cancellationToken);
+    }
 
     /// <summary>Reusable write-side add helper to keep concrete repositories concise.</summary>
-    protected static void AddEntity<TEntity>(DbSet<TEntity> set, TEntity entity) where TEntity : class =>
+    protected static void AddEntity<TEntity>(DbSet<TEntity> set, TEntity entity) where TEntity : class
+    {
         set.Add(entity);
+    }
 }

@@ -1,32 +1,29 @@
 using Application.Contracts.Email;
+using Application.Contracts.FeatureFlags;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
-using Application.Contracts.FeatureFlags;
 using Application.Contracts.Tenancy;
-using Application.FeatureFlags;
 using Application.Contracts.Transactions;
-using Application.Extensions;
+using Application.FeatureFlags;
 using Application.Modules.Users.Authentication.Common;
 using Application.Modules.Users.Profile.DomainEvents;
 using Domains.UserAggregate;
 using Microsoft.AspNetCore.Identity;
-using Shared.Errors;
 using Shared.Errors.Authentication;
-using Shared.Errors.General;
 
 namespace Application.Modules.Users.Authentication.Commands.Register;
 
 public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<RegistrationResult, Error>>
 {
-    private readonly IUserReadRepository _userRead;
-    private readonly IUserWriteRepository _userWrite;
-    private readonly IPasswordHasher<User> _passwordHasher;
-    private readonly IFeatureFlagService _featureFlags;
     private readonly IDateTimeProvider _clock;
     private readonly IEmailVerificationSender _emailVerification;
-    private readonly IUnitOfWork _uow;
+    private readonly IFeatureFlagService _featureFlags;
+    private readonly IPasswordHasher<User> _passwordHasher;
     private readonly ITenantEnrollmentService _tenantEnrollment;
+    private readonly IUnitOfWork _uow;
+    private readonly IUserReadRepository _userRead;
+    private readonly IUserWriteRepository _userWrite;
 
     public RegisterCommandHandler(
         IUserReadRepository userRead,
@@ -48,9 +45,11 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         _tenantEnrollment = tenantEnrollment;
     }
 
-    public async Task<Result<RegistrationResult, Error>> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result<RegistrationResult, Error>> Handle(RegisterCommand request,
+        CancellationToken cancellationToken)
     {
-        bool allowPublicRegister = await _featureFlags.IsEnabledAsync(FeatureFlagKeys.AllowPublicRegister, cancellationToken: cancellationToken);
+        var allowPublicRegister = await _featureFlags.IsEnabledAsync(FeatureFlagKeys.AllowPublicRegister,
+            cancellationToken: cancellationToken);
         if (!allowPublicRegister)
             return new ForbiddenError("Public registration is disabled by application setting.");
 
@@ -60,7 +59,8 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         if (await _userRead.ExistsByUserNameAsync(request.UserName, cancellationToken))
             return new UserNameAlreadyTakenError();
 
-        User user = User.CreateForLocalLoginPendingHash(request.FirstName, request.LastName, request.UserName, request.Email);
+        var user = User.CreateForLocalLoginPendingHash(request.FirstName, request.LastName, request.UserName,
+            request.Email);
         user.SetInitialPasswordHash(_passwordHasher.HashPassword(user, request.Password));
         user.MarkRegisteredAt(_clock.Now);
 

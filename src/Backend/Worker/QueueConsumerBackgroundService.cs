@@ -1,12 +1,10 @@
 using Application.Contracts.Messaging;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Worker;
 
 /// <summary>
-/// Base worker for queue-driven consumers (RabbitMQ, Kafka, etc.).
-/// Keep business logic in <see cref="HandleAsync"/>, wire broker-specific adapter in Infrastructure.
+///     Base worker for queue-driven consumers (RabbitMQ, Kafka, etc.).
+///     Keep business logic in <see cref="HandleAsync" />, wire broker-specific adapter in Infrastructure.
 /// </summary>
 public abstract class QueueConsumerBackgroundService<TMessage> : BackgroundService where TMessage : class
 {
@@ -23,8 +21,8 @@ public abstract class QueueConsumerBackgroundService<TMessage> : BackgroundServi
     protected abstract string SubscriptionName { get; }
 
     /// <summary>
-    /// Override to opt in to the broker's dead-letter routing. Default <c>null</c> preserves the
-    /// historical requeue-on-failure behaviour for sample / non-critical queues.
+    ///     Override to opt in to the broker's dead-letter routing. Default <c>null</c> preserves the
+    ///     historical requeue-on-failure behaviour for sample / non-critical queues.
     /// </summary>
     protected virtual SubscriptionOptions? SubscriptionOptions => null;
 

@@ -18,13 +18,13 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
     private readonly string _connectionString;
     private readonly string _dataProtectionKeysDirectory;
 
-    public CapturingEmailSender EmailSink { get; } = new();
-
     public CustomWebApplicationFactory(string connectionString, string dataProtectionKeysDirectory)
     {
         _connectionString = connectionString;
         _dataProtectionKeysDirectory = dataProtectionKeysDirectory;
     }
+
+    public CapturingEmailSender EmailSink { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -46,7 +46,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["DataProtection:KeysDirectory"] = _dataProtectionKeysDirectory,
                 ["Tenancy:SubdomainBaseHost"] = "app.local",
                 ["Tenancy:PlatformCnameTarget"] = "app.local",
-                ["IntegrationTesting:DisableRateLimiting"] = "true",
+                ["IntegrationTesting:DisableRateLimiting"] = "true"
             });
         });
         builder.ConfigureServices(services =>
@@ -68,8 +68,8 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     public async Task MigrateAsync()
     {
-        using IServiceScope scope = Services.CreateScope();
-        ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await db.Database.MigrateAsync();
 
         // Avoid loading encrypted columns through EF when another machine's key ring wrote them.

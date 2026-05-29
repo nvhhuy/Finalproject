@@ -6,7 +6,10 @@ using Shared.Errors.General;
 
 namespace Api.ExceptionHandling;
 
-/// <summary>Maps unhandled exceptions to RFC 7807 <see cref="ProblemDetails"/> without leaking stack traces outside Development.</summary>
+/// <summary>
+///     Maps unhandled exceptions to RFC 7807 <see cref="ProblemDetails" /> without leaking stack traces outside
+///     Development.
+/// </summary>
 internal sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly IHostEnvironment _environment;
@@ -18,7 +21,8 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
         _logger = logger;
     }
 
-    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
+    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
+        CancellationToken cancellationToken)
     {
         if (exception is ConcurrencyConflictException)
         {

@@ -1,7 +1,6 @@
 using Application.Contracts.Notifications;
 using Application.Modules.Notifications.Commands;
 using Moq;
-using Shared.Common;
 using Shared.Errors.General;
 
 namespace Application.Tests.Notifications;
@@ -17,7 +16,7 @@ public sealed class MarkNotificationReadCommandHandlerTests
             .ReturnsAsync(false);
 
         var handler = new MarkNotificationReadCommandHandler(writer.Object);
-        Result<bool, Shared.Errors.Error> result = await handler.Handle(
+        var result = await handler.Handle(
             new MarkNotificationReadCommand(Guid.NewGuid(), Guid.NewGuid()),
             CancellationToken.None);
 
@@ -28,8 +27,8 @@ public sealed class MarkNotificationReadCommandHandlerTests
     [Fact]
     public async Task Handle_returns_true_when_notification_is_marked_read()
     {
-        Guid userId = Guid.NewGuid();
-        Guid notificationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var notificationId = Guid.NewGuid();
 
         var writer = new Mock<IUserNotificationWriter>();
         writer
@@ -37,7 +36,7 @@ public sealed class MarkNotificationReadCommandHandlerTests
             .ReturnsAsync(true);
 
         var handler = new MarkNotificationReadCommandHandler(writer.Object);
-        Result<bool, Shared.Errors.Error> result = await handler.Handle(
+        var result = await handler.Handle(
             new MarkNotificationReadCommand(userId, notificationId),
             CancellationToken.None);
 

@@ -1,6 +1,6 @@
 namespace Observability;
 
-/// <summary>Configuration for <see cref="OpenTelemetryRegistration.AddPlatformOpenTelemetry"/>.</summary>
+/// <summary>Configuration for <see cref="OpenTelemetryRegistration.AddPlatformOpenTelemetry" />.</summary>
 public sealed class OpenTelemetryOptions
 {
     public const string SectionName = "OpenTelemetry";

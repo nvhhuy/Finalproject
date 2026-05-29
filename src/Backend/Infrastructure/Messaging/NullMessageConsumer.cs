@@ -4,13 +4,16 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Messaging;
 
 /// <summary>
-/// No-op consumer so Worker can run queue-based services before a real broker adapter is wired.
+///     No-op consumer so Worker can run queue-based services before a real broker adapter is wired.
 /// </summary>
 public sealed class NullMessageConsumer : IMessageConsumer
 {
     private readonly ILogger<NullMessageConsumer> _logger;
 
-    public NullMessageConsumer(ILogger<NullMessageConsumer> logger) => _logger = logger;
+    public NullMessageConsumer(ILogger<NullMessageConsumer> logger)
+    {
+        _logger = logger;
+    }
 
     public Task<IDisposable> SubscribeAsync<TMessage>(
         string subscriptionName,
@@ -28,6 +31,9 @@ public sealed class NullMessageConsumer : IMessageConsumer
     private sealed class NoopSubscription : IDisposable
     {
         public static NoopSubscription Instance { get; } = new();
-        public void Dispose() { }
+
+        public void Dispose()
+        {
+        }
     }
 }

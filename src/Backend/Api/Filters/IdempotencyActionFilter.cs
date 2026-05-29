@@ -1,17 +1,18 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text.Json;
 using Api.Models;
 using Application.Contracts.Idempotency;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Shared.Errors;
-using Shared.Errors.General;
-using System.Security.Claims;
-using System.Text.Json;
 
 namespace Api.Filters;
 
 /// <summary>
-/// Enforces idempotency keys on actions marked with <see cref="RequiresIdempotencyKeyAttribute"/>.
+///     Enforces idempotency keys on actions marked with <see cref="RequiresIdempotencyKeyAttribute" />.
 /// </summary>
 public sealed class IdempotencyActionFilter : IAsyncActionFilter, IOrderedFilter
 {
@@ -19,13 +20,14 @@ public sealed class IdempotencyActionFilter : IAsyncActionFilter, IOrderedFilter
 
     private readonly IIdempotencyService _idempotency;
 
-    public IdempotencyActionFilter(IIdempotencyService idempotency) => _idempotency = idempotency;
-
-    public int Order => -2000;
+    public IdempotencyActionFilter(IIdempotencyService idempotency)
+    {
+        _idempotency = idempotency;
+    }
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        RequiresIdempotencyKeyAttribute? attribute = context.ActionDescriptor.EndpointMetadata
+        var attribute = context.ActionDescriptor.EndpointMetadata
             .OfType<RequiresIdempotencyKeyAttribute>()
             .FirstOrDefault();
 
@@ -35,7 +37,7 @@ public sealed class IdempotencyActionFilter : IAsyncActionFilter, IOrderedFilter
             return;
         }
 
-        string? key = context.HttpContext.Request.Headers[RequiresIdempotencyKeyAttribute.HeaderName].FirstOrDefault();
+        var key = context.HttpContext.Request.Headers[RequiresIdempotencyKeyAttribute.HeaderName].FirstOrDefault();
         if (string.IsNullOrWhiteSpace(key))
         {
             context.Result = new BadRequestObjectResult(
@@ -48,10 +50,10 @@ public sealed class IdempotencyActionFilter : IAsyncActionFilter, IOrderedFilter
             return;
         }
 
-        string scope = attribute.Scope ?? BuildScope(context);
-        string ownerPartition = ResolveOwnerPartition(context.HttpContext.User);
+        var scope = attribute.Scope ?? BuildScope(context);
+        var ownerPartition = ResolveOwnerPartition(context.HttpContext.User);
 
-        IdempotencyAcquireResult acquire = await _idempotency.TryAcquireAsync(
+        var acquire = await _idempotency.TryAcquireAsync(
             scope,
             ownerPartition,
             key,
@@ -82,7 +84,7 @@ public sealed class IdempotencyActionFilter : IAsyncActionFilter, IOrderedFilter
             return;
         }
 
-        ActionExecutedContext executed = await next();
+        var executed = await next();
 
         if (acquire.RecordId is null)
             return;
@@ -93,12 +95,13 @@ public sealed class IdempotencyActionFilter : IAsyncActionFilter, IOrderedFilter
             return;
         }
 
-        int statusCode = GetStatusCode(executed.Result);
+        var statusCode = GetStatusCode(executed.Result);
         if (statusCode is >= 200 and < 300)
         {
-            string? body = TrySerializeResult(executed.Result);
+            var body = TrySerializeResult(executed.Result);
             if (body is not null)
-                await _idempotency.CompleteAsync(acquire.RecordId.Value, statusCode, body, context.HttpContext.RequestAborted);
+                await _idempotency.CompleteAsync(acquire.RecordId.Value, statusCode, body,
+                    context.HttpContext.RequestAborted);
             else
                 await _idempotency.ReleaseAsync(acquire.RecordId.Value, context.HttpContext.RequestAborted);
         }
@@ -108,26 +111,31 @@ public sealed class IdempotencyActionFilter : IAsyncActionFilter, IOrderedFilter
         }
     }
 
+    public int Order => -2000;
+
     private static string BuildScope(ActionExecutingContext context)
     {
-        string method = context.HttpContext.Request.Method;
-        string? template = (context.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor)?.AttributeRouteInfo?.Template;
+        var method = context.HttpContext.Request.Method;
+        var template = (context.ActionDescriptor as ControllerActionDescriptor)?.AttributeRouteInfo?.Template;
         return $"{method}:{template ?? context.HttpContext.Request.Path.Value}";
     }
 
     private static string ResolveOwnerPartition(ClaimsPrincipal user)
     {
-        string? sub = user.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? user.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+        var sub = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? user.FindFirstValue(JwtRegisteredClaimNames.Sub);
         return string.IsNullOrEmpty(sub) ? "anonymous" : sub;
     }
 
-    private static int GetStatusCode(IActionResult? result) => result switch
+    private static int GetStatusCode(IActionResult? result)
     {
-        IStatusCodeActionResult s when s.StatusCode.HasValue => s.StatusCode.Value,
-        ObjectResult { StatusCode: int sc } => sc,
-        _ => StatusCodes.Status200OK
-    };
+        return result switch
+        {
+            IStatusCodeActionResult s when s.StatusCode.HasValue => s.StatusCode.Value,
+            ObjectResult { StatusCode: int sc } => sc,
+            _ => StatusCodes.Status200OK
+        };
+    }
 
     private static string? TrySerializeResult(IActionResult? result)
     {

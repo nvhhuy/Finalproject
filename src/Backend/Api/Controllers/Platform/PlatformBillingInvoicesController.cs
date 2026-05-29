@@ -7,8 +7,6 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Platform;
 
@@ -19,7 +17,9 @@ namespace Api.Controllers.Platform;
 [Route("api/v{version:apiVersion}/platform/invoices")]
 public sealed class PlatformBillingInvoicesController : ApiControllerBase
 {
-    public PlatformBillingInvoicesController(ISender sender) : base(sender) { }
+    public PlatformBillingInvoicesController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BillingInvoiceResponse>>), StatusCodes.Status200OK)]
@@ -28,7 +28,7 @@ public sealed class PlatformBillingInvoicesController : ApiControllerBase
         [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
-        Result<IReadOnlyList<BillingInvoiceListItemDto>, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new ListPlatformBillingInvoicesQuery(page, pageSize),
             cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(BillingApiMapping.ToResponse).ToList()));

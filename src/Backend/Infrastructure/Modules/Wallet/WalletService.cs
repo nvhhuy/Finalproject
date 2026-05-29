@@ -12,12 +12,12 @@ namespace Infrastructure.Modules.Wallet;
 
 public sealed class WalletService : IWalletService
 {
-    private readonly IPersonalWalletStore _wallets;
+    private readonly IDateTimeProvider _clock;
+    private readonly ApplicationDbContext _db;
     private readonly IBillingInvoiceIssuer _invoices;
     private readonly IApplicationReadDbContext _read;
-    private readonly ApplicationDbContext _db;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
+    private readonly IPersonalWalletStore _wallets;
 
     public WalletService(
         IPersonalWalletStore wallets,
@@ -37,8 +37,8 @@ public sealed class WalletService : IWalletService
 
     public async Task<WalletBalanceDto> GetBalanceAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        UserId userKey = UserId.Create(userId);
-        PersonalWallet? wallet = await _read.PersonalWallets.AsNoTracking()
+        var userKey = UserId.Create(userId);
+        var wallet = await _read.PersonalWallets.AsNoTracking()
             .FirstOrDefaultAsync(w => w.UserId == userKey, cancellationToken);
 
         return wallet is null
@@ -52,7 +52,7 @@ public sealed class WalletService : IWalletService
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        UserId userKey = UserId.Create(userId);
+        var userKey = UserId.Create(userId);
         Guid? walletId = await _read.PersonalWallets.AsNoTracking()
             .Where(w => w.UserId == userKey)
             .Select(w => w.Id)
@@ -60,7 +60,7 @@ public sealed class WalletService : IWalletService
         if (walletId is null || walletId == Guid.Empty)
             return Array.Empty<WalletLedgerEntryDto>();
 
-        int skip = Math.Max(0, page - 1) * Math.Clamp(pageSize, 1, 100);
+        var skip = Math.Max(0, page - 1) * Math.Clamp(pageSize, 1, 100);
         return await _read.WalletLedgerEntries
             .AsNoTracking()
             .Where(e => e.WalletId == walletId)
@@ -85,18 +85,19 @@ public sealed class WalletService : IWalletService
         string? description = null,
         CancellationToken cancellationToken = default)
     {
-        WalletBalanceDto? replay = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
+        var replay = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
         if (replay is not null)
             return replay;
 
-        PersonalWallet wallet = await GetOrCreateWalletForUpdateAsync(userId, cancellationToken);
+        var wallet = await GetOrCreateWalletForUpdateAsync(userId, cancellationToken);
         wallet.TopUp(amountCredits, idempotencyKey, description ?? $"topup:{amountCredits}", _clock.Now);
 
         try
         {
             await _uow.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex, WalletDbExceptionHelper.LedgerIdempotencyIndex))
+        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex,
+                                               WalletDbExceptionHelper.LedgerIdempotencyIndex))
         {
             _db.ChangeTracker.Clear();
             return await RequireBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
@@ -105,7 +106,7 @@ public sealed class WalletService : IWalletService
         await _invoices.IssueWalletTopUpReceiptAsync(
             userId,
             amountCredits,
-            amountCents: 0,
+            0,
             "CREDITS",
             "manual",
             cancellationToken);
@@ -123,19 +124,20 @@ public sealed class WalletService : IWalletService
         string provider,
         CancellationToken cancellationToken = default)
     {
-        WalletBalanceDto? replay = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
+        var replay = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
         if (replay is not null)
             return replay;
 
-        PersonalWallet wallet = await GetOrCreateWalletForUpdateAsync(userId, cancellationToken);
-        string description = $"package:{packageCode}";
+        var wallet = await GetOrCreateWalletForUpdateAsync(userId, cancellationToken);
+        var description = $"package:{packageCode}";
         wallet.TopUp(creditsAmount, idempotencyKey, description, _clock.Now);
 
         try
         {
             await _uow.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex, WalletDbExceptionHelper.LedgerIdempotencyIndex))
+        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex,
+                                               WalletDbExceptionHelper.LedgerIdempotencyIndex))
         {
             _db.ChangeTracker.Clear();
             return await RequireBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
@@ -157,23 +159,21 @@ public sealed class WalletService : IWalletService
         string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
-        if (!MeteredActions.TryGetCost(actionCode, out long cost))
+        if (!MeteredActions.TryGetCost(actionCode, out var cost))
             return new WalletDebitResultDto(false, 0, 0, "Unknown metered action.");
 
-        WalletBalanceDto? replayBalance = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
+        var replayBalance = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
         if (replayBalance is not null)
         {
-            WalletLedgerEntryDto? replayEntry = await FindLedgerEntryAsync(replayBalance.WalletId, idempotencyKey, cancellationToken);
+            var replayEntry = await FindLedgerEntryAsync(replayBalance.WalletId, idempotencyKey, cancellationToken);
             if (replayEntry is not null)
-            {
                 return new WalletDebitResultDto(
                     replayEntry.AmountCredits < 0,
                     Math.Abs(replayEntry.AmountCredits),
                     replayBalance.BalanceCredits);
-            }
         }
 
-        PersonalWallet wallet = await GetOrCreateWalletForUpdateAsync(userId, cancellationToken);
+        var wallet = await GetOrCreateWalletForUpdateAsync(userId, cancellationToken);
         try
         {
             wallet.Debit(cost, actionCode, idempotencyKey, actionCode, _clock.Now);
@@ -184,12 +184,13 @@ public sealed class WalletService : IWalletService
         {
             return new WalletDebitResultDto(false, cost, wallet.BalanceCredits, "Insufficient wallet balance.");
         }
-        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex, WalletDbExceptionHelper.LedgerIdempotencyIndex))
+        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex,
+                                               WalletDbExceptionHelper.LedgerIdempotencyIndex))
         {
             _db.ChangeTracker.Clear();
-            WalletBalanceDto balance = await RequireBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
-            WalletLedgerEntryDto entry = await FindLedgerEntryAsync(balance.WalletId, idempotencyKey, cancellationToken)
-                ?? throw new InvalidOperationException("Idempotent debit replay entry was not found.");
+            var balance = await RequireBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
+            var entry = await FindLedgerEntryAsync(balance.WalletId, idempotencyKey, cancellationToken)
+                        ?? throw new InvalidOperationException("Idempotent debit replay entry was not found.");
             return new WalletDebitResultDto(
                 entry.AmountCredits < 0,
                 Math.Abs(entry.AmountCredits),
@@ -205,12 +206,12 @@ public sealed class WalletService : IWalletService
         if (string.IsNullOrWhiteSpace(idempotencyKey))
             return null;
 
-        UserId userKey = UserId.Create(userId);
+        var userKey = UserId.Create(userId);
         var row = await (
-            from entry in _read.WalletLedgerEntries.AsNoTracking()
-            join wallet in _read.PersonalWallets.AsNoTracking() on entry.WalletId equals wallet.Id
-            where entry.IdempotencyKey == idempotencyKey && wallet.UserId == userKey
-            select new { wallet.Id, entry.BalanceAfterCredits })
+                from entry in _read.WalletLedgerEntries.AsNoTracking()
+                join wallet in _read.PersonalWallets.AsNoTracking() on entry.WalletId equals wallet.Id
+                where entry.IdempotencyKey == idempotencyKey && wallet.UserId == userKey
+                select new { wallet.Id, entry.BalanceAfterCredits })
             .FirstOrDefaultAsync(cancellationToken);
 
         return row is null ? null : new WalletBalanceDto(row.Id, row.BalanceAfterCredits);
@@ -221,8 +222,9 @@ public sealed class WalletService : IWalletService
         string idempotencyKey,
         CancellationToken cancellationToken)
     {
-        WalletBalanceDto? replay = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
-        return replay ?? throw new InvalidOperationException("Idempotent wallet mutation replay could not be resolved.");
+        var replay = await TryGetBalanceForIdempotencyReplayAsync(userId, idempotencyKey, cancellationToken);
+        return replay ??
+               throw new InvalidOperationException("Idempotent wallet mutation replay could not be resolved.");
     }
 
     private async Task<WalletLedgerEntryDto?> FindLedgerEntryAsync(
@@ -245,8 +247,8 @@ public sealed class WalletService : IWalletService
 
     private async Task<PersonalWallet> GetOrCreateWalletForUpdateAsync(Guid userId, CancellationToken cancellationToken)
     {
-        UserId userKey = UserId.Create(userId);
-        PersonalWallet? wallet = await _wallets.GetByUserIdForUpdateAsync(userKey, cancellationToken);
+        var userKey = UserId.Create(userId);
+        var wallet = await _wallets.GetByUserIdForUpdateAsync(userKey, cancellationToken);
         if (wallet is not null)
             return wallet;
 
@@ -257,7 +259,8 @@ public sealed class WalletService : IWalletService
         {
             await _uow.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex, WalletDbExceptionHelper.WalletUserUniqueIndex))
+        catch (DbUpdateException ex) when (WalletDbExceptionHelper.IsUniqueViolation(ex,
+                                               WalletDbExceptionHelper.WalletUserUniqueIndex))
         {
             _db.ChangeTracker.Clear();
             wallet = await _wallets.GetByUserIdForUpdateAsync(userKey, cancellationToken);
@@ -269,6 +272,8 @@ public sealed class WalletService : IWalletService
         return wallet;
     }
 
-    private static WalletBalanceDto ToBalanceDto(PersonalWallet wallet) =>
-        new(wallet.Id, wallet.BalanceCredits);
+    private static WalletBalanceDto ToBalanceDto(PersonalWallet wallet)
+    {
+        return new WalletBalanceDto(wallet.Id, wallet.BalanceCredits);
+    }
 }

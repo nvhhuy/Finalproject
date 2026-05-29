@@ -5,20 +5,9 @@ namespace Domains.Billing;
 
 public sealed class BillingInvoice : AggregateRoot<Guid>
 {
-    public TenantId? TenantId { get; private set; }
-    public Guid? UserId { get; private set; }
-    public Guid? SubscriptionId { get; private set; }
-    public string InvoiceNumber { get; private set; } = null!;
-    public string Description { get; private set; } = null!;
-    public int AmountCents { get; private set; }
-    public long? AmountCredits { get; private set; }
-    public string Currency { get; private set; } = "USD";
-    public BillingInvoiceStatus Status { get; private set; }
-    public string Provider { get; private set; } = null!;
-    public string? ExternalReference { get; private set; }
-    public DateTime IssuedAtUtc { get; private set; }
-
-    private BillingInvoice() { }
+    private BillingInvoice()
+    {
+    }
 
     private BillingInvoice(
         Guid id,
@@ -48,6 +37,19 @@ public sealed class BillingInvoice : AggregateRoot<Guid>
         IssuedAtUtc = issuedAtUtc;
     }
 
+    public TenantId? TenantId { get; private set; }
+    public Guid? UserId { get; private set; }
+    public Guid? SubscriptionId { get; private set; }
+    public string InvoiceNumber { get; private set; } = null!;
+    public string Description { get; private set; } = null!;
+    public int AmountCents { get; private set; }
+    public long? AmountCredits { get; private set; }
+    public string Currency { get; private set; } = "USD";
+    public BillingInvoiceStatus Status { get; private set; }
+    public string Provider { get; private set; } = null!;
+    public string? ExternalReference { get; private set; }
+    public DateTime IssuedAtUtc { get; private set; }
+
     public static BillingInvoice ForSubscription(
         TenantId tenantId,
         Guid subscriptionId,
@@ -56,20 +58,22 @@ public sealed class BillingInvoice : AggregateRoot<Guid>
         int amountCents,
         string currency,
         string provider,
-        DateTime issuedAtUtc) =>
-        new(
+        DateTime issuedAtUtc)
+    {
+        return new BillingInvoice(
             Guid.NewGuid(),
             tenantId,
-            userId: null,
+            null,
             subscriptionId,
             invoiceNumber,
             description,
             amountCents,
-            amountCredits: null,
+            null,
             currency,
             provider,
-            externalReference: null,
+            null,
             issuedAtUtc);
+    }
 
     public static BillingInvoice ForWalletTopUp(
         Guid userId,
@@ -79,21 +83,25 @@ public sealed class BillingInvoice : AggregateRoot<Guid>
         long amountCredits,
         string currency,
         string provider,
-        DateTime issuedAtUtc) =>
-        new(
+        DateTime issuedAtUtc)
+    {
+        return new BillingInvoice(
             Guid.NewGuid(),
-            tenantId: null,
+            null,
             userId,
-            subscriptionId: null,
+            null,
             invoiceNumber,
             description,
             amountCents,
             amountCredits,
             currency,
             provider,
-            externalReference: null,
+            null,
             issuedAtUtc);
+    }
 
-    public static string GenerateInvoiceNumber(DateTime utcNow) =>
-        $"INV-{utcNow:yyyyMMdd}-{Guid.NewGuid():N}"[..24].ToUpperInvariant();
+    public static string GenerateInvoiceNumber(DateTime utcNow)
+    {
+        return $"INV-{utcNow:yyyyMMdd}-{Guid.NewGuid():N}"[..24].ToUpperInvariant();
+    }
 }

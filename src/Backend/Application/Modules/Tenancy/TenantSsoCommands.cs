@@ -1,19 +1,14 @@
+using Application.Contracts.ExternalAuth;
 using Application.Contracts.Persistence;
+using Application.Contracts.Services;
 using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
-using Application.Contracts.Services;
 using Application.Modules.Users.Authentication.Commands.TenantOidc;
 using Application.Modules.Users.Authentication.Common;
-using Application.Contracts.ExternalAuth;
 using Domains.Tenancy;
 using Domains.Tenancy.ValueObjects;
-using FluentValidation;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.Authentication;
-using Shared.Errors.General;
 
 namespace Application.Modules.Tenancy;
 
@@ -26,8 +21,9 @@ public sealed record TenantSsoSettingsDto(
     bool HasClientSecret,
     DateTime UpdatedAtUtc)
 {
-    public static TenantSsoSettingsDto From(TenantSsoSettings settings) =>
-        new(
+    public static TenantSsoSettingsDto From(TenantSsoSettings settings)
+    {
+        return new TenantSsoSettingsDto(
             settings.Id,
             settings.TenantId.Value,
             settings.IsEnabled,
@@ -35,6 +31,7 @@ public sealed record TenantSsoSettingsDto(
             settings.OidcClientId,
             !string.IsNullOrWhiteSpace(settings.OidcClientSecret),
             settings.UpdatedAtUtc);
+    }
 }
 
 public sealed record TenantSsoPublicDto(
@@ -47,7 +44,8 @@ public sealed record TenantSsoPublicDto(
 public sealed record GetTenantSsoSettingsQuery(Guid TenantId, Guid UserId)
     : IRequest<Result<TenantSsoSettingsDto, Error>>;
 
-public sealed class GetTenantSsoSettingsQueryHandler : IRequestHandler<GetTenantSsoSettingsQuery, Result<TenantSsoSettingsDto, Error>>
+public sealed class
+    GetTenantSsoSettingsQueryHandler : IRequestHandler<GetTenantSsoSettingsQuery, Result<TenantSsoSettingsDto, Error>>
 {
     private readonly IApplicationReadDbContext _db;
     private readonly ITenantMembershipService _membership;
@@ -65,8 +63,8 @@ public sealed class GetTenantSsoSettingsQueryHandler : IRequestHandler<GetTenant
         if (!await _membership.IsOwnerAsync(request.TenantId, request.UserId, cancellationToken))
             return new ForbiddenError("Only the tenant owner can view SSO settings.");
 
-        TenantId tenantKey = TenantId.Create(request.TenantId);
-        TenantSsoSettings? settings = await _db.TenantSsoSettings
+        var tenantKey = TenantId.Create(request.TenantId);
+        var settings = await _db.TenantSsoSettings
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.TenantId == tenantKey, cancellationToken);
         if (settings is null)
@@ -83,7 +81,10 @@ public sealed class GetPublicTenantSsoBySlugQueryHandler
 {
     private readonly IApplicationReadDbContext _db;
 
-    public GetPublicTenantSsoBySlugQueryHandler(IApplicationReadDbContext db) => _db = db;
+    public GetPublicTenantSsoBySlugQueryHandler(IApplicationReadDbContext db)
+    {
+        _db = db;
+    }
 
     public async Task<Result<TenantSsoPublicDto, Error>> Handle(
         GetPublicTenantSsoBySlugQuery request,
@@ -100,10 +101,10 @@ public sealed class GetPublicTenantSsoBySlugQueryHandler
         }
 
         var row = await (
-            from t in _db.Tenants.AsNoTracking()
-            join s in _db.TenantSsoSettings.AsNoTracking() on t.Id equals s.TenantId
-            where t.Slug == slug && t.Status == TenantStatus.Active && s.IsEnabled
-            select new { t.Id, t.Slug, s.OidcAuthority, s.OidcClientId })
+                from t in _db.Tenants.AsNoTracking()
+                join s in _db.TenantSsoSettings.AsNoTracking() on t.Id equals s.TenantId
+                where t.Slug == slug && t.Status == TenantStatus.Active && s.IsEnabled
+                select new { t.Id, t.Slug, s.OidcAuthority, s.OidcClientId })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)
@@ -136,10 +137,10 @@ public sealed class UpsertTenantSsoSettingsCommandValidator : AbstractValidator<
 public sealed class UpsertTenantSsoSettingsCommandHandler
     : IRequestHandler<UpsertTenantSsoSettingsCommand, Result<TenantSsoSettingsDto, Error>>
 {
-    private readonly ITenantSsoSettingsStore _store;
-    private readonly ITenantMembershipService _membership;
-    private readonly IUnitOfWork _uow;
     private readonly IDateTimeProvider _clock;
+    private readonly ITenantMembershipService _membership;
+    private readonly ITenantSsoSettingsStore _store;
+    private readonly IUnitOfWork _uow;
 
     public UpsertTenantSsoSettingsCommandHandler(
         ITenantSsoSettingsStore store,
@@ -170,13 +171,13 @@ public sealed class UpsertTenantSsoSettingsCommandHandler
             return new ValidationError(nameof(request.OidcAuthority), ex.Message);
         }
 
-        TenantId tenantKey = TenantId.Create(request.TenantId);
-        TenantSsoSettings? existing = await _store.GetForUpdateAsync(tenantKey, cancellationToken);
-        DateTime now = _clock.Now;
+        var tenantKey = TenantId.Create(request.TenantId);
+        var existing = await _store.GetForUpdateAsync(tenantKey, cancellationToken);
+        var now = _clock.Now;
 
         if (existing is null)
         {
-            TenantSsoSettings created = TenantSsoSettings.Create(
+            var created = TenantSsoSettings.Create(
                 tenantKey,
                 request.IsEnabled,
                 authority,
@@ -206,11 +207,12 @@ public sealed class TenantOidcSignInCommandValidator : AbstractValidator<TenantO
     }
 }
 
-public sealed class TenantOidcSignInCommandHandler : IRequestHandler<TenantOidcSignInCommand, Result<AuthenticationResponse, Error>>
+public sealed class
+    TenantOidcSignInCommandHandler : IRequestHandler<TenantOidcSignInCommand, Result<AuthenticationResponse, Error>>
 {
     private readonly IApplicationReadDbContext _db;
-    private readonly ITenantOidcIdTokenValidator _validator;
     private readonly IMediator _mediator;
+    private readonly ITenantOidcIdTokenValidator _validator;
 
     public TenantOidcSignInCommandHandler(
         IApplicationReadDbContext db,
@@ -237,16 +239,16 @@ public sealed class TenantOidcSignInCommandHandler : IRequestHandler<TenantOidcS
         }
 
         var tenantSso = await (
-            from t in _db.Tenants.AsNoTracking()
-            join s in _db.TenantSsoSettings.AsNoTracking() on t.Id equals s.TenantId
-            where t.Slug == slug && t.Status == TenantStatus.Active && s.IsEnabled
-            select new { TenantId = t.Id, s.OidcAuthority, s.OidcClientId })
+                from t in _db.Tenants.AsNoTracking()
+                join s in _db.TenantSsoSettings.AsNoTracking() on t.Id equals s.TenantId
+                where t.Slug == slug && t.Status == TenantStatus.Active && s.IsEnabled
+                select new { TenantId = t.Id, s.OidcAuthority, s.OidcClientId })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tenantSso is null)
             return new NotFoundError("Tenant SSO is not available.");
 
-        TenantOidcUserInfo? userInfo = await _validator.ValidateAsync(
+        var userInfo = await _validator.ValidateAsync(
             tenantSso.OidcAuthority,
             tenantSso.OidcClientId,
             request.IdToken,

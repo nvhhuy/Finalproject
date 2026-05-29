@@ -11,11 +11,15 @@ public sealed class SmtpHealthCheck : IHealthCheck
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(3);
     private readonly IOptionsMonitor<SmtpEmailOptions> _options;
 
-    public SmtpHealthCheck(IOptionsMonitor<SmtpEmailOptions> options) => _options = options;
-
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public SmtpHealthCheck(IOptionsMonitor<SmtpEmailOptions> options)
     {
-        SmtpEmailOptions o = _options.CurrentValue;
+        _options = options;
+    }
+
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var o = _options.CurrentValue;
         if (!o.Enabled)
             return HealthCheckResult.Healthy("SMTP disabled by configuration.");
 

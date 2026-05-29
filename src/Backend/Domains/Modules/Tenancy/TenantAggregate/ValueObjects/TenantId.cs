@@ -4,11 +4,16 @@ namespace Domains.Tenancy.ValueObjects;
 
 public sealed record TenantId : IValueObject
 {
+    private TenantId()
+    {
+    }
+
+    private TenantId(Guid value)
+    {
+        Value = value;
+    }
+
     public Guid Value { get; private set; }
-
-    private TenantId() { }
-
-    private TenantId(Guid value) => Value = value;
 
     public static TenantId Create(Guid value)
     {
@@ -17,5 +22,8 @@ public sealed record TenantId : IValueObject
         return new TenantId(value);
     }
 
-    public static TenantId CreateNew() => new(Guid.NewGuid());
+    public static TenantId CreateNew()
+    {
+        return new TenantId(Guid.NewGuid());
+    }
 }

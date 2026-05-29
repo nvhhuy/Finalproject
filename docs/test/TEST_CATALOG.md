@@ -8,8 +8,8 @@ Inventory of automated tests as of the current baseline. Update this file when a
 
 | Layer | Project / folder | Approx. specs | Requires |
 |-------|------------------|---------------|----------|
-| API integration | `Api.IntegrationTests` | ~38 (+ 1 optional media skip) | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
-| Playwright — Frontend | `e2e/tests/frontend/` | 12 (+ 1 setup) | Postgres + migrated DB; Playwright `webServer` |
+| API integration | `Api.IntegrationTests` | ~42 test cases (+ optional media skip) | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
+| Playwright — Frontend | `e2e/tests/frontend/` | 16 (+ 1 setup) | Postgres + migrated DB; Playwright `webServer` |
 | Playwright — Admin | `e2e/tests/admin/` | 7 | Same as Frontend |
 
 ---
@@ -24,14 +24,15 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | `PlatformIntegrationTests` | `GET /health/live`, `GET /health/ready` |
 | `AuthIntegrationTests` | Health smoke; register does not issue tokens until verified |
 | `AuthFlowIntegrationTests` | Register → verify → login → refresh; forgot/reset password; resend verification |
-| `UsersIntegrationTests` | Profile GET/PATCH with `rowVersion` |
+| `UsersIntegrationTests` | Profile GET/PUT with `rowVersion` |
 | `AdminIntegrationTests` | Admin login; user CRUD lock/unlock/soft-delete; email verify, reset password, revoke sessions; impersonation; settings, audit logs + **CSV export**, DLQ (Rabbit disabled) |
 | `BillingIntegrationTests` | Public plans; subscribe → tenant + subscription; invoices; invite + member limit; cancel/change plan; Pro credit grant |
 | `TenancyIntegrationTests` | Platform admin create tenant; member isolation; default tenant seed |
-| `WalletIntegrationTests` | Top-up + metered debit |
+| `WalletIntegrationTests` | Top-up + metered debit + purchase credit package |
 | `PaymentWebhookIntegrationTests` | Stripe idempotent + checkout provision; VNPay/PayOS idempotent |
 | `TenantHostIntegrationTests` | Subdomain resolve-host; custom domain register |
 | `MediaIntegrationTests` | Media initiate/complete/get (**skipped** unless `INTEGRATION_MEDIA_ENABLED=true`) |
+| `SupportTicketsIntegrationTests` | User ticket create/list/detail + add message + close/reopen |
 | `NotificationsIntegrationTests` | Admin broadcast; user list + mark read; mark-read 404 |
 | `TenancySsoIntegrationTests` | Tenant owner upsert SSO + public slug metadata; non-owner forbidden |
 
@@ -108,7 +109,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | Support tickets | Yes (`/support/tickets`, `/admin/support/tickets`) | Yes (frontend create/search/reply + admin support page controls) |
 | Admin users / settings / audit | Yes | Users, settings (including backup controls), dashboard, audit navigation, **audit CSV export** |
 | Billing / subscription (Follow 1) | Yes (`BillingIntegrationTests`) | Pricing, subscribe, `/app/tenant` smoke |
-| Personal wallet (Follow 2) | Yes (`WalletIntegrationTests`) | `/app/wallet` top-up smoke |
+| Personal wallet (Follow 2) | Yes (`WalletIntegrationTests`) | `/app/wallet` top-up + credit-package purchase smoke |
 | Tenant public `/t/[slug]` | Yes (API) | `/t/default` smoke |
 | Media pipeline | Optional (MinIO) | Media lab page smoke |
 | Messaging / DLQ | Admin test (Rabbit off) | — |

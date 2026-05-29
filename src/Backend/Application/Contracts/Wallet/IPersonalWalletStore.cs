@@ -1,5 +1,5 @@
-using Domains.Wallet;
 using Domains.UserAggregate.ValueObjects;
+using Domains.Wallet;
 
 namespace Application.Contracts.Wallet;
 

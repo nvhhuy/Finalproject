@@ -23,7 +23,7 @@ public sealed class TenantMemberConfiguration : IEntityTypeConfiguration<TenantM
         builder.Property(m => m.Role).HasMaxLength(32).IsRequired();
         builder.Property(m => m.JoinedAtUtc).IsRequired();
 
-        builder.HasIndex(m => new { TenantId = m.TenantId, UserId = m.UserId }).IsUnique();
+        builder.HasIndex(m => new { m.TenantId, m.UserId }).IsUnique();
         builder.HasIndex(m => m.UserId);
     }
 }

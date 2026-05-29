@@ -7,8 +7,6 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Platform;
 
@@ -19,22 +17,25 @@ namespace Api.Controllers.Platform;
 [Route("api/v{version:apiVersion}/platform/credit-packages")]
 public sealed class PlatformCreditPackagesController : ApiControllerBase
 {
-    public PlatformCreditPackagesController(ISender sender) : base(sender) { }
+    public PlatformCreditPackagesController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CreditPackageResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<CreditPackageDto>, Error> result =
-            await Sender.Send(new ListCreditPackagesQuery(ActiveOnly: false), cancellationToken);
+        var result =
+            await Sender.Send(new ListCreditPackagesQuery(false), cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(BillingApiMapping.ToResponse).ToList()));
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<CreditPackageResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Create([FromBody] CreateCreditPackageRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateCreditPackageRequest request,
+        CancellationToken cancellationToken)
     {
-        Result<CreditPackageDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new CreateCreditPackageCommand(
                 request.Code,
                 request.Name,
@@ -49,9 +50,10 @@ public sealed class PlatformCreditPackagesController : ApiControllerBase
 
     [HttpPut("{packageId:guid}")]
     [ProducesResponseType(typeof(ApiResponse<CreditPackageResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Update(Guid packageId, [FromBody] UpdateCreditPackageRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(Guid packageId, [FromBody] UpdateCreditPackageRequest request,
+        CancellationToken cancellationToken)
     {
-        Result<CreditPackageDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new UpdateCreditPackageCommand(
                 packageId,
                 request.Name,
@@ -69,7 +71,7 @@ public sealed class PlatformCreditPackagesController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Delete(Guid packageId, CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(new DeleteCreditPackageCommand(packageId), cancellationToken);
+        var result = await Sender.Send(new DeleteCreditPackageCommand(packageId), cancellationToken);
         return MatchApi(result, _ => OkApi(true));
     }
 }

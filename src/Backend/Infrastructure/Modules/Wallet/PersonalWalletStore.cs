@@ -10,17 +10,21 @@ public sealed class PersonalWalletStore : IPersonalWalletStore
 {
     private readonly ApplicationDbContext _db;
 
-    public PersonalWalletStore(ApplicationDbContext db) => _db = db;
+    public PersonalWalletStore(ApplicationDbContext db)
+    {
+        _db = db;
+    }
 
     /// <summary>
-    /// Pessimistic row lock when the wallet exists — must run inside an active DB transaction.
-    /// Returns null when no wallet row exists yet (caller may insert under the same transaction).
+    ///     Pessimistic row lock when the wallet exists — must run inside an active DB transaction.
+    ///     Returns null when no wallet row exists yet (caller may insert under the same transaction).
     /// </summary>
-    public async Task<PersonalWallet?> GetByUserIdForUpdateAsync(UserId userId, CancellationToken cancellationToken = default)
+    public async Task<PersonalWallet?> GetByUserIdForUpdateAsync(UserId userId,
+        CancellationToken cancellationToken = default)
     {
-        Guid userGuid = userId.Value;
+        var userGuid = userId.Value;
 
-        PersonalWallet? wallet = await _db.PersonalWallets
+        var wallet = await _db.PersonalWallets
             .AsNoTracking()
             .FirstOrDefaultAsync(w => w.UserId == userId, cancellationToken);
         if (wallet is null)
@@ -38,5 +42,8 @@ public sealed class PersonalWalletStore : IPersonalWalletStore
         return await _db.PersonalWallets.FirstOrDefaultAsync(w => w.UserId == userId, cancellationToken);
     }
 
-    public void Add(PersonalWallet wallet) => _db.PersonalWallets.Add(wallet);
+    public void Add(PersonalWallet wallet)
+    {
+        _db.PersonalWallets.Add(wallet);
+    }
 }

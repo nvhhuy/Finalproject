@@ -1,27 +1,28 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Application.Contracts.Administration;
 using Application.Contracts.Authentication;
+using Application.Contracts.Billing;
 using Application.Contracts.Caching;
-using Application.Contracts.Events;
-using Application.Contracts.Transactions;
 using Application.Contracts.Email;
-using Application.Contracts.Messaging;
-using Application.Contracts.Notifications;
+using Application.Contracts.Events;
 using Application.Contracts.ExternalAuth;
-using Application.Contracts.Media;
-using Application.Contracts.Modules.Media.Persistence;
-using Application.Contracts.Persistence;
-using Application.Contracts.Storage;
-using Microsoft.AspNetCore.DataProtection;
-using Infrastructure.Modules.Users.Persistence.Conversions;
-using Application.Contracts.Modules.Users.Persistence.Read;
-using Application.Contracts.Modules.Users.Persistence.Write;
-using Application.Contracts.Services;
 using Application.Contracts.FeatureFlags;
 using Application.Contracts.Idempotency;
+using Application.Contracts.Media;
+using Application.Contracts.Messaging;
+using Application.Contracts.Modules.Media.Persistence;
+using Application.Contracts.Modules.Users.Persistence.Read;
+using Application.Contracts.Modules.Users.Persistence.Write;
+using Application.Contracts.Notifications;
+using Application.Contracts.Persistence;
+using Application.Contracts.Services;
 using Application.Contracts.Settings;
+using Application.Contracts.Storage;
 using Application.Contracts.Support;
-using Application.Contracts.Billing;
 using Application.Contracts.Tenancy;
+using Application.Contracts.Transactions;
 using Application.Contracts.Wallet;
 using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
@@ -30,54 +31,54 @@ using Infrastructure.Authentication;
 using Infrastructure.Caching;
 using Infrastructure.Email;
 using Infrastructure.ExternalAuth;
+using Infrastructure.FeatureFlags;
+using Infrastructure.Idempotency;
 using Infrastructure.Media;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Outbox;
-using Infrastructure.Modules.Notifications;
-using Infrastructure.Modules.Media.Persistence;
-using Infrastructure.Scheduling;
-using Infrastructure.Persistence.Events;
-using Infrastructure.Modules.Users.Persistence.Repositories;
-using Infrastructure.Modules.Support;
 using Infrastructure.Modules.Billing;
-using Infrastructure.Modules.Wallet;
+using Infrastructure.Modules.Media.Persistence;
+using Infrastructure.Modules.Notifications;
+using Infrastructure.Modules.Support;
 using Infrastructure.Modules.Tenancy;
-using Infrastructure.Tenancy;
+using Infrastructure.Modules.Users.Persistence.Conversions;
+using Infrastructure.Modules.Users.Persistence.Repositories;
+using Infrastructure.Modules.Wallet;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Events;
 using Infrastructure.Persistence.Interceptors;
+using Infrastructure.Scheduling;
 using Infrastructure.Services;
-using Infrastructure.FeatureFlags;
-using Infrastructure.Idempotency;
 using Infrastructure.Settings;
 using Infrastructure.Storage;
+using Infrastructure.Tenancy;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
 
 namespace Infrastructure;
 
 public static class DependencyInjection
 {
     /// <summary>
-    /// Core (non-HTTP) infrastructure: persistence, caching, messaging, integrations, data protection,
-    /// app-settings service. Pulls no ASP.NET-specific dependencies so it is safe to call from a Worker
-    /// host that doesn't have an <see cref="Microsoft.AspNetCore.Http.HttpContext"/>.
+    ///     Core (non-HTTP) infrastructure: persistence, caching, messaging, integrations, data protection,
+    ///     app-settings service. Pulls no ASP.NET-specific dependencies so it is safe to call from a Worker
+    ///     host that doesn't have an <see cref="Microsoft.AspNetCore.Http.HttpContext" />.
     /// </summary>
     /// <remarks>
-    /// The HTTP-only pieces (JWT bearer authentication, <see cref="HttpContextLoggedInUserService"/>)
-    /// live in <see cref="AddInfrastructure(IServiceCollection, IConfiguration)"/>. A Worker that
-    /// only needs to run scheduled jobs or drain outbox/queues should call this method directly and
-    /// register a null <see cref="ILoggedInUserService"/> (already wired below).
+    ///     The HTTP-only pieces (JWT bearer authentication, <see cref="HttpContextLoggedInUserService" />)
+    ///     live in <see cref="AddInfrastructure(IServiceCollection, IConfiguration)" />. A Worker that
+    ///     only needs to run scheduled jobs or drain outbox/queues should call this method directly and
+    ///     register a null <see cref="ILoggedInUserService" /> (already wired below).
     /// </remarks>
-    public static IServiceCollection AddInfrastructureCore(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructureCore(this IServiceCollection services,
+        IConfiguration configuration)
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<ILoggedInUserService, NullLoggedInUserService>();
@@ -92,10 +93,7 @@ public static class DependencyInjection
         // half-a-decade out of date; tripling it again costs ~70 ms per hash on commodity hardware,
         // negligible against the 1-2 logins/user/day workload but raises the offline crack cost
         // proportionally.
-        services.Configure<PasswordHasherOptions>(options =>
-        {
-            options.IterationCount = 600_000;
-        });
+        services.Configure<PasswordHasherOptions>(options => { options.IterationCount = 600_000; });
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IAppSettingsService, AppSettingsService>();
         services.AddScoped<ISystemSettingsBackupService, SystemSettingsBackupService>();
@@ -111,7 +109,7 @@ public static class DependencyInjection
         services.AddScoped<IUserNotificationService>(sp => sp.GetRequiredService<UserNotificationService>());
         services.AddScoped<IUserNotificationWriter>(sp => sp.GetRequiredService<UserNotificationService>());
         services.AddScoped<IMemberNotificationBroadcaster, MemberNotificationBroadcaster>();
-        AddAuthenticationServices(services, configuration);
+        services.AddAuthenticationServices(configuration);
 
         // Media pipeline DI lives in Application.AddApplication; here we just bind the options block.
         Application.DependencyInjection.AddMediaApplicationOptions(services, configuration);
@@ -120,8 +118,8 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Full API infrastructure: core plus HTTP context, JWT bearer authentication, and the principal
-    /// resolver. Use this from the <c>Api</c> host.
+    ///     Full API infrastructure: core plus HTTP context, JWT bearer authentication, and the principal
+    ///     resolver. Use this from the <c>Api</c> host.
     /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
@@ -148,10 +146,10 @@ public static class DependencyInjection
         // We fail fast when the host looks production-like AND no directory is configured. The
         // env-var lookup is intentional: ASPNETCORE_ENVIRONMENT is what ASP.NET reads to set
         // IHostEnvironment.EnvironmentName, but we're called before that resolution.
-        IDataProtectionBuilder builder = services.AddDataProtection()
+        var builder = services.AddDataProtection()
             .SetApplicationName(configuration["DataProtection:ApplicationName"] ?? "baseproject");
 
-        string? keysDirectory = configuration["DataProtection:KeysDirectory"];
+        var keysDirectory = configuration["DataProtection:KeysDirectory"];
         if (!string.IsNullOrWhiteSpace(keysDirectory))
         {
             Directory.CreateDirectory(keysDirectory);
@@ -159,9 +157,8 @@ public static class DependencyInjection
             return;
         }
 
-        bool isDevelopment = IsDevelopmentHost(configuration);
+        var isDevelopment = IsDevelopmentHost(configuration);
         if (!isDevelopment && !configuration.GetValue("DataProtection:AllowEphemeralKeys", false))
-        {
             // Fail at startup rather than at first 2FA setup hours later.
             throw new InvalidOperationException(
                 "DataProtection:KeysDirectory is not configured. " +
@@ -169,44 +166,54 @@ public static class DependencyInjection
                 "logs every user out across replicas. Set DataProtection:KeysDirectory to a " +
                 "shared volume, or set DataProtection:AllowEphemeralKeys=true to acknowledge " +
                 "the risk (single-instance, ephemeral data only).");
-        }
     }
 
     /// <summary>
-    /// Resolves whether the current host is running in the Development environment by inspecting
-    /// every place ASP.NET Core / generic host might surface the value. We need this because
-    /// service registration runs before <see cref="Microsoft.Extensions.Hosting.IHostEnvironment"/>
-    /// is wired up via DI, and different launch paths populate the value through different keys:
-    /// <list type="bullet">
-    ///   <item><description><c>HostDefaults.EnvironmentKey</c> — what <c>WebApplicationBuilder</c> and <c>WebApplicationFactory.UseEnvironment</c> set.</description></item>
-    ///   <item><description><c>ASPNETCORE_ENVIRONMENT</c> / <c>DOTNET_ENVIRONMENT</c> — the conventional env vars exposed through the default configuration sources.</description></item>
-    ///   <item><description>OS-level env vars — used as a final fallback so Worker / CLI hosts that bypass the default builder still get a correct answer.</description></item>
-    /// </list>
-    /// Falling back to "Production" biases misconfiguration toward the safer failure mode (e.g.
-    /// the JWT dev-sentinel guard and the ephemeral-key guard both refuse to start there).
+    ///     Resolves whether the current host is running in the Development environment by inspecting
+    ///     every place ASP.NET Core / generic host might surface the value. We need this because
+    ///     service registration runs before <see cref="Microsoft.Extensions.Hosting.IHostEnvironment" />
+    ///     is wired up via DI, and different launch paths populate the value through different keys:
+    ///     <list type="bullet">
+    ///         <item>
+    ///             <description>
+    ///                 <c>HostDefaults.EnvironmentKey</c> — what <c>WebApplicationBuilder</c> and
+    ///                 <c>WebApplicationFactory.UseEnvironment</c> set.
+    ///             </description>
+    ///         </item>
+    ///         <item>
+    ///             <description>
+    ///                 <c>ASPNETCORE_ENVIRONMENT</c> / <c>DOTNET_ENVIRONMENT</c> — the conventional env vars exposed
+    ///                 through the default configuration sources.
+    ///             </description>
+    ///         </item>
+    ///         <item>
+    ///             <description>
+    ///                 OS-level env vars — used as a final fallback so Worker / CLI hosts that bypass the default
+    ///                 builder still get a correct answer.
+    ///             </description>
+    ///         </item>
+    ///     </list>
+    ///     Falling back to "Production" biases misconfiguration toward the safer failure mode (e.g.
+    ///     the JWT dev-sentinel guard and the ephemeral-key guard both refuse to start there).
     /// </summary>
     private static bool IsDevelopmentHost(IConfiguration configuration)
     {
-        string env = configuration[Microsoft.Extensions.Hosting.HostDefaults.EnvironmentKey]
-            ?? configuration["ASPNETCORE_ENVIRONMENT"]
-            ?? configuration["DOTNET_ENVIRONMENT"]
-            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-            ?? "Production";
+        var env = configuration[HostDefaults.EnvironmentKey]
+                  ?? configuration["ASPNETCORE_ENVIRONMENT"]
+                  ?? configuration["DOTNET_ENVIRONMENT"]
+                  ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                  ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                  ?? "Production";
         return string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase);
     }
 
     public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
     {
-        string? redis = configuration["Redis:ConnectionString"];
+        var redis = configuration["Redis:ConnectionString"];
         if (!string.IsNullOrWhiteSpace(redis))
-        {
             services.AddStackExchangeRedisCache(options => options.Configuration = redis);
-        }
         else
-        {
             services.AddDistributedMemoryCache();
-        }
 
         services.AddSingleton<ICacheService, DistributedCacheService>();
         return services;
@@ -221,8 +228,8 @@ public static class DependencyInjection
         services.Configure<SmtpEmailOptions>(configuration.GetSection(SmtpEmailOptions.SectionName));
         services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
 
-        bool smtpEnabled = configuration.GetValue($"{SmtpEmailOptions.SectionName}:Enabled", false);
-        bool emailViaOutbox = configuration.GetValue("Email:QueueViaOutbox", true);
+        var smtpEnabled = configuration.GetValue($"{SmtpEmailOptions.SectionName}:Enabled", false);
+        var emailViaOutbox = configuration.GetValue("Email:QueueViaOutbox", true);
 
         if (smtpEnabled)
             services.AddSingleton<SmtpEmailSender>();
@@ -246,13 +253,9 @@ public static class DependencyInjection
         services.Configure<VideoProcessingOptions>(configuration.GetSection(VideoProcessingOptions.SectionName));
         if (!string.IsNullOrWhiteSpace(configuration[$"{VideoProcessingOptions.SectionName}:FfmpegPath"])
             && !string.IsNullOrWhiteSpace(configuration[$"{VideoProcessingOptions.SectionName}:FfprobePath"]))
-        {
             services.AddSingleton<IVideoProcessingService, FfmpegVideoProcessingService>();
-        }
         else
-        {
             services.AddSingleton<IVideoProcessingService, NullVideoProcessingService>();
-        }
 
         // Malware / content scanner. Default to the no-op implementation; operators enable the
         // ClamAV-backed scanner via configuration (MediaScanner:Enabled=true + Host/Port).
@@ -281,15 +284,17 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Token issuance and lockout services shared by Api and Worker hosts. Does not register JWT
-    /// bearer middleware (Worker has no HTTP pipeline).
+    ///     Token issuance and lockout services shared by Api and Worker hosts. Does not register JWT
+    ///     bearer middleware (Worker has no HTTP pipeline).
     /// </summary>
-    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services,
+        IConfiguration configuration)
     {
-        JwtSettings jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
-            ?? throw new InvalidOperationException($"Missing configuration section '{JwtSettings.SectionName}'.");
+        var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+                          ?? throw new InvalidOperationException(
+                              $"Missing configuration section '{JwtSettings.SectionName}'.");
 
-        bool isDevelopment = IsDevelopmentHost(configuration);
+        var isDevelopment = IsDevelopmentHost(configuration);
         JwtSettings.EnsureValidForSigning(jwtSettings, isDevelopment);
         services.AddSingleton(Options.Create(jwtSettings));
 
@@ -303,10 +308,11 @@ public static class DependencyInjection
     public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
         // JwtSettings and token services are registered in AddInfrastructureCore via AddAuthenticationServices.
-        JwtSettings jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
-            ?? throw new InvalidOperationException($"Missing configuration section '{JwtSettings.SectionName}'.");
+        var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+                          ?? throw new InvalidOperationException(
+                              $"Missing configuration section '{JwtSettings.SectionName}'.");
 
-        services.AddAuthentication(defaultScheme: JwtBearerDefaults.AuthenticationScheme)
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 // Token validation policy. Every flag set explicitly (rather than relying on
@@ -324,7 +330,7 @@ public static class DependencyInjection
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
                     ClockSkew = TimeSpan.FromSeconds(30),
                     NameClaimType = JwtRegisteredClaimNames.Sub,
-                    RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+                    RoleClaimType = ClaimTypes.Role
                 };
 
                 // Only the SignalR hub-token handshake lives here. The 401 / 403 envelope shaping
@@ -338,12 +344,12 @@ public static class DependencyInjection
                         // WebSockets can't carry custom headers, so SignalR uses ?access_token=.
                         // We honour it only for the /hubs path so other endpoints can't smuggle a
                         // token through the query string and have it logged by upstream proxies.
-                        Microsoft.Extensions.Primitives.StringValues accessToken = context.Request.Query["access_token"];
+                        var accessToken = context.Request.Query["access_token"];
                         if (!string.IsNullOrEmpty(accessToken)
                             && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
                             context.Token = accessToken;
                         return Task.CompletedTask;
-                    },
+                    }
                 };
             });
 
@@ -353,8 +359,8 @@ public static class DependencyInjection
 
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        string? writeCs = configuration.GetConnectionString("DatabaseConnectionString");
-        string? readCs = configuration.GetConnectionString("DatabaseReadConnectionString");
+        var writeCs = configuration.GetConnectionString("DatabaseConnectionString");
+        var readCs = configuration.GetConnectionString("DatabaseReadConnectionString");
         if (string.IsNullOrWhiteSpace(readCs))
             readCs = writeCs;
 
@@ -367,18 +373,18 @@ public static class DependencyInjection
         {
             UserDataProtection.Initialize(sp.GetRequiredService<IDataProtectionProvider>());
             options.UseNpgsql(writeCs, npgsql => npgsql.EnableRetryOnFailure(
-                maxRetryCount: 3,
-                maxRetryDelay: TimeSpan.FromSeconds(5),
-                errorCodesToAdd: null));
+                3,
+                TimeSpan.FromSeconds(5),
+                null));
         });
 
         services.AddDbContext<ApplicationReadDbContext>((sp, options) =>
         {
             UserDataProtection.Initialize(sp.GetRequiredService<IDataProtectionProvider>());
             options.UseNpgsql(readCs, npgsql => npgsql.EnableRetryOnFailure(
-                maxRetryCount: 3,
-                maxRetryDelay: TimeSpan.FromSeconds(5),
-                errorCodesToAdd: null));
+                3,
+                TimeSpan.FromSeconds(5),
+                null));
         });
 
         services.AddScoped<IApplicationReadDbContext>(sp => sp.GetRequiredService<ApplicationReadDbContext>());
@@ -418,7 +424,10 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>Registers in-process cron scheduling (Cronos). Call from Worker host; add <see cref="Application.Contracts.Scheduling.ICronJob"/> implementations as singletons.</summary>
+    /// <summary>
+    ///     Registers in-process cron scheduling (Cronos). Call from Worker host; add
+    ///     <see cref="Application.Contracts.Scheduling.ICronJob" /> implementations as singletons.
+    /// </summary>
     public static IServiceCollection AddCronScheduling(this IServiceCollection services)
     {
         services.AddHostedService<CronJobSchedulerHostedService>();

@@ -2,11 +2,6 @@ using Application.Contracts.Administration;
 using Application.Contracts.Authorization;
 using Application.Contracts.Notifications;
 using Application.Modules.Users.Administration;
-using FluentValidation;
-using MediatR;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Notifications.Admin;
 
@@ -39,8 +34,8 @@ public sealed class BroadcastMemberNotificationCommandValidator
 public sealed class BroadcastMemberNotificationCommandHandler
     : IRequestHandler<BroadcastMemberNotificationCommand, Result<BroadcastMemberNotificationResult, Error>>
 {
-    private readonly IMemberNotificationBroadcaster _broadcaster;
     private readonly IAdminAuditLogWriter _audit;
+    private readonly IMemberNotificationBroadcaster _broadcaster;
 
     public BroadcastMemberNotificationCommandHandler(
         IMemberNotificationBroadcaster broadcaster,
@@ -54,11 +49,11 @@ public sealed class BroadcastMemberNotificationCommandHandler
         BroadcastMemberNotificationCommand request,
         CancellationToken cancellationToken)
     {
-        string title = request.Title.Trim();
-        string body = request.Body.Trim();
-        string? linkUrl = string.IsNullOrWhiteSpace(request.LinkUrl) ? null : request.LinkUrl.Trim();
+        var title = request.Title.Trim();
+        var body = request.Body.Trim();
+        var linkUrl = string.IsNullOrWhiteSpace(request.LinkUrl) ? null : request.LinkUrl.Trim();
 
-        int recipientCount = await _broadcaster.BroadcastToAllMembersAsync(
+        var recipientCount = await _broadcaster.BroadcastToAllMembersAsync(
             title,
             body,
             linkUrl,
@@ -70,7 +65,7 @@ public sealed class BroadcastMemberNotificationCommandHandler
         _audit.Append(
             request.ActingAdminUserId,
             AdminAuditActions.MemberNotificationBroadcast,
-            targetUserId: null,
+            null,
             request.ActorIpAddress,
             $"recipients={recipientCount};title={title}");
 

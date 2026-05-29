@@ -1,20 +1,23 @@
 using Api.Tenancy;
-using Application.Contracts.Tenancy;
 using Application.Contracts.Services;
+using Application.Contracts.Tenancy;
 using Domains.Tenancy;
-using Microsoft.AspNetCore.Http;
 
 namespace Api.Middleware;
 
 /// <summary>
-/// Resolves tenant context from <c>X-Tenant-Id</c>, JWT <c>tenant_id</c> claim, or request host (subdomain / custom domain).
-/// Validates membership for authenticated users unless platform admin bypass applies.
+///     Resolves tenant context from <c>X-Tenant-Id</c>, JWT <c>tenant_id</c> claim, or request host (subdomain / custom
+///     domain).
+///     Validates membership for authenticated users unless platform admin bypass applies.
 /// </summary>
 public sealed class TenantContextMiddleware
 {
     private readonly RequestDelegate _next;
 
-    public TenantContextMiddleware(RequestDelegate next) => _next = next;
+    public TenantContextMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
 
     public async Task InvokeAsync(
         HttpContext context,
@@ -23,7 +26,7 @@ public sealed class TenantContextMiddleware
         ITenantHostResolver hostResolver,
         ILoggedInUserService loggedInUser)
     {
-        if (TryResolveTenantId(context, out Guid tenantId))
+        if (TryResolveTenantId(context, out var tenantId))
         {
             if (!await AuthorizeTenantAccessAsync(context, tenantContext, membership, loggedInUser, tenantId))
                 return;
@@ -32,8 +35,8 @@ public sealed class TenantContextMiddleware
         }
         else
         {
-            string host = context.Request.Host.Host ?? string.Empty;
-            TenantHostResolution? hostResolution = await hostResolver.ResolveAsync(host, context.RequestAborted);
+            var host = context.Request.Host.Host ?? string.Empty;
+            var hostResolution = await hostResolver.ResolveAsync(host, context.RequestAborted);
             if (hostResolution is not null)
             {
                 tenantContext.SetTenant(hostResolution.TenantId);
@@ -42,18 +45,18 @@ public sealed class TenantContextMiddleware
             }
             else if (loggedInUser.UserId is { } autoUserKey)
             {
-                Guid userId = autoUserKey.Value;
+                var userId = autoUserKey.Value;
                 if (await membership.IsPlatformAdminAsync(userId, context.RequestAborted))
                 {
                     tenantContext.EnableBypass();
                 }
                 else
                 {
-                    IReadOnlyList<Guid> memberships =
+                    var memberships =
                         await membership.GetTenantIdsForUserAsync(userId, context.RequestAborted);
                     if (memberships.Count > 0)
                     {
-                        Guid activeTenant = memberships.Contains(SystemTenants.DefaultTenantId)
+                        var activeTenant = memberships.Contains(SystemTenants.DefaultTenantId)
                             ? SystemTenants.DefaultTenantId
                             : memberships[0];
                         tenantContext.SetTenant(activeTenant);
@@ -75,12 +78,12 @@ public sealed class TenantContextMiddleware
         if (loggedInUser.UserId is not { } userKey)
             return true;
 
-        Guid userId = userKey.Value;
-        bool isPlatformAdmin = await membership.IsPlatformAdminAsync(userId, context.RequestAborted);
+        var userId = userKey.Value;
+        var isPlatformAdmin = await membership.IsPlatformAdminAsync(userId, context.RequestAborted);
         if (isPlatformAdmin)
             tenantContext.EnableBypass();
 
-        bool isMember = isPlatformAdmin || await membership.IsMemberAsync(tenantId, userId, context.RequestAborted);
+        var isMember = isPlatformAdmin || await membership.IsMemberAsync(tenantId, userId, context.RequestAborted);
         if (isMember)
             return true;
 
@@ -88,7 +91,7 @@ public sealed class TenantContextMiddleware
         await context.Response.WriteAsJsonAsync(new
         {
             success = false,
-            message = "You are not a member of the requested tenant.",
+            message = "You are not a member of the requested tenant."
         });
         return false;
     }
@@ -98,15 +101,15 @@ public sealed class TenantContextMiddleware
         tenantId = Guid.Empty;
 
         if (context.Request.Headers.TryGetValue(TenantHttpHeaders.TenantId, out var headerValues)
-            && Guid.TryParse(headerValues.FirstOrDefault(), out Guid fromHeader)
+            && Guid.TryParse(headerValues.FirstOrDefault(), out var fromHeader)
             && fromHeader != Guid.Empty)
         {
             tenantId = fromHeader;
             return true;
         }
 
-        string? claim = context.User.FindFirst(TenantClaimTypes.TenantId)?.Value;
-        if (!string.IsNullOrWhiteSpace(claim) && Guid.TryParse(claim, out Guid fromClaim) && fromClaim != Guid.Empty)
+        var claim = context.User.FindFirst(TenantClaimTypes.TenantId)?.Value;
+        if (!string.IsNullOrWhiteSpace(claim) && Guid.TryParse(claim, out var fromClaim) && fromClaim != Guid.Empty)
         {
             tenantId = fromClaim;
             return true;

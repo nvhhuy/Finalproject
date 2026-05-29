@@ -1,27 +1,26 @@
+using System.Text;
 using Application.Contracts.Messaging;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text;
 
 namespace Infrastructure.Messaging.Outbox;
 
 /// <summary>
-/// Drains <see cref="OutboxMessage"/> rows produced by the transactional outbox interceptor and
-/// publishes their payloads to RabbitMQ via <see cref="IMessagePublisher"/>. Failed publishes are
-/// retried with exponential backoff up to <see cref="OutboxOptions.MaxAttempts"/>.
+///     Drains <see cref="OutboxMessage" /> rows produced by the transactional outbox interceptor and
+///     publishes their payloads to RabbitMQ via <see cref="IMessagePublisher" />. Failed publishes are
+///     retried with exponential backoff up to <see cref="OutboxOptions.MaxAttempts" />.
 /// </summary>
 public sealed class OutboxPublisherHostedService : BackgroundService
 {
     private static readonly TimeSpan MaxBackoff = TimeSpan.FromHours(1);
+    private readonly ILogger<OutboxPublisherHostedService> _logger;
+    private readonly IOptionsMonitor<OutboxOptions> _options;
 
     private readonly IServiceProvider _services;
-    private readonly IOptionsMonitor<OutboxOptions> _options;
-    private readonly ILogger<OutboxPublisherHostedService> _logger;
 
     public OutboxPublisherHostedService(
         IServiceProvider services,
@@ -35,7 +34,7 @@ public sealed class OutboxPublisherHostedService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        OutboxOptions snapshot = _options.CurrentValue;
+        var snapshot = _options.CurrentValue;
         if (!snapshot.Enabled)
         {
             _logger.LogInformation("Outbox publisher disabled by configuration.");
@@ -49,10 +48,9 @@ public sealed class OutboxPublisherHostedService : BackgroundService
             snapshot.MaxAttempts);
 
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
-                int processed = await ProcessBatchAsync(stoppingToken);
+                var processed = await ProcessBatchAsync(stoppingToken);
                 if (processed == 0)
                     await Task.Delay(TimeSpan.FromSeconds(_options.CurrentValue.PollIntervalSeconds), stoppingToken);
             }
@@ -65,27 +63,26 @@ public sealed class OutboxPublisherHostedService : BackgroundService
                 _logger.LogError(ex, "Outbox cycle failed; backing off for one poll interval.");
                 await Task.Delay(TimeSpan.FromSeconds(_options.CurrentValue.PollIntervalSeconds), stoppingToken);
             }
-        }
     }
 
     private async Task<int> ProcessBatchAsync(CancellationToken cancellationToken)
     {
-        using IServiceScope scope = _services.CreateScope();
-        ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        IMessagePublisher publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
+        using var scope = _services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
 
         return await ProcessBatchAsync(db, publisher, _options.CurrentValue, _logger, cancellationToken);
     }
 
     /// <summary>
-    /// Pure pipeline used by the hosted service; exposed for unit tests so callers can pass in
-    /// an in-memory <see cref="ApplicationDbContext"/> and a stub publisher without spinning up DI.
+    ///     Pure pipeline used by the hosted service; exposed for unit tests so callers can pass in
+    ///     an in-memory <see cref="ApplicationDbContext" /> and a stub publisher without spinning up DI.
     /// </summary>
     /// <remarks>
-    /// On PostgreSQL we open an explicit transaction and load the batch with
-    /// <c>SELECT ... FOR UPDATE SKIP LOCKED</c> so that running multiple worker instances does
-    /// not cause double-publishing. On EF Core InMemory (used by tests) we fall back to a plain
-    /// query because the provider does not support row-level locking.
+    ///     On PostgreSQL we open an explicit transaction and load the batch with
+    ///     <c>SELECT ... FOR UPDATE SKIP LOCKED</c> so that running multiple worker instances does
+    ///     not cause double-publishing. On EF Core InMemory (used by tests) we fall back to a plain
+    ///     query because the provider does not support row-level locking.
     /// </remarks>
     internal static async Task<int> ProcessBatchAsync(
         ApplicationDbContext db,
@@ -95,21 +92,19 @@ public sealed class OutboxPublisherHostedService : BackgroundService
         CancellationToken cancellationToken)
     {
         if (!db.Database.IsRelational())
-        {
             return await ProcessBatchCoreAsync(
-                db, publisher, opts, logger, useSkipLocked: false, cancellationToken);
-        }
+                db, publisher, opts, logger, false, cancellationToken);
 
         // NpgsqlRetryingExecutionStrategy requires the explicit transaction to live inside
         // CreateExecutionStrategy().ExecuteAsync — otherwise FOR UPDATE SKIP LOCKED fails.
-        IExecutionStrategy strategy = db.Database.CreateExecutionStrategy();
+        var strategy = db.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async ct =>
         {
-            await using IDbContextTransaction transaction =
+            await using var transaction =
                 await db.Database.BeginTransactionAsync(ct);
 
-            int count = await ProcessBatchCoreAsync(
-                db, publisher, opts, logger, useSkipLocked: true, ct);
+            var count = await ProcessBatchCoreAsync(
+                db, publisher, opts, logger, true, ct);
 
             await transaction.CommitAsync(ct);
             return count;
@@ -124,17 +119,17 @@ public sealed class OutboxPublisherHostedService : BackgroundService
         bool useSkipLocked,
         CancellationToken cancellationToken)
     {
-        DateTime now = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
 
-        List<OutboxMessage> batch = useSkipLocked
+        var batch = useSkipLocked
             ? await LoadBatchWithSkipLockedAsync(db, opts.BatchSize, now, cancellationToken)
             : await db.OutboxMessages
                 // Pending = not published AND not abandoned AND eligible for next attempt. The
                 // abandoned filter prevents the publisher from re-trying poison messages on every
                 // tick after MarkAbandoned has been recorded.
                 .Where(m => m.ProcessedOnUtc == null
-                    && m.AbandonedAtUtc == null
-                    && (m.NextAttemptUtc == null || m.NextAttemptUtc <= now))
+                            && m.AbandonedAtUtc == null
+                            && (m.NextAttemptUtc == null || m.NextAttemptUtc <= now))
                 .OrderBy(m => m.OccurredOnUtc)
                 .Take(opts.BatchSize)
                 .ToListAsync(cancellationToken);
@@ -142,15 +137,14 @@ public sealed class OutboxPublisherHostedService : BackgroundService
         if (batch.Count == 0)
             return 0;
 
-        foreach (OutboxMessage row in batch)
-        {
+        foreach (var row in batch)
             try
             {
                 var context = new MessagePublishContext(
-                    TopicOrExchange: row.Exchange ?? string.Empty,
-                    RoutingKey: row.RoutingKey,
-                    MessageType: row.Type,
-                    CorrelationId: row.CorrelationId);
+                    row.Exchange ?? string.Empty,
+                    row.RoutingKey,
+                    row.Type,
+                    row.CorrelationId);
                 ReadOnlyMemory<byte> payload = Encoding.UTF8.GetBytes(row.PayloadJson);
                 await publisher.PublishRawAsync(payload, context, cancellationToken);
                 row.MarkProcessed(DateTime.UtcNow);
@@ -167,7 +161,7 @@ public sealed class OutboxPublisherHostedService : BackgroundService
                 }
                 else
                 {
-                    TimeSpan delay = ComputeBackoff(opts.InitialBackoffSeconds, row.Attempts);
+                    var delay = ComputeBackoff(opts.InitialBackoffSeconds, row.Attempts);
                     logger.LogWarning(ex,
                         "Outbox publish failed for {EventId} (attempt {Attempts}); retrying in {Delay}s.",
                         row.EventId,
@@ -176,23 +170,23 @@ public sealed class OutboxPublisherHostedService : BackgroundService
                     row.RecordFailure(DateTime.UtcNow, ex.Message, delay);
                 }
             }
-        }
 
         await db.SaveChangesAsync(cancellationToken);
         return batch.Count;
     }
 
     /// <summary>
-    /// PostgreSQL-only pessimistic claim. <c>FOR UPDATE SKIP LOCKED</c> ensures concurrent
-    /// outbox workers will silently skip rows already held by a peer's transaction instead of
-    /// blocking on them, so the only contention overhead is the per-row lock acquisition.
+    ///     PostgreSQL-only pessimistic claim. <c>FOR UPDATE SKIP LOCKED</c> ensures concurrent
+    ///     outbox workers will silently skip rows already held by a peer's transaction instead of
+    ///     blocking on them, so the only contention overhead is the per-row lock acquisition.
     /// </summary>
     private static Task<List<OutboxMessage>> LoadBatchWithSkipLockedAsync(
         ApplicationDbContext db,
         int batchSize,
         DateTime now,
-        CancellationToken cancellationToken) =>
-        db.OutboxMessages
+        CancellationToken cancellationToken)
+    {
+        return db.OutboxMessages
             .FromSqlInterpolated(
                 $@"SELECT * FROM ""OutboxMessages""
                    WHERE ""ProcessedOnUtc"" IS NULL
@@ -202,10 +196,11 @@ public sealed class OutboxPublisherHostedService : BackgroundService
                    LIMIT {batchSize}
                    FOR UPDATE SKIP LOCKED")
             .ToListAsync(cancellationToken);
+    }
 
     private static TimeSpan ComputeBackoff(int initialSeconds, int previousAttempts)
     {
-        double seconds = initialSeconds * Math.Pow(2, previousAttempts);
+        var seconds = initialSeconds * Math.Pow(2, previousAttempts);
         if (seconds > MaxBackoff.TotalSeconds || double.IsInfinity(seconds))
             return MaxBackoff;
         return TimeSpan.FromSeconds(seconds);

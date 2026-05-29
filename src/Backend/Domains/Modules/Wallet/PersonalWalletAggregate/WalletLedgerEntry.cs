@@ -8,21 +8,14 @@ public enum WalletLedgerEntryType
     Debit = 1,
     Refund = 2,
     Hold = 3,
-    Release = 4,
+    Release = 4
 }
 
 public sealed class WalletLedgerEntry : Entity<Guid>
 {
-    public Guid WalletId { get; private set; }
-    public WalletLedgerEntryType EntryType { get; private set; }
-    public long AmountCredits { get; private set; }
-    public long BalanceAfterCredits { get; private set; }
-    public string? IdempotencyKey { get; private set; }
-    public string? ActionCode { get; private set; }
-    public string? Description { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-
-    private WalletLedgerEntry() { }
+    private WalletLedgerEntry()
+    {
+    }
 
     private WalletLedgerEntry(
         Guid id,
@@ -45,6 +38,15 @@ public sealed class WalletLedgerEntry : Entity<Guid>
         CreatedAtUtc = createdAtUtc;
     }
 
+    public Guid WalletId { get; private set; }
+    public WalletLedgerEntryType EntryType { get; private set; }
+    public long AmountCredits { get; private set; }
+    public long BalanceAfterCredits { get; private set; }
+    public string? IdempotencyKey { get; private set; }
+    public string? ActionCode { get; private set; }
+    public string? Description { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
+
     public static WalletLedgerEntry Create(
         Guid walletId,
         WalletLedgerEntryType entryType,
@@ -53,8 +55,9 @@ public sealed class WalletLedgerEntry : Entity<Guid>
         string? idempotencyKey,
         string? actionCode,
         string? description,
-        DateTime createdAtUtc) =>
-        new(
+        DateTime createdAtUtc)
+    {
+        return new WalletLedgerEntry(
             Guid.NewGuid(),
             walletId,
             entryType,
@@ -64,4 +67,5 @@ public sealed class WalletLedgerEntry : Entity<Guid>
             string.IsNullOrWhiteSpace(actionCode) ? null : actionCode.Trim(),
             string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             createdAtUtc);
+    }
 }

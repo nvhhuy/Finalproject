@@ -21,6 +21,10 @@ public interface ISupportTicketService
         CancellationToken cancellationToken = default);
 
     Task<bool> AssignAsync(Guid ticketId, Guid? adminUserId, CancellationToken cancellationToken = default);
-    Task<bool> ChangeStatusAsync(Guid ticketId, SupportTicketStatus status, CancellationToken cancellationToken = default);
-    Task<bool> ChangePriorityAsync(Guid ticketId, SupportTicketPriority priority, CancellationToken cancellationToken = default);
+
+    Task<bool> ChangeStatusAsync(Guid ticketId, SupportTicketStatus status,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ChangePriorityAsync(Guid ticketId, SupportTicketPriority priority,
+        CancellationToken cancellationToken = default);
 }

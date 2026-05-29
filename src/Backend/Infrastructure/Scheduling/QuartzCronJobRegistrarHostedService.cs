@@ -5,12 +5,12 @@ using Quartz;
 
 namespace Infrastructure.Scheduling;
 
-/// <summary>Registers all <see cref="ICronJob"/> instances with the Quartz scheduler after the host starts.</summary>
+/// <summary>Registers all <see cref="ICronJob" /> instances with the Quartz scheduler after the host starts.</summary>
 public sealed class QuartzCronJobRegistrarHostedService : IHostedService
 {
-    private readonly ISchedulerFactory _schedulerFactory;
     private readonly IEnumerable<ICronJob> _jobs;
     private readonly ILogger<QuartzCronJobRegistrarHostedService> _logger;
+    private readonly ISchedulerFactory _schedulerFactory;
 
     public QuartzCronJobRegistrarHostedService(
         ISchedulerFactory schedulerFactory,
@@ -24,9 +24,9 @@ public sealed class QuartzCronJobRegistrarHostedService : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        IScheduler scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
+        var scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
 
-        foreach (ICronJob cron in _jobs)
+        foreach (var cron in _jobs)
         {
             string quartzCron;
             try
@@ -44,12 +44,12 @@ public sealed class QuartzCronJobRegistrarHostedService : IHostedService
             }
 
             var jobKey = new JobKey(cron.Name);
-            IJobDetail detail = JobBuilder.Create<QuartzCronJobBridge>()
+            var detail = JobBuilder.Create<QuartzCronJobBridge>()
                 .WithIdentity(jobKey)
                 .UsingJobData(QuartzCronJobBridge.JobNameKey, cron.Name)
                 .Build();
 
-            ITrigger trigger = TriggerBuilder.Create()
+            var trigger = TriggerBuilder.Create()
                 .WithIdentity($"{cron.Name}-trigger")
                 .ForJob(jobKey)
                 .WithCronSchedule(quartzCron, b => b.InTimeZone(TimeZoneInfo.Utc))
@@ -67,5 +67,8 @@ public sealed class QuartzCronJobRegistrarHostedService : IHostedService
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 }

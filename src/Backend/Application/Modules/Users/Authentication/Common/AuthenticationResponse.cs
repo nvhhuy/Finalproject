@@ -1,4 +1,3 @@
-
 using Domains.UserAggregate;
 
 namespace Application.Modules.Users.Authentication.Common;

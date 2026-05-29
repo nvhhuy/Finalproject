@@ -9,8 +9,6 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Platform;
 
@@ -21,22 +19,26 @@ namespace Api.Controllers.Platform;
 [Route("api/v{version:apiVersion}/platform/tenants")]
 public sealed class PlatformTenantsController : ApiControllerBase
 {
-    public PlatformTenantsController(ISender sender) : base(sender) { }
+    public PlatformTenantsController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<TenantSummaryResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        Result<IReadOnlyList<TenantSummaryDto>, Error> result =
+        var result =
             await Sender.Send(new ListTenantsQuery(page, pageSize), cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(TenantApiMapping.ToResponse).ToList()));
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<TenantSummaryResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Create([FromBody] CreateTenantRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Create([FromBody] CreateTenantRequest request,
+        CancellationToken cancellationToken = default)
     {
-        Result<TenantSummaryDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new CreateTenantCommand(
                 request.Slug,
                 request.DisplayName,
@@ -51,7 +53,7 @@ public sealed class PlatformTenantsController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<SubscriptionResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSubscription(Guid tenantId, CancellationToken cancellationToken = default)
     {
-        Result<SubscriptionSummaryDto, Error> result =
+        var result =
             await Sender.Send(new GetTenantSubscriptionQuery(tenantId), cancellationToken);
         return MatchApi(result, dto => OkApi(BillingApiMapping.ToResponse(dto)));
     }
@@ -63,7 +65,7 @@ public sealed class PlatformTenantsController : ApiControllerBase
         [FromBody] AssignTenantSubscriptionRequest request,
         CancellationToken cancellationToken = default)
     {
-        Result<SubscriptionSummaryDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminAssignTenantSubscriptionCommand(tenantId, request.PlanCode),
             cancellationToken);
         return MatchApi(result, dto => OkApi(BillingApiMapping.ToResponse(dto)));

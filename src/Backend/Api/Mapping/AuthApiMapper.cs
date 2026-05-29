@@ -10,7 +10,10 @@ namespace Api.Mapping;
 public static partial class AuthApiMapper
 {
     [UserMapping(Default = true)]
-    private static Guid ToGuid(UserId id) => MappingConversions.ToGuid(id);
+    private static Guid ToGuid(UserId id)
+    {
+        return MappingConversions.ToGuid(id);
+    }
 
     [MapProperty("User.Id", nameof(AuthResponseDto.UserId))]
     [MapProperty("User.UserName", nameof(AuthResponseDto.UserName))]

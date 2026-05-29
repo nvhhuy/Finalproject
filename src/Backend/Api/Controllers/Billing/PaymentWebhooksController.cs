@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using Api.Controllers.Base;
 using Api.Models;
 using Api.Models.Billing;
@@ -6,11 +8,7 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.General;
-using System.Text;
-using System.Text.Json;
 
 namespace Api.Controllers.Billing;
 
@@ -20,17 +18,21 @@ namespace Api.Controllers.Billing;
 [Route("api/v{version:apiVersion}/webhooks/vnpay")]
 public sealed class VnPayWebhooksController : ApiControllerBase
 {
-    public VnPayWebhooksController(ISender sender) : base(sender) { }
+    public VnPayWebhooksController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<PaymentWebhookReceiptResponse>), StatusCodes.Status200OK)]
-    public Task<IActionResult> Receive(CancellationToken cancellationToken) =>
-        ReceiveAsync("vnpay", cancellationToken);
+    public Task<IActionResult> Receive(CancellationToken cancellationToken)
+    {
+        return ReceiveAsync("vnpay", cancellationToken);
+    }
 
     private async Task<IActionResult> ReceiveAsync(string provider, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
-        string payload = await reader.ReadToEndAsync(cancellationToken);
+        var payload = await reader.ReadToEndAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(payload))
             return BadRequestValidationApi(new ValidationError("body", "Empty webhook payload."));
 
@@ -38,17 +40,19 @@ public sealed class VnPayWebhooksController : ApiControllerBase
         string? eventType = null;
         try
         {
-            using JsonDocument doc = JsonDocument.Parse(payload);
-            if (doc.RootElement.TryGetProperty("id", out JsonElement idEl) && idEl.ValueKind == JsonValueKind.String)
+            using var doc = JsonDocument.Parse(payload);
+            if (doc.RootElement.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String)
                 eventId = idEl.GetString();
-            else if (doc.RootElement.TryGetProperty("orderId", out JsonElement orderEl) && orderEl.ValueKind == JsonValueKind.String)
+            else if (doc.RootElement.TryGetProperty("orderId", out var orderEl) &&
+                     orderEl.ValueKind == JsonValueKind.String)
                 eventId = orderEl.GetString();
 
-            if (doc.RootElement.TryGetProperty("type", out JsonElement typeEl) && typeEl.ValueKind == JsonValueKind.String)
+            if (doc.RootElement.TryGetProperty("type", out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
                 eventType = typeEl.GetString();
-            else if (doc.RootElement.TryGetProperty("event_type", out JsonElement etEl) && etEl.ValueKind == JsonValueKind.String)
+            else if (doc.RootElement.TryGetProperty("event_type", out var etEl) &&
+                     etEl.ValueKind == JsonValueKind.String)
                 eventType = etEl.GetString();
-            else if (doc.RootElement.TryGetProperty("code", out JsonElement codeEl) && codeEl.ValueKind == JsonValueKind.String)
+            else if (doc.RootElement.TryGetProperty("code", out var codeEl) && codeEl.ValueKind == JsonValueKind.String)
                 eventType = codeEl.GetString();
         }
         catch (JsonException)
@@ -56,7 +60,7 @@ public sealed class VnPayWebhooksController : ApiControllerBase
             return BadRequestValidationApi(new ValidationError("body", "Invalid JSON payload."));
         }
 
-        Result<PaymentWebhookReceiptDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new ReceivePaymentWebhookCommand(provider, payload, eventId, eventType ?? "payment.success"),
             cancellationToken);
 
@@ -72,17 +76,21 @@ public sealed class VnPayWebhooksController : ApiControllerBase
 [Route("api/v{version:apiVersion}/webhooks/payos")]
 public sealed class PayOsWebhooksController : ApiControllerBase
 {
-    public PayOsWebhooksController(ISender sender) : base(sender) { }
+    public PayOsWebhooksController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<PaymentWebhookReceiptResponse>), StatusCodes.Status200OK)]
-    public Task<IActionResult> Receive(CancellationToken cancellationToken) =>
-        ReceiveAsync("payos", cancellationToken);
+    public Task<IActionResult> Receive(CancellationToken cancellationToken)
+    {
+        return ReceiveAsync("payos", cancellationToken);
+    }
 
     private async Task<IActionResult> ReceiveAsync(string provider, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
-        string payload = await reader.ReadToEndAsync(cancellationToken);
+        var payload = await reader.ReadToEndAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(payload))
             return BadRequestValidationApi(new ValidationError("body", "Empty webhook payload."));
 
@@ -90,17 +98,19 @@ public sealed class PayOsWebhooksController : ApiControllerBase
         string? eventType = null;
         try
         {
-            using JsonDocument doc = JsonDocument.Parse(payload);
-            if (doc.RootElement.TryGetProperty("id", out JsonElement idEl) && idEl.ValueKind == JsonValueKind.String)
+            using var doc = JsonDocument.Parse(payload);
+            if (doc.RootElement.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String)
                 eventId = idEl.GetString();
-            else if (doc.RootElement.TryGetProperty("orderId", out JsonElement orderEl) && orderEl.ValueKind == JsonValueKind.String)
+            else if (doc.RootElement.TryGetProperty("orderId", out var orderEl) &&
+                     orderEl.ValueKind == JsonValueKind.String)
                 eventId = orderEl.GetString();
 
-            if (doc.RootElement.TryGetProperty("type", out JsonElement typeEl) && typeEl.ValueKind == JsonValueKind.String)
+            if (doc.RootElement.TryGetProperty("type", out var typeEl) && typeEl.ValueKind == JsonValueKind.String)
                 eventType = typeEl.GetString();
-            else if (doc.RootElement.TryGetProperty("event_type", out JsonElement etEl) && etEl.ValueKind == JsonValueKind.String)
+            else if (doc.RootElement.TryGetProperty("event_type", out var etEl) &&
+                     etEl.ValueKind == JsonValueKind.String)
                 eventType = etEl.GetString();
-            else if (doc.RootElement.TryGetProperty("code", out JsonElement codeEl) && codeEl.ValueKind == JsonValueKind.String)
+            else if (doc.RootElement.TryGetProperty("code", out var codeEl) && codeEl.ValueKind == JsonValueKind.String)
                 eventType = codeEl.GetString();
         }
         catch (JsonException)
@@ -108,7 +118,7 @@ public sealed class PayOsWebhooksController : ApiControllerBase
             return BadRequestValidationApi(new ValidationError("body", "Invalid JSON payload."));
         }
 
-        Result<PaymentWebhookReceiptDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new ReceivePaymentWebhookCommand(provider, payload, eventId, eventType ?? "payment.success"),
             cancellationToken);
 

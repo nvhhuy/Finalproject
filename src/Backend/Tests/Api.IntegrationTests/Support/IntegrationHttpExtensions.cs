@@ -21,7 +21,8 @@ internal static class IntegrationHttpExtensions
 
     public static HttpRequestMessage WithIdempotencyKey(this HttpRequestMessage request, string? key = null)
     {
-        request.Headers.TryAddWithoutValidation(RequiresIdempotencyKeyAttribute.HeaderName, key ?? Guid.NewGuid().ToString("N"));
+        request.Headers.TryAddWithoutValidation(RequiresIdempotencyKeyAttribute.HeaderName,
+            key ?? Guid.NewGuid().ToString("N"));
         return request;
     }
 
@@ -31,6 +32,8 @@ internal static class IntegrationHttpExtensions
         return await response.Content.ReadFromJsonAsync<ApiResponse<T>>();
     }
 
-    public static async Task<ApiResponse<T>?> ReadApiAllowFailureAsync<T>(this HttpResponseMessage response) =>
-        await response.Content.ReadFromJsonAsync<ApiResponse<T>>();
+    public static async Task<ApiResponse<T>?> ReadApiAllowFailureAsync<T>(this HttpResponseMessage response)
+    {
+        return await response.Content.ReadFromJsonAsync<ApiResponse<T>>();
+    }
 }

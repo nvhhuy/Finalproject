@@ -2,7 +2,7 @@ using Domains.Common;
 using Domains.Common.Interfaces;
 using Domains.Wallet;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
+
 namespace Infrastructure.Persistence;
 
 /// <summary>Shared EF model between write and read PostgreSQL contexts (CQRS split).</summary>
@@ -11,7 +11,7 @@ internal static class PersistenceModel
     private static readonly HashSet<Type> RowVersionExcludedTypes =
     [
         typeof(PersonalWallet),
-        typeof(WalletLedgerEntry),
+        typeof(WalletLedgerEntry)
     ];
 
     public static void Configure(ModelBuilder modelBuilder)
@@ -25,17 +25,17 @@ internal static class PersistenceModel
     }
 
     /// <summary>
-    /// Maps <see cref="Entity{TId}.RowVersion"/> as a concurrency token for domain entities.
-    /// Wallet aggregates are excluded: they use ledger idempotency keys + <c>SELECT … FOR UPDATE</c> instead.
+    ///     Maps <see cref="Entity{TId}.RowVersion" /> as a concurrency token for domain entities.
+    ///     Wallet aggregates are excluded: they use ledger idempotency keys + <c>SELECT … FOR UPDATE</c> instead.
     /// </summary>
     private static void ConfigureRowVersion(ModelBuilder modelBuilder)
     {
-        foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (!IsDomainEntity(entityType.ClrType) || RowVersionExcludedTypes.Contains(entityType.ClrType))
                 continue;
 
-            IMutableProperty? rowVersion = entityType.FindProperty(nameof(IHasRowVersion.RowVersion));
+            var rowVersion = entityType.FindProperty(nameof(IHasRowVersion.RowVersion));
             if (rowVersion is null)
                 continue;
 
@@ -47,11 +47,9 @@ internal static class PersistenceModel
 
     private static bool IsDomainEntity(Type type)
     {
-        for (Type? current = type; current is not null; current = current.BaseType)
-        {
+        for (var current = type; current is not null; current = current.BaseType)
             if (current.IsGenericType && current.GetGenericTypeDefinition() == typeof(Entity<>))
                 return true;
-        }
 
         return false;
     }

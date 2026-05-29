@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Common.Behaviors;
@@ -14,14 +13,15 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         _logger = logger;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
-        string name = typeof(TRequest).Name;
+        var name = typeof(TRequest).Name;
         _logger.LogInformation("Handling {Request}", name);
         var sw = Stopwatch.StartNew();
         try
         {
-            TResponse response = await next();
+            var response = await next();
             sw.Stop();
             _logger.LogInformation("Handled {Request} in {Elapsed} ms", name, sw.ElapsedMilliseconds);
             return response;

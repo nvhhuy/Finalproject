@@ -1,6 +1,4 @@
 using System.Text;
-using Application.Contracts.Settings;
-using Application.Contracts.Storage;
 using Infrastructure.Settings;
 using Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
@@ -19,7 +17,7 @@ public sealed class SystemDatabaseBackupImportTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:DatabaseConnectionString"] =
-                    "Host=localhost;Port=5432;Database=baseproject_test;Username=postgres;Password=postgres",
+                    "Host=localhost;Port=5432;Database=baseproject_test;Username=postgres;Password=postgres"
             })
             .Build();
 
@@ -30,7 +28,7 @@ public sealed class SystemDatabaseBackupImportTests
             NullLogger<SystemDatabaseBackupService>.Instance);
 
         await using var invalid = new MemoryStream(Encoding.UTF8.GetBytes("not-a-pg-dump"));
-        ImportSystemDatabaseBackupResult? result =
+        var result =
             await service.ImportAndRestoreBackupAsync(invalid, CancellationToken.None);
 
         Assert.Null(result);
@@ -44,7 +42,7 @@ public sealed class SystemDatabaseBackupImportTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:DatabaseConnectionString"] =
-                    "Host=localhost;Port=5432;Database=baseproject_test;Username=postgres;Password=postgres",
+                    "Host=localhost;Port=5432;Database=baseproject_test;Username=postgres;Password=postgres"
             })
             .Build();
 
@@ -54,7 +52,7 @@ public sealed class SystemDatabaseBackupImportTests
             Options.Create(new DatabaseBackupOptions()),
             NullLogger<SystemDatabaseBackupService>.Instance);
 
-        SystemDatabaseBackupDownloadResult? download =
+        var download =
             await service.DownloadBackupAsync("other-prefix/file.dump", CancellationToken.None);
 
         Assert.Null(download);

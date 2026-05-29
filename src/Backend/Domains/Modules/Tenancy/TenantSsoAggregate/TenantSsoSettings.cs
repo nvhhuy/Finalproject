@@ -5,15 +5,9 @@ namespace Domains.Tenancy;
 
 public sealed class TenantSsoSettings : Entity<Guid>
 {
-    public TenantId TenantId { get; private set; } = null!;
-    public bool IsEnabled { get; private set; }
-    public string OidcAuthority { get; private set; } = null!;
-    public string OidcClientId { get; private set; } = null!;
-    public string? OidcClientSecret { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime UpdatedAtUtc { get; private set; }
-
-    private TenantSsoSettings() { }
+    private TenantSsoSettings()
+    {
+    }
 
     private TenantSsoSettings(
         Guid id,
@@ -33,14 +27,23 @@ public sealed class TenantSsoSettings : Entity<Guid>
         UpdatedAtUtc = utcNow;
     }
 
+    public TenantId TenantId { get; private set; } = null!;
+    public bool IsEnabled { get; private set; }
+    public string OidcAuthority { get; private set; } = null!;
+    public string OidcClientId { get; private set; } = null!;
+    public string? OidcClientSecret { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime UpdatedAtUtc { get; private set; }
+
     public static TenantSsoSettings Create(
         TenantId tenantId,
         bool isEnabled,
         string oidcAuthority,
         string oidcClientId,
         string? oidcClientSecret,
-        DateTime utcNow) =>
-        new(
+        DateTime utcNow)
+    {
+        return new TenantSsoSettings(
             Guid.NewGuid(),
             tenantId,
             isEnabled,
@@ -48,6 +51,7 @@ public sealed class TenantSsoSettings : Entity<Guid>
             oidcClientId.Trim(),
             string.IsNullOrWhiteSpace(oidcClientSecret) ? null : oidcClientSecret.Trim(),
             utcNow);
+    }
 
     public void Update(
         bool isEnabled,
@@ -69,7 +73,7 @@ public sealed class TenantSsoSettings : Entity<Guid>
         if (string.IsNullOrWhiteSpace(authority))
             throw new ArgumentException("OIDC authority is required.", nameof(authority));
 
-        string value = authority.Trim().TrimEnd('/');
+        var value = authority.Trim().TrimEnd('/');
         if (!value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("OIDC authority must use HTTPS.", nameof(authority));
 

@@ -1,4 +1,3 @@
-using System.Text;
 using Application.Contracts.Storage;
 using Infrastructure.Storage;
 
@@ -10,7 +9,7 @@ public sealed class InMemoryObjectStorageTests
     public async Task Put_get_list_and_delete_round_trip()
     {
         var storage = new InMemoryObjectStorage();
-        byte[] payload = "hello-backup"u8.ToArray();
+        var payload = "hello-backup"u8.ToArray();
 
         await using (var write = new MemoryStream(payload))
         {
@@ -19,13 +18,13 @@ public sealed class InMemoryObjectStorageTests
 
         Assert.True(await storage.ExistsAsync("system-backups/settings/a.json"));
 
-        await using Stream read = await storage.GetAsync("system-backups/settings/a.json");
+        await using var read = await storage.GetAsync("system-backups/settings/a.json");
         using var buffer = new MemoryStream();
         await read.CopyToAsync(buffer);
         Assert.Equal(payload, buffer.ToArray());
 
         var listed = new List<ObjectListing>();
-        await foreach (ObjectListing item in storage.ListKeysAsync("system-backups/settings/"))
+        await foreach (var item in storage.ListKeysAsync("system-backups/settings/"))
             listed.Add(item);
 
         Assert.Single(listed);

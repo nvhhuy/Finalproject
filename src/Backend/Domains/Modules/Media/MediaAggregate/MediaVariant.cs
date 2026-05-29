@@ -1,13 +1,15 @@
 namespace Domains.MediaAggregate;
 
 /// <summary>
-/// A single processed output produced from <see cref="MediaAsset.OriginalKey"/>. Variants are
-/// owned by the <see cref="MediaAsset"/> aggregate root — they don't have their own repository
-/// and must be reached via the parent.
+///     A single processed output produced from <see cref="MediaAsset.OriginalKey" />. Variants are
+///     owned by the <see cref="MediaAsset" /> aggregate root — they don't have their own repository
+///     and must be reached via the parent.
 /// </summary>
 public sealed class MediaVariant
 {
-    private MediaVariant() { } // EF
+    private MediaVariant()
+    {
+    } // EF
 
     private MediaVariant(
         Guid id,
@@ -29,7 +31,27 @@ public sealed class MediaVariant
         Duration = duration;
     }
 
-    /// <summary>Creates a new variant attached to a parent asset. <paramref name="storageKey"/> must already exist in the bucket.</summary>
+    public Guid Id { get; private set; }
+    public MediaVariantKind Kind { get; private set; }
+
+    /// <summary>Object key in the bucket. Combine with <c>IObjectStorage.GetPublicUrl</c> to render.</summary>
+    public string StorageKey { get; private set; } = null!;
+
+    public string ContentType { get; private set; } = null!;
+    public long ByteSize { get; private set; }
+
+    /// <summary>Pixel width — null for non-visual variants.</summary>
+    public int? Width { get; private set; }
+
+    public int? Height { get; private set; }
+
+    /// <summary>Duration for video variants. Null for images.</summary>
+    public TimeSpan? Duration { get; private set; }
+
+    /// <summary>
+    ///     Creates a new variant attached to a parent asset. <paramref name="storageKey" /> must already exist in the
+    ///     bucket.
+    /// </summary>
     internal static MediaVariant Create(
         MediaVariantKind kind,
         string storageKey,
@@ -48,20 +70,4 @@ public sealed class MediaVariant
 
         return new MediaVariant(Guid.NewGuid(), kind, storageKey, contentType, byteSize, width, height, duration);
     }
-
-    public Guid Id { get; private set; }
-    public MediaVariantKind Kind { get; private set; }
-
-    /// <summary>Object key in the bucket. Combine with <c>IObjectStorage.GetPublicUrl</c> to render.</summary>
-    public string StorageKey { get; private set; } = null!;
-
-    public string ContentType { get; private set; } = null!;
-    public long ByteSize { get; private set; }
-
-    /// <summary>Pixel width — null for non-visual variants.</summary>
-    public int? Width { get; private set; }
-    public int? Height { get; private set; }
-
-    /// <summary>Duration for video variants. Null for images.</summary>
-    public TimeSpan? Duration { get; private set; }
 }

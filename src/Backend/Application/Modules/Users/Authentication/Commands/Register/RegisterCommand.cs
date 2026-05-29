@@ -1,5 +1,4 @@
 using Application.Modules.Users.Authentication.Common;
-using Shared.Errors;
 
 namespace Application.Modules.Users.Authentication.Commands.Register;
 

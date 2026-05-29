@@ -9,7 +9,10 @@ public sealed class OutboxQueuingEmailSender : IEmailSender
 {
     private readonly IIntegrationEventOutboxWriter _outbox;
 
-    public OutboxQueuingEmailSender(IIntegrationEventOutboxWriter outbox) => _outbox = outbox;
+    public OutboxQueuingEmailSender(IIntegrationEventOutboxWriter outbox)
+    {
+        _outbox = outbox;
+    }
 
     public Task SendAsync(string to, string subject, string htmlBody, CancellationToken cancellationToken = default)
     {

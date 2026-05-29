@@ -1,8 +1,6 @@
 using Api.Models;
 using Application.Modules.Users.Administration.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Admin;
 
@@ -24,8 +22,9 @@ public sealed partial class AdminUsersController
         [FromQuery] bool sortDescending = false,
         CancellationToken cancellationToken = default)
     {
-        Result<AdminUserListDto, Error> result = await Sender.Send(
-            new AdminListUsersQuery(page, pageSize, emailContains, userNameContains, search, isLocked, role, sortBy, sortDescending),
+        var result = await Sender.Send(
+            new AdminListUsersQuery(page, pageSize, emailContains, userNameContains, search, isLocked, role, sortBy,
+                sortDescending),
             cancellationToken);
         return MatchApi(result);
     }
@@ -35,7 +34,7 @@ public sealed partial class AdminUsersController
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUser(Guid userId, CancellationToken cancellationToken)
     {
-        Result<AdminUserDetailDto, Error> result =
+        var result =
             await Sender.Send(new AdminGetUserByIdQuery(userId), cancellationToken);
         return MatchApi(result);
     }

@@ -6,8 +6,6 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Admin;
 
@@ -26,7 +24,7 @@ public sealed class AdminMetricsController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<AdminDashboardMetricsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDashboard(CancellationToken cancellationToken)
     {
-        Result<AdminDashboardMetricsDto, Error> result = await Sender.Send(new AdminDashboardMetricsQuery(), cancellationToken);
+        var result = await Sender.Send(new AdminDashboardMetricsQuery(), cancellationToken);
         return MatchApi(result);
     }
 }

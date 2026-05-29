@@ -28,7 +28,7 @@ public sealed class AdminGetUserByIdQueryHandlerTests
     public async Task Handle_returns_detail_for_active_user()
     {
         var id = Guid.NewGuid();
-        User user = User.Create(UserId.Create(id), "Ada", "Lovelace", "ada", "ada@example.com", "hash");
+        var user = User.Create(UserId.Create(id), "Ada", "Lovelace", "ada", "ada@example.com", "hash");
 
         var read = new Mock<IUserReadRepository>();
         read.Setup(r => r.GetByIdAsync(id, default, It.IsAny<CancellationToken>())).ReturnsAsync(user);

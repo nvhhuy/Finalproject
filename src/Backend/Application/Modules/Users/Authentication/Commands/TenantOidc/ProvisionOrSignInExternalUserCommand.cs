@@ -8,10 +8,7 @@ using Domains.Tenancy;
 using Domains.Tenancy.ValueObjects;
 using Domains.UserAggregate;
 using Domains.UserAggregate.ValueObjects;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.Authentication;
 
 namespace Application.Modules.Users.Authentication.Commands.TenantOidc;
@@ -27,13 +24,13 @@ public sealed record ProvisionOrSignInExternalUserCommand(
 public sealed class ProvisionOrSignInExternalUserCommandHandler
     : IRequestHandler<ProvisionOrSignInExternalUserCommand, Result<AuthenticationResponse, Error>>
 {
-    private readonly IApplicationReadDbContext _read;
-    private readonly IUserWriteRepository _users;
-    private readonly ITenantStore _tenants;
-    private readonly ITenantMembershipService _membership;
-    private readonly IAuthenticationTokenIssuer _tokens;
     private readonly IDateTimeProvider _clock;
+    private readonly ITenantMembershipService _membership;
+    private readonly IApplicationReadDbContext _read;
+    private readonly ITenantStore _tenants;
+    private readonly IAuthenticationTokenIssuer _tokens;
     private readonly IUnitOfWork _uow;
+    private readonly IUserWriteRepository _users;
 
     public ProvisionOrSignInExternalUserCommandHandler(
         IApplicationReadDbContext read,
@@ -57,8 +54,8 @@ public sealed class ProvisionOrSignInExternalUserCommandHandler
         ProvisionOrSignInExternalUserCommand request,
         CancellationToken cancellationToken)
     {
-        string provider = ExternalLoginProviders.TenantOidc(request.TenantId);
-        ExternalUserLogin? link = await _read.ExternalLogins
+        var provider = ExternalLoginProviders.TenantOidc(request.TenantId);
+        var link = await _read.ExternalLogins
             .FirstOrDefaultAsync(
                 e => e.Provider == provider && e.ProviderSubject == request.ProviderSubject,
                 cancellationToken);
@@ -75,9 +72,9 @@ public sealed class ProvisionOrSignInExternalUserCommandHandler
             user = await _read.Users.FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
             if (user is null)
             {
-                string userName = await BuildUniqueUserNameAsync(request.Email, cancellationToken);
-                string first = request.GivenName ?? request.FamilyName ?? "User";
-                string last = request.FamilyName ?? string.Empty;
+                var userName = await BuildUniqueUserNameAsync(request.Email, cancellationToken);
+                var first = request.GivenName ?? request.FamilyName ?? "User";
+                var last = request.FamilyName ?? string.Empty;
                 user = User.CreateForExternal(first, last, userName, request.Email);
                 user.MarkRegisteredAt(_clock.Now);
                 user.MarkEmailVerified(_clock.Now);
@@ -86,7 +83,7 @@ public sealed class ProvisionOrSignInExternalUserCommandHandler
             }
             else
             {
-                bool alreadyLinked = await _read.ExternalLogins.AnyAsync(
+                var alreadyLinked = await _read.ExternalLogins.AnyAsync(
                     e => e.UserId.Value == user.Id.Value
                          && e.Provider == provider
                          && e.ProviderSubject == request.ProviderSubject,
@@ -103,7 +100,7 @@ public sealed class ProvisionOrSignInExternalUserCommandHandler
         if (!user.CanSignIn)
             return new AccountDisabledError("This account cannot sign in.");
 
-        Result<AuthenticationTokenPair, Error> pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
+        var pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
         if (pair.IsFailure)
             return pair.Error;
 
@@ -120,8 +117,8 @@ public sealed class ProvisionOrSignInExternalUserCommandHandler
         if (await _membership.IsMemberAsync(tenantId, userId, cancellationToken))
             return;
 
-        TenantId tenantKey = TenantId.Create(tenantId);
-        Tenant? tenant = await _tenants.GetByIdForUpdateAsync(tenantKey, cancellationToken);
+        var tenantKey = TenantId.Create(tenantId);
+        var tenant = await _tenants.GetByIdForUpdateAsync(tenantKey, cancellationToken);
         if (tenant is null)
             return;
 
@@ -137,9 +134,9 @@ public sealed class ProvisionOrSignInExternalUserCommandHandler
 
     private async Task<string> BuildUniqueUserNameAsync(string email, CancellationToken cancellationToken)
     {
-        string local = email.Split('@')[0];
-        string candidate = local;
-        int i = 0;
+        var local = email.Split('@')[0];
+        var candidate = local;
+        var i = 0;
         while (await _read.Users.AnyAsync(u => u.UserName == candidate, cancellationToken))
         {
             i++;

@@ -21,11 +21,9 @@ internal static class TenantQueryFilterConfigurator
     private static void ConfigureFilter(ModelBuilder modelBuilder, Type clrType, ITenantContext tenantContext)
     {
         if (clrType == typeof(MediaAsset))
-        {
             modelBuilder.Entity<MediaAsset>()
                 .HasQueryFilter(e =>
                     tenantContext.BypassTenantIsolation
                     || (tenantContext.TenantId != null && e.TenantId == tenantContext.TenantId));
-        }
     }
 }

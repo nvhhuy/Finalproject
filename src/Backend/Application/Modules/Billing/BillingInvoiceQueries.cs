@@ -1,13 +1,8 @@
 using Application.Contracts.Authorization;
-using Application.Contracts.Billing;
 using Application.Contracts.Persistence;
 using Application.Contracts.Tenancy;
 using Domains.Tenancy.ValueObjects;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Billing;
 
@@ -46,9 +41,9 @@ public sealed class ListTenantBillingInvoicesQueryHandler
         if (!await _membership.IsMemberAsync(request.TenantId, request.UserId, cancellationToken))
             return new ForbiddenError("You are not a member of this tenant.");
 
-        TenantId tenantKey = TenantId.Create(request.TenantId);
-        int skip = Math.Max(0, request.Page - 1) * Math.Clamp(request.PageSize, 1, 100);
-        List<BillingInvoiceListItemDto> rows = await _db.BillingInvoices
+        var tenantKey = TenantId.Create(request.TenantId);
+        var skip = Math.Max(0, request.Page - 1) * Math.Clamp(request.PageSize, 1, 100);
+        var rows = await _db.BillingInvoices
             .AsNoTracking()
             .Where(i => i.TenantId == tenantKey)
             .OrderByDescending(i => i.IssuedAtUtc)
@@ -75,18 +70,22 @@ public sealed class ListTenantBillingInvoicesQueryHandler
 public sealed record ListMyWalletInvoicesQuery(Guid UserId, int Page = 1, int PageSize = 20)
     : IRequest<Result<IReadOnlyList<BillingInvoiceListItemDto>, Error>>;
 
-public sealed class ListMyWalletInvoicesQueryHandler : IRequestHandler<ListMyWalletInvoicesQuery, Result<IReadOnlyList<BillingInvoiceListItemDto>, Error>>
+public sealed class ListMyWalletInvoicesQueryHandler : IRequestHandler<ListMyWalletInvoicesQuery,
+    Result<IReadOnlyList<BillingInvoiceListItemDto>, Error>>
 {
     private readonly IApplicationReadDbContext _db;
 
-    public ListMyWalletInvoicesQueryHandler(IApplicationReadDbContext db) => _db = db;
+    public ListMyWalletInvoicesQueryHandler(IApplicationReadDbContext db)
+    {
+        _db = db;
+    }
 
     public async Task<Result<IReadOnlyList<BillingInvoiceListItemDto>, Error>> Handle(
         ListMyWalletInvoicesQuery request,
         CancellationToken cancellationToken)
     {
-        int skip = Math.Max(0, request.Page - 1) * Math.Clamp(request.PageSize, 1, 100);
-        List<BillingInvoiceListItemDto> rows = await _db.BillingInvoices
+        var skip = Math.Max(0, request.Page - 1) * Math.Clamp(request.PageSize, 1, 100);
+        var rows = await _db.BillingInvoices
             .AsNoTracking()
             .Where(i => i.UserId == request.UserId)
             .OrderByDescending(i => i.IssuedAtUtc)
@@ -118,14 +117,17 @@ public sealed class ListPlatformBillingInvoicesQueryHandler
 {
     private readonly IApplicationReadDbContext _db;
 
-    public ListPlatformBillingInvoicesQueryHandler(IApplicationReadDbContext db) => _db = db;
+    public ListPlatformBillingInvoicesQueryHandler(IApplicationReadDbContext db)
+    {
+        _db = db;
+    }
 
     public async Task<Result<IReadOnlyList<BillingInvoiceListItemDto>, Error>> Handle(
         ListPlatformBillingInvoicesQuery request,
         CancellationToken cancellationToken)
     {
-        int skip = Math.Max(0, request.Page - 1) * Math.Clamp(request.PageSize, 1, 100);
-        List<BillingInvoiceListItemDto> rows = await _db.BillingInvoices
+        var skip = Math.Max(0, request.Page - 1) * Math.Clamp(request.PageSize, 1, 100);
+        var rows = await _db.BillingInvoices
             .AsNoTracking()
             .OrderByDescending(i => i.IssuedAtUtc)
             .Skip(skip)

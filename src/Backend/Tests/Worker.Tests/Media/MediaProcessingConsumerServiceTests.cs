@@ -9,9 +9,9 @@ using Worker.Media;
 namespace Worker.Tests.Media;
 
 /// <summary>
-/// Unit tests for <see cref="MediaProcessingConsumerService"/>. The base class
-/// <c>QueueConsumerBackgroundService</c> wires the consumer subscription; we capture the handler
-/// delegate it registers and invoke it directly to assert pipeline dispatch.
+///     Unit tests for <see cref="MediaProcessingConsumerService" />. The base class
+///     <c>QueueConsumerBackgroundService</c> wires the consumer subscription; we capture the handler
+///     delegate it registers and invoke it directly to assert pipeline dispatch.
 /// </summary>
 public sealed class MediaProcessingConsumerServiceTests
 {
@@ -33,8 +33,8 @@ public sealed class MediaProcessingConsumerServiceTests
                 It.IsAny<Func<MediaUploadedMessage, CancellationToken, Task>>(),
                 It.IsAny<SubscriptionOptions?>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<string, Func<MediaUploadedMessage, CancellationToken, Task>, SubscriptionOptions?, CancellationToken>(
-                (_, handler, _, _) => capturedHandler = handler)
+            .Callback<string, Func<MediaUploadedMessage, CancellationToken, Task>, SubscriptionOptions?,
+                CancellationToken>((_, handler, _, _) => capturedHandler = handler)
             .ReturnsAsync(Mock.Of<IDisposable>());
 
         var svc = new MediaProcessingConsumerService(
@@ -46,22 +46,22 @@ public sealed class MediaProcessingConsumerServiceTests
         // calling StartAsync with a short-lived cancellation, then yielding so the subscribe
         // call is observed before we invoke the captured handler ourselves.
         using var cts = new CancellationTokenSource();
-        Task started = svc.StartAsync(cts.Token);
+        var started = svc.StartAsync(cts.Token);
         // ExecuteAsync awaits Task.Delay(Infinite) so StartAsync returns once subscribe is wired.
         await started;
 
         Assert.NotNull(capturedHandler);
 
-        Guid assetId = Guid.NewGuid();
+        var assetId = Guid.NewGuid();
         var message = new MediaUploadedMessage(
-            EventId: Guid.NewGuid(),
-            OccurredOnUtc: DateTime.UtcNow,
-            MediaAssetId: assetId,
-            OwnerUserId: Guid.NewGuid(),
-            Kind: MediaKind.Image,
-            OriginalKey: "media/owner/asset/original",
-            ContentType: "image/jpeg",
-            ByteSize: 1234);
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            assetId,
+            Guid.NewGuid(),
+            MediaKind.Image,
+            "media/owner/asset/original",
+            "image/jpeg",
+            1234);
 
         await capturedHandler!(message, CancellationToken.None);
 
@@ -80,8 +80,8 @@ public sealed class MediaProcessingConsumerServiceTests
                 It.IsAny<Func<MediaUploadedMessage, CancellationToken, Task>>(),
                 It.IsAny<SubscriptionOptions?>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<string, Func<MediaUploadedMessage, CancellationToken, Task>, SubscriptionOptions?, CancellationToken>(
-                (_, _, options, _) => captured = options)
+            .Callback<string, Func<MediaUploadedMessage, CancellationToken, Task>, SubscriptionOptions?,
+                CancellationToken>((_, _, options, _) => captured = options)
             .ReturnsAsync(Mock.Of<IDisposable>());
 
         var services = new ServiceCollection();

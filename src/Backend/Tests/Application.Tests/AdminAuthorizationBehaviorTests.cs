@@ -13,14 +13,12 @@ using Shared.Errors.General;
 namespace Application.Tests;
 
 /// <summary>
-/// Unit tests for <see cref="AdminAuthorizationBehavior{TRequest, TResponse}"/>. These verify that
-/// the marker-interface defence-in-depth check short-circuits non-admin callers without invoking
-/// the downstream handler and lets admins through unmodified.
+///     Unit tests for <see cref="AdminAuthorizationBehavior{TRequest,TResponse}" />. These verify that
+///     the marker-interface defence-in-depth check short-circuits non-admin callers without invoking
+///     the downstream handler and lets admins through unmodified.
 /// </summary>
 public sealed class AdminAuthorizationBehaviorTests
 {
-    private sealed record DummyAdminRequest(string Payload) : IRequest<Result<string, Error>>, IRequireAdmin;
-
     [Fact]
     public async Task Returns_forbidden_when_caller_is_not_in_admin_role()
     {
@@ -32,14 +30,14 @@ public sealed class AdminAuthorizationBehaviorTests
             currentUser.Object,
             NullLogger<AdminAuthorizationBehavior<DummyAdminRequest, Result<string, Error>>>.Instance);
 
-        bool handlerCalled = false;
+        var handlerCalled = false;
         RequestHandlerDelegate<Result<string, Error>> next = _ =>
         {
             handlerCalled = true;
             return Task.FromResult<Result<string, Error>>("ok");
         };
 
-        Result<string, Error> result = await behavior.Handle(new DummyAdminRequest("p"), next, CancellationToken.None);
+        var result = await behavior.Handle(new DummyAdminRequest("p"), next, CancellationToken.None);
 
         Assert.False(handlerCalled);
         Assert.True(result.IsFailure);
@@ -58,7 +56,7 @@ public sealed class AdminAuthorizationBehaviorTests
             NullLogger<AdminAuthorizationBehavior<DummyAdminRequest, Result<string, Error>>>.Instance);
 
         RequestHandlerDelegate<Result<string, Error>> blowUp = _ => Task.FromResult<Result<string, Error>>("never");
-        Result<string, Error> result = await behavior.Handle(new DummyAdminRequest("p"), blowUp, CancellationToken.None);
+        var result = await behavior.Handle(new DummyAdminRequest("p"), blowUp, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.IsType<ForbiddenError>(result.Error);
@@ -75,10 +73,13 @@ public sealed class AdminAuthorizationBehaviorTests
             currentUser.Object,
             NullLogger<AdminAuthorizationBehavior<DummyAdminRequest, Result<string, Error>>>.Instance);
 
-        RequestHandlerDelegate<Result<string, Error>> next = _ => Task.FromResult<Result<string, Error>>("handler-output");
-        Result<string, Error> result = await behavior.Handle(new DummyAdminRequest("payload"), next, CancellationToken.None);
+        RequestHandlerDelegate<Result<string, Error>> next = _ =>
+            Task.FromResult<Result<string, Error>>("handler-output");
+        var result = await behavior.Handle(new DummyAdminRequest("payload"), next, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("handler-output", result.Value);
     }
+
+    private sealed record DummyAdminRequest(string Payload) : IRequest<Result<string, Error>>, IRequireAdmin;
 }

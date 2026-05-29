@@ -1,10 +1,5 @@
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Mapping;
-using Domains.UserAggregate;
-using MediatR;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Users.Profile.Queries;
 
@@ -24,11 +19,15 @@ public sealed class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, Re
 {
     private readonly IUserReadRepository _users;
 
-    public GetProfileQueryHandler(IUserReadRepository users) => _users = users;
-
-    public async Task<Result<UserProfileDto, Error>> Handle(GetProfileQuery request, CancellationToken cancellationToken)
+    public GetProfileQueryHandler(IUserReadRepository users)
     {
-        User? user = await _users.GetByIdAsync(request.UserId, cancellationToken: cancellationToken);
+        _users = users;
+    }
+
+    public async Task<Result<UserProfileDto, Error>> Handle(GetProfileQuery request,
+        CancellationToken cancellationToken)
+    {
+        var user = await _users.GetByIdAsync(request.UserId, cancellationToken: cancellationToken);
         if (user is null)
             return new NotFoundError("User was not found.");
 

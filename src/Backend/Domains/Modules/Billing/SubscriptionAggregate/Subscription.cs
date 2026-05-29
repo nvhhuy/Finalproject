@@ -5,17 +5,9 @@ namespace Domains.Billing;
 
 public sealed class Subscription : AggregateRoot<Guid>
 {
-    public TenantId TenantId { get; private set; } = null!;
-    public Guid PlanId { get; private set; }
-    public SubscriptionStatus Status { get; private set; }
-    public DateTime CurrentPeriodStartUtc { get; private set; }
-    public DateTime CurrentPeriodEndUtc { get; private set; }
-    public DateTime? CanceledAtUtc { get; private set; }
-    public DateTime? LastMonthlyCreditGrantUtc { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime UpdatedAtUtc { get; private set; }
-
-    private Subscription() { }
+    private Subscription()
+    {
+    }
 
     private Subscription(
         Guid id,
@@ -35,6 +27,19 @@ public sealed class Subscription : AggregateRoot<Guid>
         UpdatedAtUtc = utcNow;
     }
 
+    public TenantId TenantId { get; private set; } = null!;
+    public Guid PlanId { get; private set; }
+    public SubscriptionStatus Status { get; private set; }
+    public DateTime CurrentPeriodStartUtc { get; private set; }
+    public DateTime CurrentPeriodEndUtc { get; private set; }
+    public DateTime? CanceledAtUtc { get; private set; }
+    public DateTime? LastMonthlyCreditGrantUtc { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime UpdatedAtUtc { get; private set; }
+
+    public bool AllowsWriteAccess =>
+        Status is SubscriptionStatus.Trialing or SubscriptionStatus.Active;
+
     public static Subscription CreateTrialing(
         TenantId tenantId,
         Guid planId,
@@ -42,8 +47,9 @@ public sealed class Subscription : AggregateRoot<Guid>
         DateTime utcNow)
     {
         if (trialDays <= 0)
-            throw new ArgumentOutOfRangeException(nameof(trialDays), "Trial days must be positive for trialing subscription.");
-        DateTime end = utcNow.AddDays(trialDays);
+            throw new ArgumentOutOfRangeException(nameof(trialDays),
+                "Trial days must be positive for trialing subscription.");
+        var end = utcNow.AddDays(trialDays);
         return new Subscription(Guid.NewGuid(), tenantId, planId, SubscriptionStatus.Trialing, utcNow, end, utcNow);
     }
 
@@ -52,12 +58,9 @@ public sealed class Subscription : AggregateRoot<Guid>
         Guid planId,
         DateTime utcNow)
     {
-        DateTime end = utcNow.AddMonths(1);
+        var end = utcNow.AddMonths(1);
         return new Subscription(Guid.NewGuid(), tenantId, planId, SubscriptionStatus.Active, utcNow, end, utcNow);
     }
-
-    public bool AllowsWriteAccess =>
-        Status is SubscriptionStatus.Trialing or SubscriptionStatus.Active;
 
     public void Activate(DateTime utcNow)
     {
@@ -92,10 +95,12 @@ public sealed class Subscription : AggregateRoot<Guid>
         UpdatedAtUtc = utcNow;
     }
 
-    public bool NeedsMonthlyCreditGrant(DateTime utcNow) =>
-        LastMonthlyCreditGrantUtc is null
-        || LastMonthlyCreditGrantUtc.Value.Year != utcNow.Year
-        || LastMonthlyCreditGrantUtc.Value.Month != utcNow.Month;
+    public bool NeedsMonthlyCreditGrant(DateTime utcNow)
+    {
+        return LastMonthlyCreditGrantUtc is null
+               || LastMonthlyCreditGrantUtc.Value.Year != utcNow.Year
+               || LastMonthlyCreditGrantUtc.Value.Month != utcNow.Month;
+    }
 
     public void RecordMonthlyCreditGrant(DateTime utcNow)
     {

@@ -14,5 +14,8 @@ public sealed class HttpTenantContext : ITenantContext
         TenantId = tenantId;
     }
 
-    public void EnableBypass() => BypassTenantIsolation = true;
+    public void EnableBypass()
+    {
+        BypassTenantIsolation = true;
+    }
 }

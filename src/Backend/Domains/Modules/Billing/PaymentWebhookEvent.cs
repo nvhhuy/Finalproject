@@ -7,22 +7,15 @@ public enum PaymentWebhookStatus
     Received = 0,
     Processed = 1,
     Failed = 2,
-    Ignored = 3,
+    Ignored = 3
 }
 
 /// <summary>Inbox row for payment-provider webhooks (Stripe, VNPay, …). Processed asynchronously in later phases.</summary>
 public sealed class PaymentWebhookEvent : Entity<Guid>
 {
-    public string Provider { get; private set; } = null!;
-    public string ExternalEventId { get; private set; } = null!;
-    public string EventType { get; private set; } = null!;
-    public string PayloadJson { get; private set; } = null!;
-    public PaymentWebhookStatus Status { get; private set; }
-    public string? ErrorMessage { get; private set; }
-    public DateTime ReceivedAtUtc { get; private set; }
-    public DateTime? ProcessedAtUtc { get; private set; }
-
-    private PaymentWebhookEvent() { }
+    private PaymentWebhookEvent()
+    {
+    }
 
     private PaymentWebhookEvent(
         Guid id,
@@ -40,19 +33,30 @@ public sealed class PaymentWebhookEvent : Entity<Guid>
         ReceivedAtUtc = receivedAtUtc;
     }
 
+    public string Provider { get; private set; } = null!;
+    public string ExternalEventId { get; private set; } = null!;
+    public string EventType { get; private set; } = null!;
+    public string PayloadJson { get; private set; } = null!;
+    public PaymentWebhookStatus Status { get; private set; }
+    public string? ErrorMessage { get; private set; }
+    public DateTime ReceivedAtUtc { get; private set; }
+    public DateTime? ProcessedAtUtc { get; private set; }
+
     public static PaymentWebhookEvent Create(
         string provider,
         string externalEventId,
         string eventType,
         string payloadJson,
-        DateTime receivedAtUtc) =>
-        new(
+        DateTime receivedAtUtc)
+    {
+        return new PaymentWebhookEvent(
             Guid.NewGuid(),
             provider.Trim().ToLowerInvariant(),
             externalEventId.Trim(),
             eventType.Trim(),
             payloadJson,
             receivedAtUtc);
+    }
 
     public void MarkProcessed(DateTime utcNow)
     {

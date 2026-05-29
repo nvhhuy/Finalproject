@@ -9,6 +9,10 @@ public enum IdempotencyRecordStatus
 /// <summary>Persisted idempotency outcome for a mutating HTTP request.</summary>
 public sealed class IdempotencyRecord
 {
+    private IdempotencyRecord()
+    {
+    }
+
     public Guid Id { get; private set; }
     public string Scope { get; private set; } = null!;
     public string OwnerPartition { get; private set; } = null!;
@@ -18,8 +22,6 @@ public sealed class IdempotencyRecord
     public string? ResponseBody { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime ExpiresAtUtc { get; private set; }
-
-    private IdempotencyRecord() { }
 
     public static IdempotencyRecord CreateInProgress(
         string scope,

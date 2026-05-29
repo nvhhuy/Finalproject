@@ -3,9 +3,9 @@ using Application.Modules.Media.Common;
 namespace Application.Tests.Media;
 
 /// <summary>
-/// Unit tests for the magic-byte sniffer that gates upload completion. Verifies the supported
-/// formats are detected, that mismatches are caught, and that the MP4/QuickTime equivalence
-/// (both share an ISO-BMFF container) is honoured.
+///     Unit tests for the magic-byte sniffer that gates upload completion. Verifies the supported
+///     formats are detected, that mismatches are caught, and that the MP4/QuickTime equivalence
+///     (both share an ISO-BMFF container) is honoured.
 /// </summary>
 public sealed class MediaContentTypeVerifierTests
 {
@@ -18,24 +18,24 @@ public sealed class MediaContentTypeVerifierTests
     {
         0x52, 0x49, 0x46, 0x46, // "RIFF"
         0x24, 0x00, 0x00, 0x00, // size
-        0x57, 0x45, 0x42, 0x50, // "WEBP"
+        0x57, 0x45, 0x42, 0x50 // "WEBP"
     }, "image/webp")]
     [InlineData(new byte[]
     {
         0x00, 0x00, 0x00, 0x20, // box size
         0x66, 0x74, 0x79, 0x70, // "ftyp"
-        0x69, 0x73, 0x6F, 0x6D, // brand "isom"
+        0x69, 0x73, 0x6F, 0x6D // brand "isom"
     }, "video/mp4")]
     [InlineData(new byte[]
     {
         0x00, 0x00, 0x00, 0x20,
         0x66, 0x74, 0x79, 0x70,
-        0x71, 0x74, 0x20, 0x20, // brand "qt  "
+        0x71, 0x74, 0x20, 0x20 // brand "qt  "
     }, "video/quicktime")]
     [InlineData(new byte[] { 0x1A, 0x45, 0xDF, 0xA3, 0x9F, 0x42, 0x86, 0x81 }, "video/webm")]
     public void Detect_recognises_known_signatures(byte[] header, string expected)
     {
-        string? detected = MediaContentTypeVerifier.Detect(header);
+        var detected = MediaContentTypeVerifier.Detect(header);
         Assert.Equal(expected, detected);
     }
 

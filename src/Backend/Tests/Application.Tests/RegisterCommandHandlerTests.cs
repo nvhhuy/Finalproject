@@ -1,26 +1,23 @@
 using Application.Contracts.Email;
+using Application.Contracts.FeatureFlags;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
-using Application.Contracts.FeatureFlags;
 using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
 using Application.Modules.Users.Authentication.Commands.Register;
-using Application.Modules.Users.Authentication.Common;
 using Domains.UserAggregate;
 using Microsoft.AspNetCore.Identity;
 using Moq;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.Authentication;
 using Shared.Errors.General;
 
 namespace Application.Tests;
 
 /// <summary>
-/// Unit tests for <see cref="RegisterCommandHandler"/>. We exercise the handler in isolation: the
-/// uniqueness checks, the public-registration toggle, the domain event scheduling, and the side
-/// effects (persisting through <see cref="IUserWriteRepository"/>, sending the verification email).
+///     Unit tests for <see cref="RegisterCommandHandler" />. We exercise the handler in isolation: the
+///     uniqueness checks, the public-registration toggle, the domain event scheduling, and the side
+///     effects (persisting through <see cref="IUserWriteRepository" />, sending the verification email).
 /// </summary>
 public sealed class RegisterCommandHandlerTests
 {
@@ -31,12 +28,12 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task Register_returns_forbidden_when_public_registration_is_disabled()
     {
-        var settings = NewFeatureFlags(allowPublicRegister: false);
+        var settings = NewFeatureFlags(false);
         var read = new Mock<IUserReadRepository>();
         var write = new Mock<IUserWriteRepository>();
-        RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, settings.Object);
+        var handler = BuildHandler(read.Object, write.Object, settings.Object);
 
-        Result<RegistrationResult, Error> result =
+        var result =
             await handler.Handle(NewCommand(), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -52,9 +49,9 @@ public sealed class RegisterCommandHandlerTests
         read.Setup(r => r.ExistsByEmailAsync(Email, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var write = new Mock<IUserWriteRepository>();
 
-        RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, NewFeatureFlags().Object);
+        var handler = BuildHandler(read.Object, write.Object, NewFeatureFlags().Object);
 
-        Result<RegistrationResult, Error> result =
+        var result =
             await handler.Handle(NewCommand(), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -70,9 +67,9 @@ public sealed class RegisterCommandHandlerTests
         read.Setup(r => r.ExistsByUserNameAsync(UserName, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var write = new Mock<IUserWriteRepository>();
 
-        RegisterCommandHandler handler = BuildHandler(read.Object, write.Object, NewFeatureFlags().Object);
+        var handler = BuildHandler(read.Object, write.Object, NewFeatureFlags().Object);
 
-        Result<RegistrationResult, Error> result =
+        var result =
             await handler.Handle(NewCommand(), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -94,11 +91,11 @@ public sealed class RegisterCommandHandlerTests
         var emailSender = new Mock<IEmailVerificationSender>();
         var uow = new Mock<IUnitOfWork>();
 
-        RegisterCommandHandler handler = BuildHandler(
+        var handler = BuildHandler(
             read.Object, write.Object, NewFeatureFlags().Object,
-            emailSender: emailSender.Object, uow: uow.Object);
+            emailSender.Object, uow.Object);
 
-        Result<RegistrationResult, Error> result =
+        var result =
             await handler.Handle(NewCommand(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -114,13 +111,16 @@ public sealed class RegisterCommandHandlerTests
             Times.Once);
     }
 
-    private static RegisterCommand NewCommand() =>
-        new("First", "Last", UserName, Email, Password);
+    private static RegisterCommand NewCommand()
+    {
+        return new RegisterCommand("First", "Last", UserName, Email, Password);
+    }
 
     private static Mock<IFeatureFlagService> NewFeatureFlags(bool allowPublicRegister = true)
     {
         var mock = new Mock<IFeatureFlagService>();
-        mock.Setup(s => s.IsEnabledAsync(It.IsAny<string>(), It.IsAny<FeatureFlagContext?>(), It.IsAny<CancellationToken>()))
+        mock.Setup(s =>
+                s.IsEnabledAsync(It.IsAny<string>(), It.IsAny<FeatureFlagContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(allowPublicRegister);
         return mock;
     }

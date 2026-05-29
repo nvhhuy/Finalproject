@@ -4,7 +4,9 @@ using Application.Modules.Users.Authentication.Common;
 namespace Api.Models.Auth;
 
 public sealed record RefreshSessionRequest(string RefreshToken);
+
 public sealed record ForgotPasswordRequest(string Email);
+
 public sealed record ResetPasswordRequest(string TokenId, string Token, string NewPassword);
 
 public sealed record VerifyEmailRequest(string TokenId, string Token);
@@ -13,8 +15,10 @@ public sealed record ResendEmailVerificationRequest(string Email);
 
 public sealed record RegistrationResponseDto(string Email, string Message)
 {
-    public static RegistrationResponseDto From(Application.Modules.Users.Authentication.Common.RegistrationResult result) =>
-        new(result.Email, result.Message);
+    public static RegistrationResponseDto From(RegistrationResult result)
+    {
+        return new RegistrationResponseDto(result.Email, result.Message);
+    }
 }
 
 public sealed record GoogleSignInRequest(string IdToken);
@@ -37,7 +41,10 @@ public sealed record AuthResponseDto(
     string RefreshToken,
     DateTime RefreshTokenExpiresUtc)
 {
-    public static AuthResponseDto From(AuthenticationResponse response) => response.ToAuthResponseDto();
+    public static AuthResponseDto From(AuthenticationResponse response)
+    {
+        return response.ToAuthResponseDto();
+    }
 }
 
 /// <summary>Returned with HTTP 202 when the user must complete two-factor authentication.</summary>

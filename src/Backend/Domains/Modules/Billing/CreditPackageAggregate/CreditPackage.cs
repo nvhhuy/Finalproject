@@ -5,19 +5,9 @@ namespace Domains.Billing;
 /// <summary>Top-up SKU: maps money (smallest currency unit) to wallet credits.</summary>
 public sealed class CreditPackage : AggregateRoot<Guid>
 {
-    public string Code { get; private set; } = null!;
-    public string Name { get; private set; } = null!;
-    public string? Description { get; private set; }
-    /// <summary>Price in smallest currency unit (USD cents, VND đồng, …).</summary>
-    public int PriceCents { get; private set; }
-    public string Currency { get; private set; } = "USD";
-    public long CreditsAmount { get; private set; }
-    public bool IsActive { get; private set; }
-    public int SortOrder { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime UpdatedAtUtc { get; private set; }
-
-    private CreditPackage() { }
+    private CreditPackage()
+    {
+    }
 
     private CreditPackage(
         Guid id,
@@ -43,6 +33,20 @@ public sealed class CreditPackage : AggregateRoot<Guid>
         UpdatedAtUtc = utcNow;
     }
 
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public string? Description { get; private set; }
+
+    /// <summary>Price in smallest currency unit (USD cents, VND đồng, …).</summary>
+    public int PriceCents { get; private set; }
+
+    public string Currency { get; private set; } = "USD";
+    public long CreditsAmount { get; private set; }
+    public bool IsActive { get; private set; }
+    public int SortOrder { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime UpdatedAtUtc { get; private set; }
+
     public static CreditPackage Create(
         string code,
         string name,
@@ -53,7 +57,7 @@ public sealed class CreditPackage : AggregateRoot<Guid>
         int sortOrder,
         DateTime utcNow)
     {
-        string normalizedCode = NormalizeCode(code);
+        var normalizedCode = NormalizeCode(code);
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Package name is required.", nameof(name));
         if (priceCents < 0)
@@ -69,7 +73,7 @@ public sealed class CreditPackage : AggregateRoot<Guid>
             priceCents,
             string.IsNullOrWhiteSpace(currency) ? "USD" : currency.Trim().ToUpperInvariant(),
             creditsAmount,
-            isActive: true,
+            true,
             sortOrder,
             utcNow);
     }

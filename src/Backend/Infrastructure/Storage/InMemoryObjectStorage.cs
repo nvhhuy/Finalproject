@@ -5,7 +5,7 @@ using Application.Contracts.Storage;
 namespace Infrastructure.Storage;
 
 /// <summary>
-/// Process-local object storage for integration tests and environments without S3.
+///     Process-local object storage for integration tests and environments without S3.
 /// </summary>
 public sealed class InMemoryObjectStorage : IObjectStorage
 {
@@ -21,10 +21,10 @@ public sealed class InMemoryObjectStorage : IObjectStorage
 
     public Task<Stream> GetAsync(string key, CancellationToken cancellationToken = default)
     {
-        if (!_objects.TryGetValue(key, out StoredObject? stored))
+        if (!_objects.TryGetValue(key, out var stored))
             throw new FileNotFoundException($"Object not found: {key}");
 
-        return Task.FromResult<Stream>(new MemoryStream(stored.Bytes, writable: false));
+        return Task.FromResult<Stream>(new MemoryStream(stored.Bytes, false));
     }
 
     public Task DeleteAsync(string key, CancellationToken cancellationToken = default)
@@ -33,27 +33,36 @@ public sealed class InMemoryObjectStorage : IObjectStorage
         return Task.CompletedTask;
     }
 
-    public string GetPublicUrl(string key) => $"inmemory:///{key}";
+    public string GetPublicUrl(string key)
+    {
+        return $"inmemory:///{key}";
+    }
 
     public Task<string> GeneratePresignedDownloadUrlAsync(
         string key,
         TimeSpan expiration,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(GetPublicUrl(key));
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetPublicUrl(key));
+    }
 
     public Task<string> GeneratePresignedUploadUrlAsync(
         string key,
         string contentType,
         TimeSpan expiration,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(GetPublicUrl(key));
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetPublicUrl(key));
+    }
 
-    public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_objects.ContainsKey(key));
+    public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_objects.ContainsKey(key));
+    }
 
     public Task<ObjectMetadata?> GetMetadataAsync(string key, CancellationToken cancellationToken = default)
     {
-        if (!_objects.TryGetValue(key, out StoredObject? stored))
+        if (!_objects.TryGetValue(key, out var stored))
             return Task.FromResult<ObjectMetadata?>(null);
 
         return Task.FromResult<ObjectMetadata?>(new ObjectMetadata(stored.Bytes.LongLength, stored.ContentType));
@@ -63,7 +72,7 @@ public sealed class InMemoryObjectStorage : IObjectStorage
         string prefix,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        foreach ((string key, StoredObject stored) in _objects)
+        foreach (var (key, stored) in _objects)
         {
             if (!key.StartsWith(prefix, StringComparison.Ordinal))
                 continue;

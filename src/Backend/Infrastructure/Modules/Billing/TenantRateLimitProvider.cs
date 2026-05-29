@@ -17,8 +17,8 @@ public sealed class TenantRateLimitOptions
 
 public sealed class TenantRateLimitProvider : ITenantRateLimitProvider
 {
-    private readonly IEntitlementService _entitlements;
     private readonly IMemoryCache _cache;
+    private readonly IEntitlementService _entitlements;
     private readonly TenantRateLimitOptions _options;
 
     public TenantRateLimitProvider(
@@ -36,18 +36,18 @@ public sealed class TenantRateLimitProvider : ITenantRateLimitProvider
         if (tenantId is null || tenantId == Guid.Empty)
             return _options.AnonymousRequestsPerMinute;
 
-        string cacheKey = $"tenant-rate:{tenantId:N}";
+        var cacheKey = $"tenant-rate:{tenantId:N}";
         if (_cache.TryGetValue(cacheKey, out int cached))
             return cached;
 
-        int resolved = ResolveRequestsPerMinuteAsync(tenantId.Value).GetAwaiter().GetResult();
+        var resolved = ResolveRequestsPerMinuteAsync(tenantId.Value).GetAwaiter().GetResult();
         _cache.Set(cacheKey, resolved, TimeSpan.FromMinutes(5));
         return resolved;
     }
 
     private async Task<int> ResolveRequestsPerMinuteAsync(Guid tenantId)
     {
-        PlanLimits? limits = await _entitlements.GetLimitsAsync(tenantId, CancellationToken.None);
+        var limits = await _entitlements.GetLimitsAsync(tenantId, CancellationToken.None);
         if (limits is not null && limits.ApiRequestsPerMinute > 0)
             return limits.ApiRequestsPerMinute;
 

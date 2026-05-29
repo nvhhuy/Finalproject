@@ -14,19 +14,19 @@ public sealed record StripeCheckoutMetadata(
     {
         try
         {
-            using JsonDocument doc = JsonDocument.Parse(payloadJson);
-            if (!doc.RootElement.TryGetProperty("data", out JsonElement data))
+            using var doc = JsonDocument.Parse(payloadJson);
+            if (!doc.RootElement.TryGetProperty("data", out var data))
                 return null;
-            if (!data.TryGetProperty("object", out JsonElement obj))
+            if (!data.TryGetProperty("object", out var obj))
                 return null;
-            if (!obj.TryGetProperty("metadata", out JsonElement metadata) || metadata.ValueKind != JsonValueKind.Object)
+            if (!obj.TryGetProperty("metadata", out var metadata) || metadata.ValueKind != JsonValueKind.Object)
                 return null;
 
-            string? userIdRaw = GetMetadata(metadata, "user_id", "userId");
-            string? planCode = GetMetadata(metadata, "plan_code", "planCode");
-            string? tenantSlug = GetMetadata(metadata, "tenant_slug", "tenantSlug");
-            string? tenantName = GetMetadata(metadata, "tenant_display_name", "tenantDisplayName");
-            if (!Guid.TryParse(userIdRaw, out Guid userId) ||
+            var userIdRaw = GetMetadata(metadata, "user_id", "userId");
+            var planCode = GetMetadata(metadata, "plan_code", "planCode");
+            var tenantSlug = GetMetadata(metadata, "tenant_slug", "tenantSlug");
+            var tenantName = GetMetadata(metadata, "tenant_display_name", "tenantDisplayName");
+            if (!Guid.TryParse(userIdRaw, out var userId) ||
                 string.IsNullOrWhiteSpace(planCode) ||
                 string.IsNullOrWhiteSpace(tenantSlug) ||
                 string.IsNullOrWhiteSpace(tenantName))
@@ -48,15 +48,13 @@ public sealed record StripeCheckoutMetadata(
 
     private static string? GetMetadata(JsonElement metadata, params string[] keys)
     {
-        foreach (string key in keys)
-        {
-            if (metadata.TryGetProperty(key, out JsonElement value) && value.ValueKind == JsonValueKind.String)
+        foreach (var key in keys)
+            if (metadata.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String)
             {
-                string? s = value.GetString();
+                var s = value.GetString();
                 if (!string.IsNullOrWhiteSpace(s))
                     return s;
             }
-        }
 
         return null;
     }

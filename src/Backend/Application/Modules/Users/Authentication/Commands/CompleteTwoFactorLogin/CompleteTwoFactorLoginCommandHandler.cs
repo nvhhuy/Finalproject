@@ -1,18 +1,15 @@
-using Application.Modules.Users.Authentication;
-using Application.Modules.Users.Authentication.Common;
 using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Services;
-using Domains.UserAggregate;
-using MediatR;
+using Application.Modules.Users.Authentication.Common;
 using OtpNet;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.Authentication;
 
 namespace Application.Modules.Users.Authentication.Commands.CompleteTwoFactorLogin;
 
-public sealed class CompleteTwoFactorLoginCommandHandler : IRequestHandler<CompleteTwoFactorLoginCommand, Result<AuthenticationResponse, Error>>
+public sealed class
+    CompleteTwoFactorLoginCommandHandler : IRequestHandler<CompleteTwoFactorLoginCommand,
+    Result<AuthenticationResponse, Error>>
 {
     /// <summary>How many wrong codes we accept on the same pending-login id before invalidating it.</summary>
     private const int MaxAttemptsPerPendingLogin = 5;
@@ -24,29 +21,31 @@ public sealed class CompleteTwoFactorLoginCommandHandler : IRequestHandler<Compl
     private static readonly TimeSpan UsedStepTtl = TimeSpan.FromMinutes(2);
 
     private readonly ICacheService _cache;
-    private readonly IUserReadRepository _users;
     private readonly IAuthenticationTokenIssuer _tokens;
+    private readonly IUserReadRepository _users;
 
-    public CompleteTwoFactorLoginCommandHandler(ICacheService cache, IUserReadRepository users, IAuthenticationTokenIssuer tokens)
+    public CompleteTwoFactorLoginCommandHandler(ICacheService cache, IUserReadRepository users,
+        IAuthenticationTokenIssuer tokens)
     {
         _cache = cache;
         _users = users;
         _tokens = tokens;
     }
 
-    public async Task<Result<AuthenticationResponse, Error>> Handle(CompleteTwoFactorLoginCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthenticationResponse, Error>> Handle(CompleteTwoFactorLoginCommand request,
+        CancellationToken cancellationToken)
     {
-        string pendingKey = AuthCacheKeys.PendingLoginPrefix + request.PendingLoginId;
-        string? userIdStr = await _cache.GetAsync<string>(pendingKey, cancellationToken);
-        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
+        var pendingKey = AuthCacheKeys.PendingLoginPrefix + request.PendingLoginId;
+        var userIdStr = await _cache.GetAsync<string>(pendingKey, cancellationToken);
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
             return new InvalidCredentialsError("Login session expired. Please sign in again.");
 
         // Per-pending-id attempt counter. A determined attacker that already stole the
         // PendingLoginId cookie has a 5-minute window to brute-force the 6-digit code; we cap
         // that at 5 wrong codes total. Counter shares the same TTL as the pending login so it
         // disappears with the session.
-        string attemptsKey = AuthCacheKeys.TwoFactorAttemptsPrefix + request.PendingLoginId;
-        int attempts = await _cache.GetAsync<int?>(attemptsKey, cancellationToken) ?? 0;
+        var attemptsKey = AuthCacheKeys.TwoFactorAttemptsPrefix + request.PendingLoginId;
+        var attempts = await _cache.GetAsync<int?>(attemptsKey, cancellationToken) ?? 0;
         if (attempts >= MaxAttemptsPerPendingLogin)
         {
             // Burn the pending-login so the attacker has to start from password again.
@@ -55,7 +54,7 @@ public sealed class CompleteTwoFactorLoginCommandHandler : IRequestHandler<Compl
             return new InvalidCredentialsError("Too many attempts. Please sign in again.");
         }
 
-        User? user = await _users.GetByIdAsync(userId, cancellationToken: cancellationToken);
+        var user = await _users.GetByIdAsync(userId, cancellationToken: cancellationToken);
         if (user is null || string.IsNullOrEmpty(user.TwoFactorSecret))
         {
             await IncrementAttemptsAsync(attemptsKey, attempts, cancellationToken);
@@ -63,7 +62,8 @@ public sealed class CompleteTwoFactorLoginCommandHandler : IRequestHandler<Compl
         }
 
         var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
-        if (!totp.VerifyTotp(request.Code, out long usedStep, new VerificationWindow(previous: TotpVerificationWindowSteps, future: TotpVerificationWindowSteps)))
+        if (!totp.VerifyTotp(request.Code, out var usedStep,
+                new VerificationWindow(TotpVerificationWindowSteps, TotpVerificationWindowSteps)))
         {
             await IncrementAttemptsAsync(attemptsKey, attempts, cancellationToken);
             return new InvalidCredentialsError("Invalid authenticator code.");
@@ -72,19 +72,20 @@ public sealed class CompleteTwoFactorLoginCommandHandler : IRequestHandler<Compl
         // Replay protection: TOTP allows a 30-second step + a ±1 verification window so the same
         // 6-digit code is technically valid for ~90 seconds. We remember the step that just
         // succeeded for 2 minutes (longer than the window) and reject re-use during that period.
-        string usedStepKey = AuthCacheKeys.TwoFactorUsedStepPrefix + user.Id.Value + ":" + usedStep;
-        bool alreadyUsed = await _cache.GetAsync<bool?>(usedStepKey, cancellationToken) == true;
+        var usedStepKey = AuthCacheKeys.TwoFactorUsedStepPrefix + user.Id.Value + ":" + usedStep;
+        var alreadyUsed = await _cache.GetAsync<bool?>(usedStepKey, cancellationToken) == true;
         if (alreadyUsed)
         {
             await IncrementAttemptsAsync(attemptsKey, attempts, cancellationToken);
             return new InvalidCredentialsError("Invalid authenticator code.");
         }
+
         await _cache.SetAsync(usedStepKey, true, UsedStepTtl, cancellationToken);
 
         await _cache.RemoveAsync(pendingKey, cancellationToken);
         await _cache.RemoveAsync(attemptsKey, cancellationToken);
 
-        Result<AuthenticationTokenPair, Error> pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
+        var pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
         if (pair.IsFailure)
             return pair.Error;
 

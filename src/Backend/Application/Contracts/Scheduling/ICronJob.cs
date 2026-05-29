@@ -4,7 +4,9 @@ namespace Application.Contracts.Scheduling;
 public interface ICronJob
 {
     string Name { get; }
+
     /// <summary>Standard five-field cron (minute hour day month day-of-week), e.g. <c>*/10 * * * *</c>.</summary>
     string CronExpression { get; }
+
     Task ExecuteAsync(CancellationToken stoppingToken);
 }

@@ -1,16 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <key id="f249ec30-b39b-4d77-9413-ab8d72c0b376" version="1">
-  <creationDate>2026-05-27T14:34:25.809558Z</creationDate>
-  <activationDate>2026-05-27T14:34:25.712652Z</activationDate>
-  <expirationDate>2026-08-25T14:34:25.712652Z</expirationDate>
-  <descriptor deserializerType="Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel.AuthenticatedEncryptorDescriptorDeserializer, Microsoft.AspNetCore.DataProtection, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-    <descriptor>
-      <encryption algorithm="AES_256_CBC" />
-      <validation algorithm="HMACSHA256" />
-      <masterKey p4:requiresEncryption="true" xmlns:p4="http://schemas.asp.net/2015/03/dataProtection">
-        <!-- Warning: the key below is in an unencrypted form. -->
-        <value>zIn1bmnmXuzO/OI1vswpRN8idUQKw86bnBPwZsE8f8uST4NJGITkChBLIBbrRAUZ484cZ7hKMGpu94Kvk0uCLw==</value>
-      </masterKey>
+    <creationDate>2026-05-27T14:34:25.809558Z</creationDate>
+    <activationDate>2026-05-27T14:34:25.712652Z</activationDate>
+    <expirationDate>2026-08-25T14:34:25.712652Z</expirationDate>
+    <descriptor
+            deserializerType="Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel.AuthenticatedEncryptorDescriptorDeserializer, Microsoft.AspNetCore.DataProtection, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+        <descriptor>
+            <encryption algorithm="AES_256_CBC"/>
+            <validation algorithm="HMACSHA256"/>
+            <masterKey xmlns:p4="http://schemas.asp.net/2015/03/dataProtection" p4:requiresEncryption="true">
+                <!-- Warning: the key below is in an unencrypted form. -->
+                <value>zIn1bmnmXuzO/OI1vswpRN8idUQKw86bnBPwZsE8f8uST4NJGITkChBLIBbrRAUZ484cZ7hKMGpu94Kvk0uCLw==</value>
+            </masterKey>
+        </descriptor>
     </descriptor>
-  </descriptor>
 </key>

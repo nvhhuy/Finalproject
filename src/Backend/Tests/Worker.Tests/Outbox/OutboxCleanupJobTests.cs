@@ -9,18 +9,18 @@ using Infrastructure.Persistence.Interceptors;
 using Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Worker;
 using Worker.Outbox;
 
 namespace Worker.Tests.Outbox;
 
 /// <summary>
-/// Unit tests for <see cref="OutboxCleanupJob"/>. Backed by EF Core InMemory + a deterministic
-/// clock so we can assert both <i>what</i> got deleted and that <i>nothing else</i> did.
+///     Unit tests for <see cref="OutboxCleanupJob" />. Backed by EF Core InMemory + a deterministic
+///     clock so we can assert both <i>what</i> got deleted and that <i>nothing else</i> did.
 /// </summary>
 public sealed class OutboxCleanupJobTests
 {
@@ -35,16 +35,16 @@ public sealed class OutboxCleanupJobTests
     [Fact]
     public async Task ExecuteAsync_deletes_only_processed_rows_older_than_retention_window()
     {
-        var (sp, db, clock) = BuildScope(retentionDays: 30);
+        var (sp, db, clock) = BuildScope(30);
 
-        DateTime now = clock.Now;
+        var now = clock.Now;
 
         // Rows we want gone: processed, processed-on > 30 days ago.
-        db.OutboxMessages.Add(CreateRow(processedOn: now.AddDays(-31)));
-        db.OutboxMessages.Add(CreateRow(processedOn: now.AddDays(-90)));
+        db.OutboxMessages.Add(CreateRow(now.AddDays(-31)));
+        db.OutboxMessages.Add(CreateRow(now.AddDays(-90)));
         // Rows we must keep:
-        db.OutboxMessages.Add(CreateRow(processedOn: now.AddDays(-29))); // within retention
-        db.OutboxMessages.Add(CreateRow(processedOn: null));             // never processed → keep
+        db.OutboxMessages.Add(CreateRow(now.AddDays(-29))); // within retention
+        db.OutboxMessages.Add(CreateRow(null)); // never processed → keep
         await db.SaveChangesAsync();
 
         var job = new OutboxCleanupJob(
@@ -61,7 +61,7 @@ public sealed class OutboxCleanupJobTests
     [Fact]
     public async Task ExecuteAsync_does_not_throw_on_empty_table()
     {
-        var (sp, _, _) = BuildScope(retentionDays: 30);
+        var (sp, _, _) = BuildScope(30);
 
         var job = new OutboxCleanupJob(
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -75,14 +75,14 @@ public sealed class OutboxCleanupJobTests
     [Fact]
     public async Task ExecuteAsync_caps_at_batch_size_per_tick_to_avoid_long_locks()
     {
-        var (sp, db, clock) = BuildScope(retentionDays: 1);
+        var (sp, db, clock) = BuildScope(1);
 
         // Seed 250 already-expired rows; cap a batch at 100 so we expect 100 deletes after 1 tick
         // (the job breaks out when a partial batch comes back; 100/100 isn't partial, so it loops
         // again — second batch is also 100, third is 50, then break). So actually it should
         // delete all 250 in one tick because the loop continues until <batchSize.
-        for (int i = 0; i < 250; i++)
-            db.OutboxMessages.Add(CreateRow(processedOn: clock.Now.AddDays(-10)));
+        for (var i = 0; i < 250; i++)
+            db.OutboxMessages.Add(CreateRow(clock.Now.AddDays(-10)));
         await db.SaveChangesAsync();
 
         var job = new OutboxCleanupJob(
@@ -98,21 +98,19 @@ public sealed class OutboxCleanupJobTests
     private static OutboxMessage CreateRow(DateTime? processedOn)
     {
         var row = new OutboxMessage(
-            eventId: Guid.NewGuid(),
-            occurredOnUtc: DateTime.UtcNow,
-            type: "Test.Event",
-            routingKey: "test.event",
-            exchange: null,
-            payloadJson: "{}");
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            "Test.Event",
+            "test.event",
+            null,
+            "{}");
 
         if (processedOn.HasValue)
-        {
             // OutboxMessage.MarkProcessed sets ProcessedOnUtc + bumps Attempts. We need a specific
             // timestamp so use reflection — adding a public setter would weaken the aggregate.
             typeof(OutboxMessage)
                 .GetProperty(nameof(OutboxMessage.ProcessedOnUtc))!
                 .SetValue(row, processedOn.Value);
-        }
         return row;
     }
 
@@ -128,7 +126,7 @@ public sealed class OutboxCleanupJobTests
         // OutboxCleanupJob relies on ExecuteDeleteAsync, which the InMemory provider's LINQ
         // translator does not support for compound queries with OrderBy + Take. SQLite mirrors
         // Postgres semantics closely enough to exercise the real DELETE statement.
-        var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+        var connection = new SqliteConnection("DataSource=:memory:");
         connection.Open();
 
         var services = new ServiceCollection();
@@ -148,22 +146,40 @@ public sealed class OutboxCleanupJobTests
 
     private sealed class NoOpPublisher : IPublisher
     {
-        public Task Publish<T>(T notification, CancellationToken cancellationToken = default) where T : INotification => Task.CompletedTask;
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task Publish<T>(T notification, CancellationToken cancellationToken = default) where T : INotification
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task Publish(object notification, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FixedClock : IDateTimeProvider
     {
-        private readonly DateTime _now;
-        public FixedClock(DateTime now) { _now = now; }
-        public DateTime Now => _now;
+        public FixedClock(DateTime now)
+        {
+            Now = now;
+        }
+
+        public DateTime Now { get; }
     }
 
     private sealed class TestTenantContext : ITenantContext
     {
         public Guid? TenantId { get; private set; }
         public bool BypassTenantIsolation { get; private set; }
-        public void SetTenant(Guid tenantId) => TenantId = tenantId;
-        public void EnableBypass() => BypassTenantIsolation = true;
+
+        public void SetTenant(Guid tenantId)
+        {
+            TenantId = tenantId;
+        }
+
+        public void EnableBypass()
+        {
+            BypassTenantIsolation = true;
+        }
     }
 }

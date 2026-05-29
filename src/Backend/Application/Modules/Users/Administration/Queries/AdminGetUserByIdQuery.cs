@@ -1,11 +1,6 @@
 using Application.Contracts.Authorization;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Mapping;
-using Domains.UserAggregate;
-using MediatR;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Users.Administration.Queries;
 
@@ -34,13 +29,16 @@ public sealed class AdminGetUserByIdQueryHandler
 {
     private readonly IUserReadRepository _users;
 
-    public AdminGetUserByIdQueryHandler(IUserReadRepository users) => _users = users;
+    public AdminGetUserByIdQueryHandler(IUserReadRepository users)
+    {
+        _users = users;
+    }
 
     public async Task<Result<AdminUserDetailDto, Error>> Handle(
         AdminGetUserByIdQuery request,
         CancellationToken cancellationToken)
     {
-        User? user = await _users.GetByIdAsync(request.UserId, cancellationToken: cancellationToken);
+        var user = await _users.GetByIdAsync(request.UserId, cancellationToken: cancellationToken);
         if (user is null || user.DeletedAtUtc is not null)
             return new NotFoundError("User was not found.");
 

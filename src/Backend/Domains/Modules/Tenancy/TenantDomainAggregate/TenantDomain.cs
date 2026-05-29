@@ -6,14 +6,9 @@ namespace Domains.Tenancy;
 
 public sealed partial class TenantDomain : Entity<Guid>
 {
-    public TenantId TenantId { get; private set; } = null!;
-    public string Hostname { get; private set; } = null!;
-    public TenantDomainStatus Status { get; private set; }
-    public string VerificationToken { get; private set; } = null!;
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime? VerifiedAtUtc { get; private set; }
-
-    private TenantDomain() { }
+    private TenantDomain()
+    {
+    }
 
     private TenantDomain(
         Guid id,
@@ -29,13 +24,20 @@ public sealed partial class TenantDomain : Entity<Guid>
         CreatedAtUtc = createdAtUtc;
     }
 
+    public TenantId TenantId { get; private set; } = null!;
+    public string Hostname { get; private set; } = null!;
+    public TenantDomainStatus Status { get; private set; }
+    public string VerificationToken { get; private set; } = null!;
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime? VerifiedAtUtc { get; private set; }
+
     public static TenantDomain Create(TenantId tenantId, string hostname, string verificationToken, DateTime utcNow)
     {
-        string normalized = NormalizeHostname(hostname);
+        var normalized = NormalizeHostname(hostname);
         if (string.IsNullOrWhiteSpace(verificationToken))
             throw new ArgumentException("Verification token is required.", nameof(verificationToken));
 
-        return new(Guid.NewGuid(), tenantId, normalized, verificationToken.Trim(), utcNow);
+        return new TenantDomain(Guid.NewGuid(), tenantId, normalized, verificationToken.Trim(), utcNow);
     }
 
     public void MarkVerified(DateTime utcNow)
@@ -50,15 +52,18 @@ public sealed partial class TenantDomain : Entity<Guid>
         VerifiedAtUtc ??= utcNow;
     }
 
-    public void Disable() => Status = TenantDomainStatus.Disabled;
+    public void Disable()
+    {
+        Status = TenantDomainStatus.Disabled;
+    }
 
     public static string NormalizeHostname(string hostname)
     {
         if (string.IsNullOrWhiteSpace(hostname))
             throw new ArgumentException("Hostname is required.", nameof(hostname));
 
-        string value = hostname.Trim().ToLowerInvariant();
-        int colon = value.IndexOf(':');
+        var value = hostname.Trim().ToLowerInvariant();
+        var colon = value.IndexOf(':');
         if (colon > 0)
             value = value[..colon];
 
@@ -77,7 +82,10 @@ public sealed partial class TenantDomain : Entity<Guid>
         return value;
     }
 
-    public static string CreateVerificationToken() => Guid.NewGuid().ToString("N");
+    public static string CreateVerificationToken()
+    {
+        return Guid.NewGuid().ToString("N");
+    }
 
     [GeneratedRegex(@"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$")]
     private static partial Regex HostnamePattern();

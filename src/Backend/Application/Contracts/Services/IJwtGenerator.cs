@@ -1,5 +1,4 @@
 using Domains.UserAggregate;
-using System.Security.Claims;
 
 namespace Application.Contracts.Services;
 

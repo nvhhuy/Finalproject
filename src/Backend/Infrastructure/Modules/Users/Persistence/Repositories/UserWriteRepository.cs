@@ -17,24 +17,39 @@ public sealed class UserWriteRepository : WriteRepositoryBase, IUserWriteReposit
         _context = context;
     }
 
-    public Task<User?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
-        GetTrackedForUpdateAsync(_context.Users, u => u.Id == UserId.Create(id), cancellationToken);
-
-    public void AddUser(User user) => AddEntity(_context.Users, user);
-
-    public void AddExternalLogin(ExternalUserLogin login) => AddEntity(_context.ExternalLogins, login);
-
-    public Task<RefreshToken?> GetRefreshTokenByHashForUpdateAsync(string tokenHash, CancellationToken cancellationToken = default) =>
-        GetTrackedForUpdateAsync(_context.RefreshTokens, t => t.TokenHash == tokenHash, cancellationToken);
-
-    public async Task<int> RevokeAllRefreshTokensForUserAsync(Guid userId, DateTime revokedAtUtc, CancellationToken cancellationToken = default)
+    public Task<User?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        UserId uid = UserId.Create(userId);
+        return GetTrackedForUpdateAsync(_context.Users, u => u.Id == UserId.Create(id), cancellationToken);
+    }
+
+    public void AddUser(User user)
+    {
+        AddEntity(_context.Users, user);
+    }
+
+    public void AddExternalLogin(ExternalUserLogin login)
+    {
+        AddEntity(_context.ExternalLogins, login);
+    }
+
+    public Task<RefreshToken?> GetRefreshTokenByHashForUpdateAsync(string tokenHash,
+        CancellationToken cancellationToken = default)
+    {
+        return GetTrackedForUpdateAsync(_context.RefreshTokens, t => t.TokenHash == tokenHash, cancellationToken);
+    }
+
+    public async Task<int> RevokeAllRefreshTokensForUserAsync(Guid userId, DateTime revokedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var uid = UserId.Create(userId);
         return await _context.RefreshTokens
             .Where(t => t.UserId == uid && t.RevokedAtUtc == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, revokedAtUtc), cancellationToken);
     }
 
-    public Task InvalidateUserCacheAsync(Guid userId, string? email = null, string? userName = null, CancellationToken cancellationToken = default) =>
-        InvalidateUserLookupAsync(userId, email, userName, cancellationToken);
+    public Task InvalidateUserCacheAsync(Guid userId, string? email = null, string? userName = null,
+        CancellationToken cancellationToken = default)
+    {
+        return InvalidateUserLookupAsync(userId, email, userName, cancellationToken);
+    }
 }

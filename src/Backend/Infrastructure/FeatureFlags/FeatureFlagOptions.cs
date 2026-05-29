@@ -16,8 +16,8 @@ public sealed class FeatureFlagDefinition
     public Dictionary<string, bool> Environments { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Optional percentage rollout (0–100). When set and <see cref="FeatureFlagContext.UserId"/> is present,
-    /// a stable hash determines inclusion for canary releases.
+    ///     Optional percentage rollout (0–100). When set and <see cref="FeatureFlagContext.UserId" /> is present,
+    ///     a stable hash determines inclusion for canary releases.
     /// </summary>
     public int? Percentage { get; set; }
 

@@ -29,15 +29,25 @@ public sealed record MeteredActionResponse(string Code, long CostCredits, string
 
 public static class WalletApiMapping
 {
-    public static WalletBalanceResponse ToResponse(WalletBalanceDto dto) =>
-        new(dto.WalletId, dto.BalanceCredits);
+    public static WalletBalanceResponse ToResponse(WalletBalanceDto dto)
+    {
+        return new WalletBalanceResponse(dto.WalletId, dto.BalanceCredits);
+    }
 
-    public static WalletLedgerEntryResponse ToResponse(WalletLedgerEntryDto dto) =>
-        new(dto.Id, dto.EntryType, dto.AmountCredits, dto.BalanceAfterCredits, dto.ActionCode, dto.Description, dto.CreatedAtUtc);
+    public static WalletLedgerEntryResponse ToResponse(WalletLedgerEntryDto dto)
+    {
+        return new WalletLedgerEntryResponse(dto.Id, dto.EntryType, dto.AmountCredits, dto.BalanceAfterCredits,
+            dto.ActionCode, dto.Description,
+            dto.CreatedAtUtc);
+    }
 
-    public static WalletDebitResponse ToResponse(WalletDebitResultDto dto) =>
-        new(dto.Success, dto.ChargedCredits, dto.RemainingBalance, dto.DenyReason);
+    public static WalletDebitResponse ToResponse(WalletDebitResultDto dto)
+    {
+        return new WalletDebitResponse(dto.Success, dto.ChargedCredits, dto.RemainingBalance, dto.DenyReason);
+    }
 
-    public static MeteredActionResponse ToResponse(MeteredActionDto dto) =>
-        new(dto.Code, dto.CostCredits, dto.Description);
+    public static MeteredActionResponse ToResponse(MeteredActionDto dto)
+    {
+        return new MeteredActionResponse(dto.Code, dto.CostCredits, dto.Description);
+    }
 }

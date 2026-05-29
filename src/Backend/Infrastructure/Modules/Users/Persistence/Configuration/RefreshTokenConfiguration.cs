@@ -15,6 +15,7 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.Property(e => e.TokenHash).HasMaxLength(128).IsRequired();
         builder.Property(e => e.ReplacedByTokenHash).HasMaxLength(128);
         builder.HasIndex(e => e.TokenHash).IsUnique();
-        builder.HasOne<User>().WithMany(u => u.RefreshTokens).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<User>().WithMany(u => u.RefreshTokens).HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -7,8 +7,6 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Platform;
 
@@ -19,14 +17,16 @@ namespace Api.Controllers.Platform;
 [Route("api/v{version:apiVersion}/platform/plans")]
 public sealed class PlatformPlansController : ApiControllerBase
 {
-    public PlatformPlansController(ISender sender) : base(sender) { }
+    public PlatformPlansController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PlanResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<PlanDto>, Error> result =
-            await Sender.Send(new ListPlansQuery(ActiveOnly: false), cancellationToken);
+        var result =
+            await Sender.Send(new ListPlansQuery(false), cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(BillingApiMapping.ToResponse).ToList()));
     }
 
@@ -34,7 +34,7 @@ public sealed class PlatformPlansController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<PlanResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Create([FromBody] CreatePlanRequest request, CancellationToken cancellationToken)
     {
-        Result<PlanDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new CreatePlanCommand(
                 request.Code,
                 request.Name,
@@ -50,9 +50,10 @@ public sealed class PlatformPlansController : ApiControllerBase
 
     [HttpPut("{planId:guid}")]
     [ProducesResponseType(typeof(ApiResponse<PlanResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Update(Guid planId, [FromBody] UpdatePlanRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(Guid planId, [FromBody] UpdatePlanRequest request,
+        CancellationToken cancellationToken)
     {
-        Result<PlanDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new UpdatePlanCommand(
                 planId,
                 request.Name,
@@ -71,7 +72,7 @@ public sealed class PlatformPlansController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Delete(Guid planId, CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(new DeletePlanCommand(planId), cancellationToken);
+        var result = await Sender.Send(new DeletePlanCommand(planId), cancellationToken);
         return MatchApi(result, _ => OkApi(true));
     }
 }

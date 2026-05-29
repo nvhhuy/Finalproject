@@ -1,16 +1,15 @@
 using Application.Contracts.Scheduling;
 using Application.Contracts.Settings;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Application.Modules.SystemSettings;
 using Microsoft.Extensions.Options;
 
 namespace Worker.Settings;
 
 public sealed class DatabaseBackupJob : ICronJob
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly WorkerSchedulingOptions _options;
     private readonly ILogger<DatabaseBackupJob> _logger;
+    private readonly WorkerSchedulingOptions _options;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public DatabaseBackupJob(
         IServiceScopeFactory scopeFactory,
@@ -27,13 +26,13 @@ public sealed class DatabaseBackupJob : ICronJob
 
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using IServiceScope scope = _scopeFactory.CreateScope();
+        using var scope = _scopeFactory.CreateScope();
         var appSettings = scope.ServiceProvider.GetRequiredService<IAppSettingsService>();
         var backupService = scope.ServiceProvider.GetRequiredService<ISystemDatabaseBackupService>();
 
-        bool enabled = await appSettings.GetBooleanAsync(
-            Application.Modules.SystemSettings.AppSettingKeys.DatabaseBackupEnabled,
-            defaultValue: false,
+        var enabled = await appSettings.GetBooleanAsync(
+            AppSettingKeys.DatabaseBackupEnabled,
+            false,
             stoppingToken);
         if (!enabled)
         {
@@ -41,13 +40,13 @@ public sealed class DatabaseBackupJob : ICronJob
             return;
         }
 
-        string? retentionRaw = await appSettings.GetValueAsync(
-            Application.Modules.SystemSettings.AppSettingKeys.DatabaseBackupRetentionDays,
+        var retentionRaw = await appSettings.GetValueAsync(
+            AppSettingKeys.DatabaseBackupRetentionDays,
             stoppingToken);
-        int retentionDays = int.TryParse(retentionRaw, out int parsed) ? Math.Max(1, parsed) : 7;
+        var retentionDays = int.TryParse(retentionRaw, out var parsed) ? Math.Max(1, parsed) : 7;
 
-        CreateSystemDatabaseBackupResult created = await backupService.CreateBackupAsync("worker.cron", stoppingToken);
-        int deleted = await backupService.CleanupExpiredBackupsAsync(retentionDays, stoppingToken);
+        var created = await backupService.CreateBackupAsync("worker.cron", stoppingToken);
+        var deleted = await backupService.CleanupExpiredBackupsAsync(retentionDays, stoppingToken);
 
         _logger.LogInformation(
             "Database backup created ({Key}, {Bytes} bytes). Retention={RetentionDays}d deleted={Deleted}",

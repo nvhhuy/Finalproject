@@ -5,6 +5,10 @@ namespace Domains.UserAggregate;
 /// <summary>Rotating refresh token persisted as a hash (never store the raw token).</summary>
 public sealed class RefreshToken
 {
+    private RefreshToken()
+    {
+    }
+
     public Guid Id { get; private set; }
     public UserId UserId { get; private set; } = null!;
     public string TokenHash { get; private set; } = null!;
@@ -14,10 +18,12 @@ public sealed class RefreshToken
     public DateTime? RevokedAtUtc { get; private set; }
     public string? ReplacedByTokenHash { get; private set; }
 
-    private RefreshToken() { }
+    public bool IsActive => RevokedAtUtc is null && DateTime.UtcNow < ExpiresAtUtc;
 
-    public static RefreshToken Issue(UserId userId, string tokenHash, DateTime expiresAtUtc, DateTime createdAtUtc, string? createdByIp) =>
-        new()
+    public static RefreshToken Issue(UserId userId, string tokenHash, DateTime expiresAtUtc, DateTime createdAtUtc,
+        string? createdByIp)
+    {
+        return new RefreshToken
         {
             Id = Guid.NewGuid(),
             UserId = userId,
@@ -26,12 +32,11 @@ public sealed class RefreshToken
             CreatedAtUtc = createdAtUtc,
             CreatedByIp = createdByIp
         };
+    }
 
     public void Revoke(string? replacedByTokenHash = null)
     {
         RevokedAtUtc = DateTime.UtcNow;
         ReplacedByTokenHash = replacedByTokenHash;
     }
-
-    public bool IsActive => RevokedAtUtc is null && DateTime.UtcNow < ExpiresAtUtc;
 }

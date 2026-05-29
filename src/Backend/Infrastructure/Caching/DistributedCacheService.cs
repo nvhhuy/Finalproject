@@ -6,8 +6,8 @@ namespace Infrastructure.Caching;
 
 public sealed class DistributedCacheService : ICacheService
 {
-    private readonly IDistributedCache _cache;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly IDistributedCache _cache;
 
     public DistributedCacheService(IDistributedCache cache)
     {
@@ -16,7 +16,7 @@ public sealed class DistributedCacheService : ICacheService
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
-        byte[]? bytes = await _cache.GetAsync(key, cancellationToken);
+        var bytes = await _cache.GetAsync(key, cancellationToken);
         if (bytes is null || bytes.Length == 0)
             return default;
         return JsonSerializer.Deserialize<T>(bytes, JsonOptions);
@@ -24,16 +24,19 @@ public sealed class DistributedCacheService : ICacheService
 
     public async Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken cancellationToken = default)
     {
-        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions);
-        await _cache.SetAsync(key, bytes, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = ttl }, cancellationToken);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions);
+        await _cache.SetAsync(key, bytes, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = ttl },
+            cancellationToken);
     }
 
-    public Task RemoveAsync(string key, CancellationToken cancellationToken = default) =>
-        _cache.RemoveAsync(key, cancellationToken);
+    public Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        return _cache.RemoveAsync(key, cancellationToken);
+    }
 
     public async Task RemoveManyAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
     {
-        foreach (string key in keys)
+        foreach (var key in keys)
             await _cache.RemoveAsync(key, cancellationToken);
     }
 }

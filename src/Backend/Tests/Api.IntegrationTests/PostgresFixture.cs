@@ -22,7 +22,7 @@ public sealed class PostgresFixture : IAsyncLifetime
             "baseproject-api-integration-tests",
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(DataProtectionKeysDirectory);
-        string? external = Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING");
+        var external = Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION_STRING");
         if (!string.IsNullOrWhiteSpace(external))
         {
             ConnectionString = external;

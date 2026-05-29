@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Application.Contracts.Tenancy;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Tenancy;
 
@@ -9,12 +11,12 @@ namespace Infrastructure.Tenancy;
 public sealed class GoogleDnsTenantDomainVerifier : ITenantDomainDnsVerifier
 {
     private readonly HttpClient _http;
-    private readonly TenancyHostOptions _options;
     private readonly ILogger<GoogleDnsTenantDomainVerifier> _logger;
+    private readonly TenancyHostOptions _options;
 
     public GoogleDnsTenantDomainVerifier(
         HttpClient http,
-        Microsoft.Extensions.Options.IOptions<TenancyHostOptions> options,
+        IOptions<TenancyHostOptions> options,
         ILogger<GoogleDnsTenantDomainVerifier> logger)
     {
         _http = http;
@@ -27,29 +29,29 @@ public sealed class GoogleDnsTenantDomainVerifier : ITenantDomainDnsVerifier
         string verificationToken,
         CancellationToken cancellationToken = default)
     {
-        string prefix = _options.VerificationTxtPrefix.Trim('.');
-        string recordName = $"{prefix}.{hostname}";
+        var prefix = _options.VerificationTxtPrefix.Trim('.');
+        var recordName = $"{prefix}.{hostname}";
         try
         {
-            string url =
+            var url =
                 $"https://dns.google/resolve?name={Uri.EscapeDataString(recordName)}&type=TXT";
-            DnsGoogleResponse? payload = await _http.GetFromJsonAsync<DnsGoogleResponse>(url, cancellationToken);
+            var payload = await _http.GetFromJsonAsync<DnsGoogleResponse>(url, cancellationToken);
             if (payload?.Answer is null)
                 return false;
 
-            foreach (DnsGoogleAnswer answer in payload.Answer)
+            foreach (var answer in payload.Answer)
             {
                 if (answer.Type != 16 || string.IsNullOrWhiteSpace(answer.Data))
                     continue;
 
-                string data = answer.Data.Trim('"');
+                var data = answer.Data.Trim('"');
                 if (data.Contains(verificationToken, StringComparison.Ordinal))
                     return true;
             }
 
             return false;
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             _logger.LogWarning(ex, "DNS TXT lookup failed for {RecordName}", recordName);
             return false;
@@ -58,16 +60,13 @@ public sealed class GoogleDnsTenantDomainVerifier : ITenantDomainDnsVerifier
 
     private sealed class DnsGoogleResponse
     {
-        [JsonPropertyName("Answer")]
-        public DnsGoogleAnswer[]? Answer { get; init; }
+        [JsonPropertyName("Answer")] public DnsGoogleAnswer[]? Answer { get; init; }
     }
 
     private sealed class DnsGoogleAnswer
     {
-        [JsonPropertyName("type")]
-        public int Type { get; init; }
+        [JsonPropertyName("type")] public int Type { get; init; }
 
-        [JsonPropertyName("data")]
-        public string? Data { get; init; }
+        [JsonPropertyName("data")] public string? Data { get; init; }
     }
 }

@@ -1,22 +1,26 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Api.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Common;
 using Shared.Errors;
 using Shared.Errors.General;
-using System.Security.Claims;
 
 namespace Api.Controllers.Base;
 
-/// <summary>Shared HTTP concerns: MediatR sender, user id resolution, <see cref="ApiResponse{T}"/> mapping.</summary>
+/// <summary>Shared HTTP concerns: MediatR sender, user id resolution, <see cref="ApiResponse{T}" /> mapping.</summary>
 public abstract class ApiControllerBase : ControllerBase
 {
     protected readonly ISender Sender;
 
-    protected ApiControllerBase(ISender sender) => Sender = sender;
+    protected ApiControllerBase(ISender sender)
+    {
+        Sender = sender;
+    }
 
     protected Guid CurrentUserId =>
-        TryGetUserId(out Guid id)
+        TryGetUserId(out var id)
             ? id
             : throw new InvalidOperationException("Authenticated user id claim is missing.");
 
@@ -29,38 +33,47 @@ public abstract class ApiControllerBase : ControllerBase
     {
         get
         {
-            string? impersonator = User.FindFirstValue("impersonator_sub");
-            return Guid.TryParse(impersonator, out Guid id) ? id : null;
+            var impersonator = User.FindFirstValue("impersonator_sub");
+            return Guid.TryParse(impersonator, out var id) ? id : null;
         }
     }
 
     protected bool TryGetUserId(out Guid userId)
     {
-        string? sub = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (!string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out userId))
             return true;
         userId = default;
         return false;
     }
 
-    protected IActionResult OkApi<T>(T data) =>
-        Ok(ApiResponse<T>.Ok(data, HttpContext));
+    protected IActionResult OkApi<T>(T data)
+    {
+        return Ok(ApiResponse<T>.Ok(data, HttpContext));
+    }
 
-    protected IActionResult OkApiEmpty() =>
-        Ok(ApiResponse<object?>.OkEmpty(HttpContext));
+    protected IActionResult OkApiEmpty()
+    {
+        return Ok(ApiResponse<object?>.OkEmpty(HttpContext));
+    }
 
     protected IActionResult FailApi(Error error, int? overrideStatus = null)
     {
-        int status = overrideStatus ?? error.StatusCode ?? StatusCodes.Status400BadRequest;
-        ApiErrorPayload payload = ToErrorPayload(error);
+        var status = overrideStatus ?? error.StatusCode ?? StatusCodes.Status400BadRequest;
+        var payload = ToErrorPayload(error);
         return StatusCode(status, ApiResponse<object?>.Fail(payload, HttpContext));
     }
 
-    protected IActionResult BadRequestValidationApi(ValidationError validation) =>
-        BadRequest(ApiResponse<object?>.Fail(ToErrorPayload(validation), HttpContext));
+    protected IActionResult BadRequestValidationApi(ValidationError validation)
+    {
+        return BadRequest(ApiResponse<object?>.Fail(ToErrorPayload(validation), HttpContext));
+    }
 
-    /// <summary>Maps <see cref="Result{T,E}"/> to HTTP using the standard envelope (except special auth flows handled separately).</summary>
+    /// <summary>
+    ///     Maps <see cref="Result{T,E}" /> to HTTP using the standard envelope (except special auth flows handled
+    ///     separately).
+    /// </summary>
     protected IActionResult MatchApi<T>(Result<T, Error> result, Func<T, IActionResult>? success = null)
     {
         if (result.IsFailure)

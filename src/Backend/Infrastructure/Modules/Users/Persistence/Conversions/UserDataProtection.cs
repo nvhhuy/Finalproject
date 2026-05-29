@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.DataProtection;
 namespace Infrastructure.Modules.Users.Persistence.Conversions;
 
 /// <summary>
-/// Process-wide accessor for the <see cref="IDataProtectionProvider"/> used by user-aggregate
-/// value converters. Initialised once during <c>AddInfrastructure</c>; only invoked during EF
-/// <c>OnModelCreating</c> and value-converter execution.
+///     Process-wide accessor for the <see cref="IDataProtectionProvider" /> used by user-aggregate
+///     value converters. Initialised once during <c>AddInfrastructure</c>; only invoked during EF
+///     <c>OnModelCreating</c> and value-converter execution.
 /// </summary>
 internal static class UserDataProtection
 {

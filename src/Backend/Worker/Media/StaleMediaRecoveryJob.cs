@@ -3,40 +3,42 @@ using Application.Contracts.Scheduling;
 using Application.Contracts.Services;
 using Application.Contracts.Transactions;
 using Domains.MediaAggregate;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Worker.Media;
 
 /// <summary>
-/// Detects and requeues media assets that have been stuck in <see cref="MediaAssetStatus.Processing"/>
-/// longer than the configured threshold. Without this, a worker that crashes mid-pipeline (OOM,
-/// container kill, ffmpeg hang) would leave the asset permanently unprocessable — the API would
-/// report <c>Processing</c> forever and the user would never see a Ready variant.
+///     Detects and requeues media assets that have been stuck in <see cref="MediaAssetStatus.Processing" />
+///     longer than the configured threshold. Without this, a worker that crashes mid-pipeline (OOM,
+///     container kill, ffmpeg hang) would leave the asset permanently unprocessable — the API would
+///     report <c>Processing</c> forever and the user would never see a Ready variant.
 /// </summary>
 /// <remarks>
-/// <para><b>Design:</b> the job acts as a watchdog only — it doesn't run encoding itself. It finds
-/// stale assets, calls <see cref="MediaAsset.RequeueAfterStall"/> which raises a fresh upload
-/// event, commits, and the outbox publisher pushes that event back onto the worker queue. The
-/// next available worker picks it up and the regular pipeline runs.</para>
-///
-/// <para><b>Idempotency:</b> if two recovery instances ran concurrently (e.g. two worker pods)
-/// and both grabbed the same stalled asset, the second one's <c>RequeueAfterStall</c> would throw
-/// because the first one already transitioned the status to <c>Uploaded</c>. The throw is caught
-/// per-asset so one collision doesn't sink the whole batch.</para>
-///
-/// <para><b>Concurrency with live worker:</b> if the original worker is still alive but very
-/// slow (not crashed), it'll eventually call <c>MarkReady</c> or <c>MarkFailed</c>. Because
-/// recovery resets the asset to <c>Uploaded</c>, the slow worker's <c>MarkReady</c> will throw
-/// (status guard mismatch) and the pipeline's catch block will <c>MarkFailed</c>. That's a benign
-/// outcome — the second worker (started by recovery) takes over.</para>
+///     <para>
+///         <b>Design:</b> the job acts as a watchdog only — it doesn't run encoding itself. It finds
+///         stale assets, calls <see cref="MediaAsset.RequeueAfterStall" /> which raises a fresh upload
+///         event, commits, and the outbox publisher pushes that event back onto the worker queue. The
+///         next available worker picks it up and the regular pipeline runs.
+///     </para>
+///     <para>
+///         <b>Idempotency:</b> if two recovery instances ran concurrently (e.g. two worker pods)
+///         and both grabbed the same stalled asset, the second one's <c>RequeueAfterStall</c> would throw
+///         because the first one already transitioned the status to <c>Uploaded</c>. The throw is caught
+///         per-asset so one collision doesn't sink the whole batch.
+///     </para>
+///     <para>
+///         <b>Concurrency with live worker:</b> if the original worker is still alive but very
+///         slow (not crashed), it'll eventually call <c>MarkReady</c> or <c>MarkFailed</c>. Because
+///         recovery resets the asset to <c>Uploaded</c>, the slow worker's <c>MarkReady</c> will throw
+///         (status guard mismatch) and the pipeline's catch block will <c>MarkFailed</c>. That's a benign
+///         outcome — the second worker (started by recovery) takes over.
+///     </para>
 /// </remarks>
 public sealed class StaleMediaRecoveryJob : ICronJob
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly WorkerSchedulingOptions _options;
     private readonly ILogger<StaleMediaRecoveryJob> _logger;
+    private readonly WorkerSchedulingOptions _options;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public StaleMediaRecoveryJob(
         IServiceScopeFactory scopeFactory,
@@ -56,13 +58,13 @@ public sealed class StaleMediaRecoveryJob : ICronJob
     {
         // Per-tick scope keeps DbContext lifetime bounded and prevents change-tracking leaks
         // between ticks (the job lives forever as a singleton, the scope is per-execution).
-        using IServiceScope scope = _scopeFactory.CreateScope();
+        using var scope = _scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<IMediaAssetRepository>();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var clock = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 
-        DateTime cutoff = clock.Now.AddMinutes(-_options.StaleMediaProcessingThresholdMinutes);
-        IReadOnlyList<MediaAsset> stalled = await repo.GetStalledProcessingAsync(
+        var cutoff = clock.Now.AddMinutes(-_options.StaleMediaProcessingThresholdMinutes);
+        var stalled = await repo.GetStalledProcessingAsync(
             cutoff,
             _options.StaleMediaRecoveryBatchSize,
             stoppingToken);
@@ -70,16 +72,15 @@ public sealed class StaleMediaRecoveryJob : ICronJob
         if (stalled.Count == 0)
             return;
 
-        int requeued = 0;
-        int quarantined = 0;
-        foreach (MediaAsset asset in stalled)
-        {
+        var requeued = 0;
+        var quarantined = 0;
+        foreach (var asset in stalled)
             try
             {
-                int attemptsBefore = asset.ProcessingAttemptCount;
+                var attemptsBefore = asset.ProcessingAttemptCount;
                 asset.RequeueAfterStall(clock.Now, _options.MaxMediaProcessingAttempts);
 
-                if (asset.Status == Domains.MediaAggregate.MediaAssetStatus.Failed)
+                if (asset.Status == MediaAssetStatus.Failed)
                 {
                     quarantined++;
                     _logger.LogError(
@@ -107,7 +108,6 @@ public sealed class StaleMediaRecoveryJob : ICronJob
                 // it concurrently. Skip — the asset is no longer our problem this tick.
                 _logger.LogInformation(ex, "Skipped media asset {AssetId} during stale recovery", asset.Id.Value);
             }
-        }
 
         if (requeued + quarantined > 0)
             await uow.SaveChangesAsync(stoppingToken);

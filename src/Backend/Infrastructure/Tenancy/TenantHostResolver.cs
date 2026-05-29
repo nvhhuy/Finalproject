@@ -1,7 +1,6 @@
 using Application.Contracts.Persistence;
 using Application.Contracts.Tenancy;
 using Domains.Tenancy;
-using Domains.Tenancy.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -20,11 +19,11 @@ public sealed class TenantHostResolver : ITenantHostResolver
 
     public async Task<TenantHostResolution?> ResolveAsync(string host, CancellationToken cancellationToken = default)
     {
-        string normalizedHost = NormalizeHost(host);
+        var normalizedHost = NormalizeHost(host);
         if (string.IsNullOrWhiteSpace(normalizedHost))
             return null;
 
-        string? baseHost = string.IsNullOrWhiteSpace(_options.SubdomainBaseHost)
+        var baseHost = string.IsNullOrWhiteSpace(_options.SubdomainBaseHost)
             ? null
             : _options.SubdomainBaseHost.Trim().ToLowerInvariant();
 
@@ -33,16 +32,16 @@ public sealed class TenantHostResolver : ITenantHostResolver
             if (normalizedHost == baseHost || normalizedHost == $"www.{baseHost}")
                 return null;
 
-            string suffix = $".{baseHost}";
+            var suffix = $".{baseHost}";
             if (normalizedHost.EndsWith(suffix, StringComparison.Ordinal))
             {
-                string subdomain = normalizedHost[..^suffix.Length];
+                var subdomain = normalizedHost[..^suffix.Length];
                 if (IsReservedSubdomain(subdomain))
                     return null;
 
                 try
                 {
-                    string slug = Tenant.NormalizeSlug(subdomain);
+                    var slug = Tenant.NormalizeSlug(subdomain);
                     return await ResolveBySlugAsync(slug, TenantHostResolutionSource.Subdomain, cancellationToken);
                 }
                 catch (ArgumentException)
@@ -83,20 +82,24 @@ public sealed class TenantHostResolver : ITenantHostResolver
                 (d, t) => new { t.Id, t.Slug })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return row is null ? null : new TenantHostResolution(row.Id.Value, row.Slug, TenantHostResolutionSource.CustomDomain);
+        return row is null
+            ? null
+            : new TenantHostResolution(row.Id.Value, row.Slug, TenantHostResolutionSource.CustomDomain);
     }
 
-    private bool IsReservedSubdomain(string subdomain) =>
-        _options.ReservedSubdomains.Any(r =>
+    private bool IsReservedSubdomain(string subdomain)
+    {
+        return _options.ReservedSubdomains.Any(r =>
             string.Equals(r, subdomain, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static string NormalizeHost(string host)
     {
         if (string.IsNullOrWhiteSpace(host))
             return string.Empty;
 
-        string value = host.Trim().ToLowerInvariant();
-        int colon = value.IndexOf(':');
+        var value = host.Trim().ToLowerInvariant();
+        var colon = value.IndexOf(':');
         if (colon > 0)
             value = value[..colon];
         return value;

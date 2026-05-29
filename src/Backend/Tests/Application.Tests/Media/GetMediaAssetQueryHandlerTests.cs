@@ -1,20 +1,17 @@
 using Application.Contracts.Modules.Media.Persistence;
 using Application.Contracts.Storage;
-using Application.Modules.Media.Dtos;
 using Application.Modules.Media.Queries;
 using Domains.MediaAggregate;
 using Domains.MediaAggregate.ValueObjects;
 using Domains.Tenancy;
 using Moq;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.General;
 
 namespace Application.Tests.Media;
 
 /// <summary>
-/// Verifies the ownership check returns the same 404 to a non-owner as for a missing id
-/// (defence against id enumeration).
+///     Verifies the ownership check returns the same 404 to a non-owner as for a missing id
+///     (defence against id enumeration).
 /// </summary>
 public sealed class GetMediaAssetQueryHandlerTests
 {
@@ -29,7 +26,7 @@ public sealed class GetMediaAssetQueryHandlerTests
 
         var handler = new GetMediaAssetQueryHandler(repo.Object, new Mock<IObjectStorage>().Object);
 
-        Result<MediaAssetDto, Error> result = await handler.Handle(
+        var result = await handler.Handle(
             new GetMediaAssetQuery(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -39,9 +36,9 @@ public sealed class GetMediaAssetQueryHandlerTests
     [Fact]
     public async Task Handle_returns_not_found_when_caller_is_not_owner()
     {
-        Guid owner = Guid.NewGuid();
-        Guid attacker = Guid.NewGuid();
-        MediaAsset asset = MediaAsset.CreateForUpload(
+        var owner = Guid.NewGuid();
+        var attacker = Guid.NewGuid();
+        var asset = MediaAsset.CreateForUpload(
             MediaAssetId.CreateNew(), SystemTenants.DefaultTenantId, owner, MediaKind.Image,
             "media/originals/x.jpg", "image/jpeg", 1024, FixedNow);
 
@@ -51,7 +48,7 @@ public sealed class GetMediaAssetQueryHandlerTests
 
         var handler = new GetMediaAssetQueryHandler(repo.Object, new Mock<IObjectStorage>().Object);
 
-        Result<MediaAssetDto, Error> result = await handler.Handle(
+        var result = await handler.Handle(
             new GetMediaAssetQuery(asset.Id.Value, attacker), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -62,8 +59,8 @@ public sealed class GetMediaAssetQueryHandlerTests
     [Fact]
     public async Task Handle_returns_dto_when_owner_matches()
     {
-        Guid owner = Guid.NewGuid();
-        MediaAsset asset = MediaAsset.CreateForUpload(
+        var owner = Guid.NewGuid();
+        var asset = MediaAsset.CreateForUpload(
             MediaAssetId.CreateNew(), SystemTenants.DefaultTenantId, owner, MediaKind.Image,
             "media/originals/x.jpg", "image/jpeg", 1024, FixedNow);
 
@@ -76,7 +73,7 @@ public sealed class GetMediaAssetQueryHandlerTests
 
         var handler = new GetMediaAssetQueryHandler(repo.Object, storage.Object);
 
-        Result<MediaAssetDto, Error> result = await handler.Handle(
+        var result = await handler.Handle(
             new GetMediaAssetQuery(asset.Id.Value, owner), CancellationToken.None);
 
         Assert.True(result.IsSuccess);

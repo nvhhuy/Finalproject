@@ -14,7 +14,11 @@ public sealed record RestoreSystemBackupRequest(string Key, string Confirmation)
 
 public sealed record SystemBackupItemDto(string Key, DateTime CreatedAtUtc, long ByteSize);
 
-public sealed record ImportSystemBackupRestoreResponse(string Key, DateTime CreatedAtUtc, long ByteSize, int SettingsApplied);
+public sealed record ImportSystemBackupRestoreResponse(
+    string Key,
+    DateTime CreatedAtUtc,
+    long ByteSize,
+    int SettingsApplied);
 
 public sealed record DatabaseBackupSettingsDto(bool Enabled, int RetentionDays);
 

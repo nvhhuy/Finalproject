@@ -10,10 +10,18 @@ public sealed class TenantSsoSettingsStore : ITenantSsoSettingsStore
 {
     private readonly ApplicationDbContext _db;
 
-    public TenantSsoSettingsStore(ApplicationDbContext db) => _db = db;
+    public TenantSsoSettingsStore(ApplicationDbContext db)
+    {
+        _db = db;
+    }
 
-    public void Add(TenantSsoSettings settings) => _db.TenantSsoSettings.Add(settings);
+    public void Add(TenantSsoSettings settings)
+    {
+        _db.TenantSsoSettings.Add(settings);
+    }
 
-    public Task<TenantSsoSettings?> GetForUpdateAsync(TenantId tenantId, CancellationToken cancellationToken = default) =>
-        _db.TenantSsoSettings.FirstOrDefaultAsync(s => s.TenantId == tenantId, cancellationToken);
+    public Task<TenantSsoSettings?> GetForUpdateAsync(TenantId tenantId, CancellationToken cancellationToken = default)
+    {
+        return _db.TenantSsoSettings.FirstOrDefaultAsync(s => s.TenantId == tenantId, cancellationToken);
+    }
 }

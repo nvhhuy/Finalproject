@@ -1,7 +1,6 @@
 using Application.Contracts.Notifications;
 using Domains.Notifications;
 using Domains.UserAggregate;
-using Domains.UserAggregate.ValueObjects;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +12,10 @@ public sealed class MemberNotificationBroadcaster : IMemberNotificationBroadcast
 
     private readonly ApplicationDbContext _db;
 
-    public MemberNotificationBroadcaster(ApplicationDbContext db) => _db = db;
+    public MemberNotificationBroadcaster(ApplicationDbContext db)
+    {
+        _db = db;
+    }
 
     public async Task<int> BroadcastToAllMembersAsync(
         string title,
@@ -21,7 +23,7 @@ public sealed class MemberNotificationBroadcaster : IMemberNotificationBroadcast
         string? linkUrl = null,
         CancellationToken cancellationToken = default)
     {
-        List<UserId> memberIds = await _db.Users
+        var memberIds = await _db.Users
             .AsNoTracking()
             .Where(u =>
                 u.Role == UserRoles.User
@@ -31,15 +33,15 @@ public sealed class MemberNotificationBroadcaster : IMemberNotificationBroadcast
             .Select(u => u.Id)
             .ToListAsync(cancellationToken);
 
-        List<Guid> memberUserIds = memberIds.Select(id => id.Value).ToList();
+        var memberUserIds = memberIds.Select(id => id.Value).ToList();
 
         if (memberUserIds.Count == 0)
             return 0;
 
-        for (int offset = 0; offset < memberUserIds.Count; offset += InsertBatchSize)
+        for (var offset = 0; offset < memberUserIds.Count; offset += InsertBatchSize)
         {
-            IEnumerable<Guid> batch = memberUserIds.Skip(offset).Take(InsertBatchSize);
-            foreach (Guid userId in batch)
+            var batch = memberUserIds.Skip(offset).Take(InsertBatchSize);
+            foreach (var userId in batch)
                 _db.UserNotifications.Add(new UserNotification(userId, title, body, linkUrl));
 
             await _db.SaveChangesAsync(cancellationToken);

@@ -1,17 +1,15 @@
 using Application.Contracts.Scheduling;
 using Application.Modules.Billing;
 using MediatR;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Worker.Billing;
 
 public sealed class SubscriptionCreditGrantJob : ICronJob
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly WorkerSchedulingOptions _options;
     private readonly ILogger<SubscriptionCreditGrantJob> _logger;
+    private readonly WorkerSchedulingOptions _options;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public SubscriptionCreditGrantJob(
         IServiceScopeFactory scopeFactory,
@@ -28,9 +26,9 @@ public sealed class SubscriptionCreditGrantJob : ICronJob
 
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using IServiceScope scope = _scopeFactory.CreateScope();
-        ISender sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        Shared.Common.Result<int, Shared.Errors.Error> result =
+        using var scope = _scopeFactory.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+        var result =
             await sender.Send(new ProcessSubscriptionCreditGrantsCommand(), stoppingToken);
         if (result.IsFailure)
         {

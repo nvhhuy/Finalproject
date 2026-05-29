@@ -1,10 +1,6 @@
 using Application.Contracts.Notifications;
 using Application.Contracts.Persistence;
-using Domains.Notifications;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Application.Modules.Notifications;
 
@@ -14,8 +10,8 @@ public sealed record ProcessPendingNotificationDeliveriesCommand(int BatchSize =
 public sealed class ProcessPendingNotificationDeliveriesCommandHandler
     : IRequestHandler<ProcessPendingNotificationDeliveriesCommand, Result<int, Error>>
 {
-    private readonly IApplicationReadDbContext _read;
     private readonly INotificationDeliveryProcessor _processor;
+    private readonly IApplicationReadDbContext _read;
 
     public ProcessPendingNotificationDeliveriesCommandHandler(
         IApplicationReadDbContext read,
@@ -29,10 +25,10 @@ public sealed class ProcessPendingNotificationDeliveriesCommandHandler
         ProcessPendingNotificationDeliveriesCommand request,
         CancellationToken cancellationToken)
     {
-        int batchSize = Math.Clamp(request.BatchSize, 1, 1_000);
-        DateTime cutoff = DateTime.UtcNow.AddDays(-7);
+        var batchSize = Math.Clamp(request.BatchSize, 1, 1_000);
+        var cutoff = DateTime.UtcNow.AddDays(-7);
 
-        List<Guid> pendingIds = await _read.UserNotifications
+        var pendingIds = await _read.UserNotifications
             .AsNoTracking()
             .Where(n => n.LiveDeliveredAtUtc == null && n.CreatedAtUtc >= cutoff)
             .OrderBy(n => n.CreatedAtUtc)
@@ -40,12 +36,10 @@ public sealed class ProcessPendingNotificationDeliveriesCommandHandler
             .Select(n => n.Id)
             .ToListAsync(cancellationToken);
 
-        int delivered = 0;
-        foreach (Guid id in pendingIds)
-        {
+        var delivered = 0;
+        foreach (var id in pendingIds)
             if (await _processor.TryDeliverAsync(id, cancellationToken))
                 delivered++;
-        }
 
         return delivered;
     }

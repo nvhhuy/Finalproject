@@ -1,25 +1,24 @@
-using Application.Modules.Users.Authentication.Common;
 using Application.Contracts.ExternalAuth;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Persistence;
 using Application.Contracts.Services;
 using Application.Contracts.Transactions;
+using Application.Modules.Users.Authentication.Common;
 using Domains.UserAggregate;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.Authentication;
 
 namespace Application.Modules.Users.Authentication.Commands.GoogleSignIn;
 
-public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCommand, Result<AuthenticationResponse, Error>>
+public sealed class
+    GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCommand, Result<AuthenticationResponse, Error>>
 {
+    private readonly IDateTimeProvider _clock;
     private readonly IGoogleIdTokenValidator _google;
     private readonly IApplicationReadDbContext _read;
-    private readonly IUserWriteRepository _users;
     private readonly IAuthenticationTokenIssuer _tokens;
-    private readonly IDateTimeProvider _clock;
     private readonly IUnitOfWork _uow;
+    private readonly IUserWriteRepository _users;
 
     public GoogleSignInCommandHandler(
         IGoogleIdTokenValidator google,
@@ -37,13 +36,14 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
         _uow = uow;
     }
 
-    public async Task<Result<AuthenticationResponse, Error>> Handle(GoogleSignInCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthenticationResponse, Error>> Handle(GoogleSignInCommand request,
+        CancellationToken cancellationToken)
     {
-        GoogleUserInfo? info = await _google.ValidateAsync(request.IdToken, cancellationToken);
+        var info = await _google.ValidateAsync(request.IdToken, cancellationToken);
         if (info is null)
             return new InvalidCredentialsError("Google token could not be validated.");
 
-        ExternalUserLogin? link = await _read.ExternalLogins
+        var link = await _read.ExternalLogins
             .FirstOrDefaultAsync(
                 e => e.Provider == ExternalLoginProviders.Google && e.ProviderSubject == info.Subject,
                 cancellationToken);
@@ -60,9 +60,9 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
             user = await _read.Users.FirstOrDefaultAsync(u => u.Email == info.Email, cancellationToken);
             if (user is null)
             {
-                string userName = await BuildUniqueUserNameAsync(info.Email, cancellationToken);
-                string first = info.GivenName ?? info.Name ?? "User";
-                string last = info.FamilyName ?? string.Empty;
+                var userName = await BuildUniqueUserNameAsync(info.Email, cancellationToken);
+                var first = info.GivenName ?? info.Name ?? "User";
+                var last = info.FamilyName ?? string.Empty;
                 user = User.CreateForExternal(first, last, userName, info.Email);
                 user.MarkRegisteredAt(_clock.Now);
                 user.MarkEmailVerified(_clock.Now);
@@ -73,14 +73,15 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
             }
             else
             {
-                bool alreadyLinked = await _read.ExternalLogins.AnyAsync(
+                var alreadyLinked = await _read.ExternalLogins.AnyAsync(
                     e => e.UserId.Value == user.Id.Value
                          && e.Provider == ExternalLoginProviders.Google
                          && e.ProviderSubject == info.Subject,
                     cancellationToken);
                 if (!alreadyLinked)
                 {
-                    _users.AddExternalLogin(ExternalUserLogin.Create(user.Id, ExternalLoginProviders.Google, info.Subject));
+                    _users.AddExternalLogin(ExternalUserLogin.Create(user.Id, ExternalLoginProviders.Google,
+                        info.Subject));
                     await _uow.SaveChangesAsync(cancellationToken);
                     await _users.InvalidateUserCacheAsync(user.Id.Value, user.Email, user.UserName, cancellationToken);
                 }
@@ -90,7 +91,7 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
         if (!user.CanSignIn)
             return new AccountDisabledError("This account cannot sign in.");
 
-        Result<AuthenticationTokenPair, Error> pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
+        var pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
         if (pair.IsFailure)
             return pair.Error;
 
@@ -104,14 +105,15 @@ public sealed class GoogleSignInCommandHandler : IRequestHandler<GoogleSignInCom
 
     private async Task<string> BuildUniqueUserNameAsync(string email, CancellationToken cancellationToken)
     {
-        string local = email.Split('@')[0];
-        string candidate = local;
-        int i = 0;
+        var local = email.Split('@')[0];
+        var candidate = local;
+        var i = 0;
         while (await _read.Users.AnyAsync(u => u.UserName == candidate, cancellationToken))
         {
             i++;
             candidate = $"{local}{i}";
         }
+
         return candidate;
     }
 }

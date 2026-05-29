@@ -22,7 +22,7 @@ Catalog of **existing** Admin Console features — routes, behavior, and corresp
 | `/tenants` | Tenant list, create, assign/change subscription plan | Admin |
 | `/invoices` | Platform billing invoices (paginated) | Admin |
 
-Nav sidebar: Dashboard, Users, Announcements, Plans, Tenants, Invoices, Audit logs, Settings, DLQ, Support tickets.
+Nav sidebar: Dashboard, Users, Announcements, Plans, Credit packages, Tenants, Invoices, Audit logs, Settings, DLQ, Support tickets.
 
 ## Subscription plans
 
@@ -63,7 +63,7 @@ API: `GET/POST /api/v1/platform/tenants`, `GET/POST /api/v1/platform/tenants/{id
 | Capability | UI | API |
 |------------|-----|-----|
 | Email + password login | `LoginPage` | `POST /api/v1/auth/login` |
-| 2FA completion | Second step on login | `POST /api/v1/auth/2fa` (flow via auth-api) |
+| 2FA completion | Second step on login | `POST /api/v1/auth/login/2fa` (flow via auth-api) |
 | Session refresh | Automatic in `client.ts` | `POST /api/v1/auth/refresh` |
 | Logout | Sidebar | Clears Zustand + sessionStorage |
 | Role gate | `ProtectedRoute` | JWT must include **Admin** role |
@@ -143,8 +143,9 @@ Admin **does not** expose end-user registration UI — only toggles whether the 
 | Paginated table | 50 per page |
 | Filter by target user ID | Query param + URL `?targetUserId=` |
 | Columns | Time, action, actor, target, details |
+| Export CSV | Downloads filtered result set as CSV |
 
-API: `GET /api/v1/admin/audit-logs`.
+API: `GET /api/v1/admin/audit-logs`, `GET /api/v1/admin/audit-logs/export`.
 
 ---
 
@@ -158,6 +159,20 @@ API: `GET /api/v1/admin/audit-logs`.
 | Queue name + batch size | Configurable inputs |
 
 Requires RabbitMQ enabled on API. API: `/api/v1/admin/messaging/dlq/...`.
+
+---
+
+## Support tickets (`/support`)
+
+| Capability | Notes |
+|------------|-------|
+| Ticket list + filters | Search, status, priority, assignment |
+| Ticket detail | Timeline/messages panel |
+| Assign / unassign | Set `assignedAdminUserId` |
+| Change status / priority | Inline update controls |
+| Reply with internal note | Optional internal flag per message |
+
+API: `GET /api/v1/admin/support/tickets`, `GET /api/v1/admin/support/tickets/{ticketId}`, `POST /assign`, `POST /status`, `POST /priority`, `POST /messages` under `/api/v1/admin/support/tickets/{ticketId}`.
 
 ---
 

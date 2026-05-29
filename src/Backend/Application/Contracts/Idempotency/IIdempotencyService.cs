@@ -1,13 +1,13 @@
 namespace Application.Contracts.Idempotency;
 
 /// <summary>
-/// Stores idempotency keys for mutating HTTP requests so retries return the original response
-/// instead of re-executing side effects.
+///     Stores idempotency keys for mutating HTTP requests so retries return the original response
+///     instead of re-executing side effects.
 /// </summary>
 public interface IIdempotencyService
 {
     /// <summary>
-    /// Attempts to claim an idempotency key for the given scope and owner partition.
+    ///     Attempts to claim an idempotency key for the given scope and owner partition.
     /// </summary>
     Task<IdempotencyAcquireResult> TryAcquireAsync(
         string scope,

@@ -7,19 +7,11 @@ namespace Domains.Tenancy;
 
 public sealed partial class Tenant : AggregateRoot<TenantId>
 {
-    public string Slug { get; private set; } = null!;
-    public string DisplayName { get; private set; } = null!;
-    public TenantStatus Status { get; private set; }
-    public UserId OwnerUserId { get; private set; } = null!;
-    public string? PublicTagline { get; private set; }
-    public string? PublicDescription { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime UpdatedAtUtc { get; private set; }
-
     private readonly List<TenantMember> _members = [];
-    public IReadOnlyList<TenantMember> Members => _members.AsReadOnly();
 
-    private Tenant() { }
+    private Tenant()
+    {
+    }
 
     private Tenant(
         TenantId id,
@@ -36,9 +28,19 @@ public sealed partial class Tenant : AggregateRoot<TenantId>
         UpdatedAtUtc = utcNow;
     }
 
+    public string Slug { get; private set; } = null!;
+    public string DisplayName { get; private set; } = null!;
+    public TenantStatus Status { get; private set; }
+    public UserId OwnerUserId { get; private set; } = null!;
+    public string? PublicTagline { get; private set; }
+    public string? PublicDescription { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime UpdatedAtUtc { get; private set; }
+    public IReadOnlyList<TenantMember> Members => _members.AsReadOnly();
+
     public static Tenant Create(string slug, string displayName, UserId ownerUserId, DateTime utcNow)
     {
-        string normalizedSlug = NormalizeSlug(slug);
+        var normalizedSlug = NormalizeSlug(slug);
         if (string.IsNullOrWhiteSpace(displayName))
             throw new ArgumentException("Display name is required.", nameof(displayName));
         if (ownerUserId is null || ownerUserId.Value == Guid.Empty)
@@ -57,12 +59,14 @@ public sealed partial class Tenant : AggregateRoot<TenantId>
         UserId ownerUserId,
         TenantStatus status,
         DateTime createdAtUtc,
-        DateTime updatedAtUtc) =>
-        new(id, slug, displayName, ownerUserId, createdAtUtc)
+        DateTime updatedAtUtc)
+    {
+        return new Tenant(id, slug, displayName, ownerUserId, createdAtUtc)
         {
             Status = status,
-            UpdatedAtUtc = updatedAtUtc,
+            UpdatedAtUtc = updatedAtUtc
         };
+    }
 
     public TenantMember AddMember(UserId userId, string role, DateTime utcNow)
     {
@@ -101,7 +105,7 @@ public sealed partial class Tenant : AggregateRoot<TenantId>
         if (string.IsNullOrWhiteSpace(slug))
             throw new ArgumentException("Slug is required.", nameof(slug));
 
-        string normalized = slug.Trim().ToLowerInvariant();
+        var normalized = slug.Trim().ToLowerInvariant();
         if (normalized.Length is < 3 or > 63)
             throw new ArgumentException("Slug must be between 3 and 63 characters.", nameof(slug));
         if (!SlugPattern().IsMatch(normalized))

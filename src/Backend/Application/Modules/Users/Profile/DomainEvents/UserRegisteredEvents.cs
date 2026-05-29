@@ -1,5 +1,4 @@
 using Domains.Common.Interfaces;
-using MediatR;
 
 namespace Application.Modules.Users.Profile.DomainEvents;
 

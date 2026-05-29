@@ -1,17 +1,11 @@
 using Application.Contracts.Billing;
 using Application.Contracts.Persistence;
 using Application.Contracts.Services;
-using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
 using Domains.Billing;
 using Domains.Tenancy.ValueObjects;
 using Domains.UserAggregate.ValueObjects;
-using FluentValidation;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Billing;
 
@@ -32,7 +26,8 @@ public sealed class CancelTenantSubscriptionCommandValidator : AbstractValidator
     }
 }
 
-public sealed class ChangeTenantSubscriptionPlanCommandValidator : AbstractValidator<ChangeTenantSubscriptionPlanCommand>
+public sealed class
+    ChangeTenantSubscriptionPlanCommandValidator : AbstractValidator<ChangeTenantSubscriptionPlanCommand>
 {
     public ChangeTenantSubscriptionPlanCommandValidator()
     {
@@ -45,10 +40,10 @@ public sealed class ChangeTenantSubscriptionPlanCommandValidator : AbstractValid
 public sealed class CancelTenantSubscriptionCommandHandler
     : IRequestHandler<CancelTenantSubscriptionCommand, Result<SubscriptionSummaryDto, Error>>
 {
-    private readonly ISubscriptionStore _subscriptions;
-    private readonly IApplicationReadDbContext _db;
-    private readonly IUnitOfWork _uow;
     private readonly IDateTimeProvider _clock;
+    private readonly IApplicationReadDbContext _db;
+    private readonly ISubscriptionStore _subscriptions;
+    private readonly IUnitOfWork _uow;
 
     public CancelTenantSubscriptionCommandHandler(
         ISubscriptionStore subscriptions,
@@ -69,8 +64,8 @@ public sealed class CancelTenantSubscriptionCommandHandler
         if (!await IsTenantOwnerAsync(request.TenantId, request.UserId, cancellationToken))
             return new ForbiddenError("Only the tenant owner can cancel the subscription.");
 
-        TenantId tenantId = TenantId.Create(request.TenantId);
-        Subscription? subscription = await _subscriptions.GetByTenantForUpdateAsync(tenantId, cancellationToken);
+        var tenantId = TenantId.Create(request.TenantId);
+        var subscription = await _subscriptions.GetByTenantForUpdateAsync(tenantId, cancellationToken);
         if (subscription is null)
             return new NotFoundError("No subscription for this tenant.");
 
@@ -81,7 +76,7 @@ public sealed class CancelTenantSubscriptionCommandHandler
 
     private async Task<bool> IsTenantOwnerAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken)
     {
-        UserId ownerId = UserId.Create(userId);
+        var ownerId = UserId.Create(userId);
         return await _db.Tenants.AsNoTracking()
             .AnyAsync(t => t.Id == TenantId.Create(tenantId) && t.OwnerUserId == ownerId, cancellationToken);
     }
@@ -90,20 +85,20 @@ public sealed class CancelTenantSubscriptionCommandHandler
         Subscription subscription,
         CancellationToken cancellationToken)
     {
-        SubscriptionSummaryDto? row = await (
-            from s in _db.Subscriptions.AsNoTracking()
-            join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
-            where s.Id == subscription.Id
-            select new SubscriptionSummaryDto(
-                s.Id,
-                s.TenantId.Value,
-                s.PlanId,
-                p.Code,
-                p.Name,
-                s.Status.ToString(),
-                s.CurrentPeriodStartUtc,
-                s.CurrentPeriodEndUtc,
-                s.AllowsWriteAccess))
+        var row = await (
+                from s in _db.Subscriptions.AsNoTracking()
+                join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
+                where s.Id == subscription.Id
+                select new SubscriptionSummaryDto(
+                    s.Id,
+                    s.TenantId.Value,
+                    s.PlanId,
+                    p.Code,
+                    p.Name,
+                    s.Status.ToString(),
+                    s.CurrentPeriodStartUtc,
+                    s.CurrentPeriodEndUtc,
+                    s.AllowsWriteAccess))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)
@@ -115,12 +110,12 @@ public sealed class CancelTenantSubscriptionCommandHandler
 public sealed class ChangeTenantSubscriptionPlanCommandHandler
     : IRequestHandler<ChangeTenantSubscriptionPlanCommand, Result<SubscriptionSummaryDto, Error>>
 {
-    private readonly ISubscriptionStore _subscriptions;
-    private readonly IPlanStore _plans;
-    private readonly IBillingInvoiceIssuer _invoices;
-    private readonly IApplicationReadDbContext _db;
-    private readonly IUnitOfWork _uow;
     private readonly IDateTimeProvider _clock;
+    private readonly IApplicationReadDbContext _db;
+    private readonly IBillingInvoiceIssuer _invoices;
+    private readonly IPlanStore _plans;
+    private readonly ISubscriptionStore _subscriptions;
+    private readonly IUnitOfWork _uow;
 
     public ChangeTenantSubscriptionPlanCommandHandler(
         ISubscriptionStore subscriptions,
@@ -145,13 +140,13 @@ public sealed class ChangeTenantSubscriptionPlanCommandHandler
         if (!await IsTenantOwnerAsync(request.TenantId, request.UserId, cancellationToken))
             return new ForbiddenError("Only the tenant owner can change the subscription plan.");
 
-        string planCode = Plan.NormalizeCode(request.PlanCode);
-        Plan? plan = await _plans.GetByCodeAsync(planCode, activeOnly: true, cancellationToken);
+        var planCode = Plan.NormalizeCode(request.PlanCode);
+        var plan = await _plans.GetByCodeAsync(planCode, true, cancellationToken);
         if (plan is null)
             return new NotFoundError("Plan not found or inactive.");
 
-        TenantId tenantId = TenantId.Create(request.TenantId);
-        Subscription? subscription = await _subscriptions.GetByTenantForUpdateAsync(tenantId, cancellationToken);
+        var tenantId = TenantId.Create(request.TenantId);
+        var subscription = await _subscriptions.GetByTenantForUpdateAsync(tenantId, cancellationToken);
         if (subscription is null)
             return new NotFoundError("No subscription for this tenant.");
 
@@ -176,7 +171,7 @@ public sealed class ChangeTenantSubscriptionPlanCommandHandler
 
     private async Task<bool> IsTenantOwnerAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken)
     {
-        UserId ownerId = UserId.Create(userId);
+        var ownerId = UserId.Create(userId);
         return await _db.Tenants.AsNoTracking()
             .AnyAsync(t => t.Id == TenantId.Create(tenantId) && t.OwnerUserId == ownerId, cancellationToken);
     }
@@ -185,20 +180,20 @@ public sealed class ChangeTenantSubscriptionPlanCommandHandler
         Subscription subscription,
         CancellationToken cancellationToken)
     {
-        SubscriptionSummaryDto? row = await (
-            from s in _db.Subscriptions.AsNoTracking()
-            join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
-            where s.Id == subscription.Id
-            select new SubscriptionSummaryDto(
-                s.Id,
-                s.TenantId.Value,
-                s.PlanId,
-                p.Code,
-                p.Name,
-                s.Status.ToString(),
-                s.CurrentPeriodStartUtc,
-                s.CurrentPeriodEndUtc,
-                s.AllowsWriteAccess))
+        var row = await (
+                from s in _db.Subscriptions.AsNoTracking()
+                join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
+                where s.Id == subscription.Id
+                select new SubscriptionSummaryDto(
+                    s.Id,
+                    s.TenantId.Value,
+                    s.PlanId,
+                    p.Code,
+                    p.Name,
+                    s.Status.ToString(),
+                    s.CurrentPeriodStartUtc,
+                    s.CurrentPeriodEndUtc,
+                    s.AllowsWriteAccess))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)
@@ -207,13 +202,14 @@ public sealed class ChangeTenantSubscriptionPlanCommandHandler
     }
 }
 
-public sealed class ProcessSubscriptionDunningCommandHandler : IRequestHandler<ProcessSubscriptionDunningCommand, Result<int, Error>>
+public sealed class
+    ProcessSubscriptionDunningCommandHandler : IRequestHandler<ProcessSubscriptionDunningCommand, Result<int, Error>>
 {
-    private readonly ISubscriptionStore _subscriptions;
+    private readonly IDateTimeProvider _clock;
     private readonly IApplicationReadDbContext _db;
     private readonly IBillingDunningNotifier _dunning;
+    private readonly ISubscriptionStore _subscriptions;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public ProcessSubscriptionDunningCommandHandler(
         ISubscriptionStore subscriptions,
@@ -229,20 +225,21 @@ public sealed class ProcessSubscriptionDunningCommandHandler : IRequestHandler<P
         _clock = clock;
     }
 
-    public async Task<Result<int, Error>> Handle(ProcessSubscriptionDunningCommand request, CancellationToken cancellationToken)
+    public async Task<Result<int, Error>> Handle(ProcessSubscriptionDunningCommand request,
+        CancellationToken cancellationToken)
     {
-        int notified = 0;
-        DateTime now = _clock.Now;
+        var notified = 0;
+        var now = _clock.Now;
 
-        IReadOnlyList<Subscription> expired = await _subscriptions.ListExpiredActiveOrTrialingAsync(now, cancellationToken);
-        foreach (Subscription subscription in expired)
+        var expired = await _subscriptions.ListExpiredActiveOrTrialingAsync(now, cancellationToken);
+        foreach (var subscription in expired)
         {
             subscription.MarkPastDue(now);
             notified += await TryNotifyOwnerAsync(subscription, cancellationToken) ? 1 : 0;
         }
 
-        IReadOnlyList<Subscription> pastDue = await _subscriptions.ListPastDueAsync(cancellationToken);
-        foreach (Subscription subscription in pastDue)
+        var pastDue = await _subscriptions.ListPastDueAsync(cancellationToken);
+        foreach (var subscription in pastDue)
         {
             if (expired.Any(e => e.Id == subscription.Id))
                 continue;
@@ -256,16 +253,16 @@ public sealed class ProcessSubscriptionDunningCommandHandler : IRequestHandler<P
     private async Task<bool> TryNotifyOwnerAsync(Subscription subscription, CancellationToken cancellationToken)
     {
         var row = await (
-            from t in _db.Tenants.AsNoTracking()
-            join u in _db.Users.AsNoTracking() on t.OwnerUserId equals u.Id
-            join p in _db.Plans.AsNoTracking() on subscription.PlanId equals p.Id
-            where t.Id == subscription.TenantId
-            select new
-            {
-                t.DisplayName,
-                Email = u.Email,
-                PlanName = p.Name,
-            })
+                from t in _db.Tenants.AsNoTracking()
+                join u in _db.Users.AsNoTracking() on t.OwnerUserId equals u.Id
+                join p in _db.Plans.AsNoTracking() on subscription.PlanId equals p.Id
+                where t.Id == subscription.TenantId
+                select new
+                {
+                    t.DisplayName,
+                    u.Email,
+                    PlanName = p.Name
+                })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null || string.IsNullOrWhiteSpace(row.Email))

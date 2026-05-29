@@ -8,15 +8,13 @@ using Application.Modules.Media.Commands;
 using Domains.MediaAggregate;
 using Microsoft.Extensions.Options;
 using Moq;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.General;
 
 namespace Application.Tests.Media;
 
 /// <summary>
-/// Tests for upload initiation: the size cap rejection path and the happy path that reserves the
-/// asset, persists it, and issues a presigned URL.
+///     Tests for upload initiation: the size cap rejection path and the happy path that reserves the
+///     asset, persists it, and issues a presigned URL.
 /// </summary>
 public sealed class InitiateMediaUploadCommandHandlerTests
 {
@@ -27,10 +25,10 @@ public sealed class InitiateMediaUploadCommandHandlerTests
     {
         var repo = new Mock<IMediaAssetRepository>();
         var storage = new Mock<IObjectStorage>();
-        InitiateMediaUploadCommandHandler handler = BuildHandler(repo.Object, storage.Object, maxBytes: 10);
+        var handler = BuildHandler(repo.Object, storage.Object, maxBytes: 10);
 
-        Result<InitiateMediaUploadResult, Error> result = await handler.Handle(
-            new InitiateMediaUploadCommand(Guid.NewGuid(), "image/jpeg", ByteSize: 11, FileExtension: "jpg"),
+        var result = await handler.Handle(
+            new InitiateMediaUploadCommand(Guid.NewGuid(), "image/jpeg", 11, "jpg"),
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -53,10 +51,10 @@ public sealed class InitiateMediaUploadCommandHandlerTests
             .ReturnsAsync("https://bucket/presigned-PUT");
 
         var uow = new Mock<IUnitOfWork>();
-        InitiateMediaUploadCommandHandler handler = BuildHandler(repo.Object, storage.Object, uow: uow.Object);
+        var handler = BuildHandler(repo.Object, storage.Object, uow.Object);
 
-        Result<InitiateMediaUploadResult, Error> result = await handler.Handle(
-            new InitiateMediaUploadCommand(Guid.NewGuid(), "video/mp4", ByteSize: 1024, FileExtension: "mp4"),
+        var result = await handler.Handle(
+            new InitiateMediaUploadCommand(Guid.NewGuid(), "video/mp4", 1024, "mp4"),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -79,7 +77,7 @@ public sealed class InitiateMediaUploadCommandHandlerTests
         var opts = Options.Create(new MediaUploadOptions
         {
             MaxUploadBytes = maxBytes,
-            PresignedUrlExpirationMinutes = 10,
+            PresignedUrlExpirationMinutes = 10
         });
 
         return new InitiateMediaUploadCommandHandler(

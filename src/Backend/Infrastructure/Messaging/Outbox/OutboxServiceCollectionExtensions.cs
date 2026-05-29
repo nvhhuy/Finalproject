@@ -6,8 +6,8 @@ namespace Infrastructure.Messaging.Outbox;
 public static class OutboxServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the transactional-outbox publisher hosted service. Call from the Worker host
-    /// only — the API process should not drain the outbox (avoid double publishes).
+    ///     Registers the transactional-outbox publisher hosted service. Call from the Worker host
+    ///     only — the API process should not drain the outbox (avoid double publishes).
     /// </summary>
     public static IServiceCollection AddOutboxPublisher(this IServiceCollection services, IConfiguration configuration)
     {

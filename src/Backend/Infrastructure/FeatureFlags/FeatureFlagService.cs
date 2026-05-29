@@ -7,9 +7,9 @@ namespace Infrastructure.FeatureFlags;
 
 public sealed class FeatureFlagService : IFeatureFlagService
 {
-    private readonly FeatureFlagOptions _options;
     private readonly IAppSettingsService _appSettings;
     private readonly IHostEnvironment _environment;
+    private readonly FeatureFlagOptions _options;
 
     public FeatureFlagService(
         IOptions<FeatureFlagOptions> options,
@@ -26,17 +26,17 @@ public sealed class FeatureFlagService : IFeatureFlagService
         FeatureFlagContext? context = null,
         CancellationToken cancellationToken = default)
     {
-        if (!_options.Flags.TryGetValue(flagKey, out FeatureFlagDefinition? definition))
+        if (!_options.Flags.TryGetValue(flagKey, out var definition))
             return true;
 
         if (!string.IsNullOrWhiteSpace(definition.DbKey))
         {
-            bool dbValue = await _appSettings.GetBooleanAsync(definition.DbKey, definition.Default, cancellationToken);
+            var dbValue = await _appSettings.GetBooleanAsync(definition.DbKey, definition.Default, cancellationToken);
             if (!dbValue)
                 return false;
         }
 
-        if (definition.Environments.TryGetValue(_environment.EnvironmentName, out bool envValue))
+        if (definition.Environments.TryGetValue(_environment.EnvironmentName, out var envValue))
             return envValue;
 
         if (definition.Percentage is int pct && context?.UserId is Guid userId)
@@ -53,8 +53,8 @@ public sealed class FeatureFlagService : IFeatureFlagService
         if (percentage <= 0)
             return false;
 
-        string seed = $"{flagKey}:{tenantId ?? "global"}:{userId:N}";
-        int bucket = Math.Abs(seed.GetHashCode(StringComparison.Ordinal)) % 100;
+        var seed = $"{flagKey}:{tenantId ?? "global"}:{userId:N}";
+        var bucket = Math.Abs(seed.GetHashCode(StringComparison.Ordinal)) % 100;
         return bucket < percentage;
     }
 }

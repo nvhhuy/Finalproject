@@ -3,7 +3,6 @@ using Domains.Billing;
 using Domains.Tenancy;
 using Domains.Tenancy.ValueObjects;
 using Domains.UserAggregate;
-using Domains.UserAggregate.ValueObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,19 +15,22 @@ namespace Infrastructure.Persistence;
 /// <summary>Ensures a single bootstrap admin exists when seeding is enabled (idempotent).</summary>
 public static class DbSeeder
 {
-    /// <summary>Default password applied when <see cref="SeedAdminOptions.Password"/> is empty. Documented in <c>DEVELOPER_GUIDE.md</c>.</summary>
+    /// <summary>
+    ///     Default password applied when <see cref="SeedAdminOptions.Password" /> is empty. Documented in
+    ///     <c>DEVELOPER_GUIDE.md</c>.
+    /// </summary>
     public const string DefaultDevPassword = "Temp!ChangeMe123";
 
     /// <summary>Creates the configured admin user if no user with the same email or username exists.</summary>
     public static async Task SeedAdminIfMissingAsync(ApplicationDbContext db, IServiceProvider services)
     {
-        SeedAdminOptions opts = services.GetRequiredService<IOptions<SeedAdminOptions>>().Value;
-        IPasswordHasher<User> hasher = services.GetRequiredService<IPasswordHasher<User>>();
-        IHostEnvironment? env = services.GetService<IHostEnvironment>();
-        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        var opts = services.GetRequiredService<IOptions<SeedAdminOptions>>().Value;
+        var hasher = services.GetRequiredService<IPasswordHasher<User>>();
+        var env = services.GetService<IHostEnvironment>();
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
-        string email = (opts.Email ?? "").Trim();
-        string userName = (opts.UserName ?? "").Trim();
+        var email = (opts.Email ?? "").Trim();
+        var userName = (opts.UserName ?? "").Trim();
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(userName))
         {
             logger.LogWarning("Admin seeding skipped: Seed:Admin:Email or Seed:Admin:UserName is empty.");
@@ -38,8 +40,8 @@ public static class DbSeeder
         if (await db.Users.AnyAsync(u => u.Email == email || u.UserName == userName))
             return;
 
-        bool passwordWasDefault = string.IsNullOrEmpty(opts.Password);
-        string password = passwordWasDefault ? DefaultDevPassword : opts.Password;
+        var passwordWasDefault = string.IsNullOrEmpty(opts.Password);
+        var password = passwordWasDefault ? DefaultDevPassword : opts.Password;
 
         // Defensive guard for L12: do not silently bootstrap a production admin with the
         // dev-default password. Operators who genuinely want this must opt in by setting
@@ -53,7 +55,7 @@ public static class DbSeeder
             return;
         }
 
-        User admin = User.CreateForLocalLoginPendingHash(opts.FirstName, opts.LastName, userName, email);
+        var admin = User.CreateForLocalLoginPendingHash(opts.FirstName, opts.LastName, userName, email);
         admin.AssignRole(UserRoles.Admin);
         admin.SetInitialPasswordHash(hasher.HashPassword(admin, password));
         admin.MarkRegisteredAt(DateTime.UtcNow);
@@ -62,39 +64,37 @@ public static class DbSeeder
         await db.SaveChangesAsync();
 
         if (passwordWasDefault)
-        {
             logger.LogWarning(
                 "Seeded bootstrap admin '{Email}' with the DEV default password. Change it immediately via the admin profile endpoint.",
                 email);
-        }
     }
 
     /// <summary>
-    /// Ensures the system default tenant exists and links the bootstrap admin as owner when present.
-    /// Existing rows are backfilled by migration; this covers fresh databases after migrate.
+    ///     Ensures the system default tenant exists and links the bootstrap admin as owner when present.
+    ///     Existing rows are backfilled by migration; this covers fresh databases after migrate.
     /// </summary>
     public static async Task SeedDefaultTenantIfMissingAsync(ApplicationDbContext db, IServiceProvider services)
     {
-        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
-        TenantId defaultId = TenantId.Create(SystemTenants.DefaultTenantId);
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        var defaultId = TenantId.Create(SystemTenants.DefaultTenantId);
 
         if (!await db.Tenants.AnyAsync(t => t.Id == defaultId))
         {
-        UserId? ownerId = await db.Users
-            .AsNoTracking()
-            .Where(u => u.Role == UserRoles.Admin)
-            .OrderBy(u => u.RegisteredAtUtc)
-            .Select(u => u.Id)
-            .FirstOrDefaultAsync();
+            var ownerId = await db.Users
+                .AsNoTracking()
+                .Where(u => u.Role == UserRoles.Admin)
+                .OrderBy(u => u.RegisteredAtUtc)
+                .Select(u => u.Id)
+                .FirstOrDefaultAsync();
 
-        if (ownerId is null || ownerId.Value == Guid.Empty)
+            if (ownerId is null || ownerId.Value == Guid.Empty)
             {
                 logger.LogWarning("Default tenant seed skipped: no admin user exists yet.");
                 return;
             }
 
-            DateTime now = DateTime.UtcNow;
-            Tenant tenant = Tenant.CreateExisting(
+            var now = DateTime.UtcNow;
+            var tenant = Tenant.CreateExisting(
                 defaultId,
                 SystemTenants.DefaultSlug,
                 SystemTenants.DefaultDisplayName,
@@ -105,17 +105,18 @@ public static class DbSeeder
             tenant.AddMember(ownerId, TenantMemberRoles.Owner, now);
             db.Tenants.Add(tenant);
             await db.SaveChangesAsync();
-            logger.LogInformation("Seeded default tenant '{Slug}' ({TenantId}).", SystemTenants.DefaultSlug, defaultId.Value);
+            logger.LogInformation("Seeded default tenant '{Slug}' ({TenantId}).", SystemTenants.DefaultSlug,
+                defaultId.Value);
         }
     }
 
     public static async Task SeedDefaultPlansIfMissingAsync(ApplicationDbContext db, IServiceProvider services)
     {
-        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
         if (await db.Plans.AnyAsync())
             return;
 
-        DateTime now = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
         var starterLimits = new PlanLimits
         {
             MaxUsers = 5,
@@ -123,7 +124,7 @@ public static class DbSeeder
             Modules = [BillingModules.Support, BillingModules.Media],
             MaxOpenSupportTickets = 20,
             ApiRequestsPerMinute = 120,
-            MonthlyCreditGrant = 0,
+            MonthlyCreditGrant = 0
         };
         var proLimits = new PlanLimits
         {
@@ -134,11 +135,13 @@ public static class DbSeeder
             Impersonation = true,
             BackupRestore = true,
             ApiRequestsPerMinute = 600,
-            MonthlyCreditGrant = 500,
+            MonthlyCreditGrant = 500
         };
 
-        db.Plans.Add(Plan.Create("starter", "Starter", "For small teams getting started.", 2900, "USD", 14, starterLimits.ToJson(), 10, now));
-        db.Plans.Add(Plan.Create("pro", "Professional", "For growing organizations.", 9900, "USD", 14, proLimits.ToJson(), 20, now));
+        db.Plans.Add(Plan.Create("starter", "Starter", "For small teams getting started.", 2900, "USD", 14,
+            starterLimits.ToJson(), 10, now));
+        db.Plans.Add(Plan.Create("pro", "Professional", "For growing organizations.", 9900, "USD", 14,
+            proLimits.ToJson(), 20, now));
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded default billing plans (starter, pro).");
     }
@@ -146,12 +149,12 @@ public static class DbSeeder
     /// <summary>Backfills plan limit JSON when new fields are added (idempotent).</summary>
     public static async Task EnsureDefaultPlanLimitsAsync(ApplicationDbContext db, IServiceProvider services)
     {
-        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
-        Plan? pro = await db.Plans.FirstOrDefaultAsync(p => p.Code == "pro");
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        var pro = await db.Plans.FirstOrDefaultAsync(p => p.Code == "pro");
         if (pro is null)
             return;
 
-        PlanLimits limits = PlanLimits.Parse(pro.LimitsJson);
+        var limits = PlanLimits.Parse(pro.LimitsJson);
         if (limits.MonthlyCreditGrant >= 500)
             return;
 
@@ -167,7 +170,7 @@ public static class DbSeeder
             Impersonation = limits.Impersonation,
             BackupRestore = limits.BackupRestore,
             ApiRequestsPerMinute = limits.ApiRequestsPerMinute > 0 ? limits.ApiRequestsPerMinute : 600,
-            MonthlyCreditGrant = 500,
+            MonthlyCreditGrant = 500
         };
         pro.Update(
             pro.Name,
@@ -185,46 +188,46 @@ public static class DbSeeder
 
     public static async Task SeedDefaultCreditPackagesIfMissingAsync(ApplicationDbContext db, IServiceProvider services)
     {
-        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
         if (await db.CreditPackages.AnyAsync())
             return;
 
-        DateTime now = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
         db.CreditPackages.Add(CreditPackage.Create(
             "starter-500",
             "Starter pack",
             "500 credits for light usage.",
-            priceCents: 499,
+            499,
             "USD",
-            creditsAmount: 500,
-            sortOrder: 10,
+            500,
+            10,
             now));
         db.CreditPackages.Add(CreditPackage.Create(
             "value-1500",
             "Value pack",
             "1,500 credits — best value for regular users.",
-            priceCents: 1299,
+            1299,
             "USD",
-            creditsAmount: 1500,
-            sortOrder: 20,
+            1500,
+            20,
             now));
         db.CreditPackages.Add(CreditPackage.Create(
             "pack-1k-vnd",
             "1,000 credits (VND)",
             "1,000 credits — priced in Vietnamese đồng.",
-            priceCents: 100_000,
+            100_000,
             "VND",
-            creditsAmount: 1000,
-            sortOrder: 30,
+            1000,
+            30,
             now));
         db.CreditPackages.Add(CreditPackage.Create(
             "pack-5k-vnd",
             "5,500 credits (VND)",
             "5,500 credits with bonus — priced in Vietnamese đồng.",
-            priceCents: 450_000,
+            450_000,
             "VND",
-            creditsAmount: 5500,
-            sortOrder: 40,
+            5500,
+            40,
             now));
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded default credit packages.");

@@ -1,16 +1,14 @@
 using Application.Contracts.Events;
 using Application.Contracts.Transactions;
-using Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Infrastructure.Persistence;
 
 public sealed class EfUnitOfWork : IUnitOfWork
 {
-    private readonly ApplicationDbContext _db;
     private readonly IAfterCommitDomainEventQueue _afterCommitQueue;
+    private readonly ApplicationDbContext _db;
     private readonly IPublisher _publisher;
 
     public EfUnitOfWork(ApplicationDbContext db, IAfterCommitDomainEventQueue afterCommitQueue, IPublisher publisher)
@@ -44,7 +42,7 @@ public sealed class EfUnitOfWork : IUnitOfWork
 
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
-        IDbContextTransaction? tx = _db.Database.CurrentTransaction;
+        var tx = _db.Database.CurrentTransaction;
         if (tx is not null)
         {
             await tx.CommitAsync(cancellationToken);
@@ -57,7 +55,7 @@ public sealed class EfUnitOfWork : IUnitOfWork
     public async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
         _afterCommitQueue.Clear();
-        IDbContextTransaction? tx = _db.Database.CurrentTransaction;
+        var tx = _db.Database.CurrentTransaction;
         if (tx is null)
             return;
 

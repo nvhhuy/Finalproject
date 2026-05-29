@@ -3,9 +3,16 @@ using System.Text.Json.Serialization;
 
 namespace Application.Contracts.Billing;
 
-/// <summary>Deserialized from <see cref="Domains.Billing.Plan.LimitsJson"/>.</summary>
+/// <summary>Deserialized from <see cref="Domains.Billing.Plan.LimitsJson" />.</summary>
 public sealed class PlanLimits
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     public int MaxUsers { get; init; } = 5;
     public long MaxStorageBytes { get; init; } = 1_073_741_824;
     public IReadOnlyList<string> Modules { get; init; } = Array.Empty<string>();
@@ -22,13 +29,6 @@ public sealed class PlanLimits
 
     public static PlanLimits Default { get; } = new();
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
     public static PlanLimits Parse(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -43,10 +43,15 @@ public sealed class PlanLimits
         }
     }
 
-    public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
+    public string ToJson()
+    {
+        return JsonSerializer.Serialize(this, JsonOptions);
+    }
 
-    public bool HasModule(string moduleCode) =>
-        Modules.Any(m => string.Equals(m, moduleCode, StringComparison.OrdinalIgnoreCase));
+    public bool HasModule(string moduleCode)
+    {
+        return Modules.Any(m => string.Equals(m, moduleCode, StringComparison.OrdinalIgnoreCase));
+    }
 }
 
 public static class BillingModules

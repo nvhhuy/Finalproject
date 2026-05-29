@@ -17,11 +17,19 @@ public interface IEntitlementService
 
     Task<EntitlementCheckResult> CheckMemberInviteAsync(Guid tenantId, CancellationToken cancellationToken = default);
 
-    Task<EntitlementCheckResult> CheckOpenSupportTicketAsync(Guid tenantId, CancellationToken cancellationToken = default);
+    Task<EntitlementCheckResult> CheckOpenSupportTicketAsync(Guid tenantId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record EntitlementCheckResult(bool Allowed, string? DenyReason = null)
 {
-    public static EntitlementCheckResult Ok() => new(true);
-    public static EntitlementCheckResult Deny(string reason) => new(false, reason);
+    public static EntitlementCheckResult Ok()
+    {
+        return new EntitlementCheckResult(true);
+    }
+
+    public static EntitlementCheckResult Deny(string reason)
+    {
+        return new EntitlementCheckResult(false, reason);
+    }
 }

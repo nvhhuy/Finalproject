@@ -1,6 +1,9 @@
 namespace Infrastructure.Persistence;
 
-/// <summary>Optional first-run admin bootstrap. Bind from <c>Seed:Admin</c>. Invoked from the Api host when seeding is enabled.</summary>
+/// <summary>
+///     Optional first-run admin bootstrap. Bind from <c>Seed:Admin</c>. Invoked from the Api host when seeding is
+///     enabled.
+/// </summary>
 public sealed class SeedAdminOptions
 {
     public const string SectionName = "Seed:Admin";

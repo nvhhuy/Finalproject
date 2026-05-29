@@ -8,8 +8,8 @@ using OpenTelemetry.Trace;
 namespace Observability;
 
 /// <summary>
-/// Wires distributed tracing + runtime metrics for ASP.NET, HttpClient, EF Core and Redis.
-/// Activity sources and meters are exported via OTLP when an endpoint is configured.
+///     Wires distributed tracing + runtime metrics for ASP.NET, HttpClient, EF Core and Redis.
+///     Activity sources and meters are exported via OTLP when an endpoint is configured.
 /// </summary>
 public static class OpenTelemetryRegistration
 {
@@ -24,21 +24,20 @@ public static class OpenTelemetryRegistration
         IConfiguration configuration,
         string serviceNameFallback)
     {
-        OpenTelemetryOptions opts = configuration.GetSection(OpenTelemetryOptions.SectionName).Get<OpenTelemetryOptions>()
-            ?? new OpenTelemetryOptions();
+        var opts = configuration.GetSection(OpenTelemetryOptions.SectionName).Get<OpenTelemetryOptions>()
+                   ?? new OpenTelemetryOptions();
         if (!opts.Enabled)
             return services;
 
-        string serviceName = string.IsNullOrWhiteSpace(opts.ServiceName) ? serviceNameFallback : opts.ServiceName;
+        var serviceName = string.IsNullOrWhiteSpace(opts.ServiceName) ? serviceNameFallback : opts.ServiceName;
 
-        ResourceBuilder resourceBuilder = ResourceBuilder
+        var resourceBuilder = ResourceBuilder
             .CreateDefault()
-            .AddService(serviceName: serviceName, serviceVersion: opts.ServiceVersion ?? "1.0.0");
+            .AddService(serviceName, serviceVersion: opts.ServiceVersion ?? "1.0.0");
 
         IOpenTelemetryBuilder builder = services.AddOpenTelemetry().ConfigureResource(_ => { });
 
         if (opts.Tracing)
-        {
             builder.WithTracing(tracing =>
             {
                 tracing
@@ -51,10 +50,8 @@ public static class OpenTelemetryRegistration
                 if (!string.IsNullOrWhiteSpace(opts.OtlpEndpoint))
                     tracing.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(opts.OtlpEndpoint));
             });
-        }
 
         if (opts.Metrics)
-        {
             builder.WithMetrics(metrics =>
             {
                 metrics
@@ -67,7 +64,6 @@ public static class OpenTelemetryRegistration
                 if (!string.IsNullOrWhiteSpace(opts.OtlpEndpoint))
                     metrics.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(opts.OtlpEndpoint));
             });
-        }
 
         return services;
     }

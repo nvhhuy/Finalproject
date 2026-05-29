@@ -1,9 +1,9 @@
 namespace Application.Contracts.Authentication;
 
 /// <summary>
-/// Tracks failed login attempts per identity (email or normalised username) and applies a
-/// temporary lockout when the configured threshold is exceeded. Backed by the distributed
-/// cache so it survives instance failover but resets automatically.
+///     Tracks failed login attempts per identity (email or normalised username) and applies a
+///     temporary lockout when the configured threshold is exceeded. Backed by the distributed
+///     cache so it survives instance failover but resets automatically.
 /// </summary>
 public interface IFailedLoginTracker
 {
@@ -11,8 +11,8 @@ public interface IFailedLoginTracker
     Task<TimeSpan?> GetLockoutRemainingAsync(string identity, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Records a failed attempt. When the configured threshold is reached the identity becomes locked for
-    /// the configured lockout duration; subsequent failures extend the lockout.
+    ///     Records a failed attempt. When the configured threshold is reached the identity becomes locked for
+    ///     the configured lockout duration; subsequent failures extend the lockout.
     /// </summary>
     /// <returns><c>true</c> when this attempt caused (or extended) a lockout.</returns>
     Task<bool> RegisterFailureAsync(string identity, CancellationToken cancellationToken = default);

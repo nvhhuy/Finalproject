@@ -3,12 +3,22 @@ using Application.Contracts.Services;
 namespace Api.Middleware;
 
 /// <summary>
-/// Ensures every response has a correlation id (for logs, support, distributed tracing).
-/// Accepts incoming <c>X-Correlation-Id</c> or generates one; exposes it on:
-/// <list type="bullet">
-///   <item><description><see cref="HttpContext.Items"/>[<c>CorrelationId</c>] — for handlers that prefer HTTP context.</description></item>
-///   <item><description><see cref="ICorrelationContext"/>.Current — for Application/Infrastructure code that can't depend on ASP.NET (outbox writer, queue publisher).</description></item>
-/// </list>
+///     Ensures every response has a correlation id (for logs, support, distributed tracing).
+///     Accepts incoming <c>X-Correlation-Id</c> or generates one; exposes it on:
+///     <list type="bullet">
+///         <item>
+///             <description>
+///                 <see cref="HttpContext.Items" />[<c>CorrelationId</c>] — for handlers that prefer HTTP
+///                 context.
+///             </description>
+///         </item>
+///         <item>
+///             <description>
+///                 <see cref="ICorrelationContext" />.Current — for Application/Infrastructure code that can't
+///                 depend on ASP.NET (outbox writer, queue publisher).
+///             </description>
+///         </item>
+///     </list>
 /// </summary>
 public sealed class CorrelationIdMiddleware
 {
@@ -17,12 +27,15 @@ public sealed class CorrelationIdMiddleware
 
     private readonly RequestDelegate _next;
 
-    public CorrelationIdMiddleware(RequestDelegate next) => _next = next;
+    public CorrelationIdMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
 
     public async Task InvokeAsync(HttpContext context, ICorrelationContext correlationContext)
     {
-        string id = context.Request.Headers[HeaderName].FirstOrDefault()
-            ?? Guid.NewGuid().ToString("N");
+        var id = context.Request.Headers[HeaderName].FirstOrDefault()
+                 ?? Guid.NewGuid().ToString("N");
         context.Items[HttpContextItemKey] = id;
         context.Response.OnStarting(() =>
         {

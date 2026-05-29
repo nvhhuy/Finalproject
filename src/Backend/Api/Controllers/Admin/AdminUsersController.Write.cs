@@ -3,10 +3,7 @@ using Api.Models;
 using Api.Models.Admin;
 using Api.Models.Auth;
 using Application.Modules.Users.Administration.Commands;
-using Application.Modules.Users.Authentication.Common;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Admin;
 
@@ -19,9 +16,10 @@ public sealed partial class AdminUsersController
     [RequiresIdempotencyKey(Scope = "admin.users.create")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserRequest body, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserRequest body,
+        CancellationToken cancellationToken)
     {
-        Result<Guid, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminCreateUserCommand(
                 CurrentAdminId,
                 body.FirstName,
@@ -38,9 +36,10 @@ public sealed partial class AdminUsersController
     [HttpPut("{userId:guid}")]
     [RequiresIdempotencyKey(Scope = "admin.users.update")]
     [Transactional]
-    public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] AdminUpdateUserRequest body, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] AdminUpdateUserRequest body,
+        CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminUpdateUserCommand(
                 CurrentAdminId,
                 userId,
@@ -63,7 +62,7 @@ public sealed partial class AdminUsersController
         [FromQuery] uint rowVersion,
         CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminDeleteUserCommand(CurrentAdminId, userId, rowVersion, ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -73,9 +72,10 @@ public sealed partial class AdminUsersController
     [RequiresIdempotencyKey(Scope = "admin.users.lock")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> LockUser(Guid userId, [FromBody] LockUserRequest body, CancellationToken cancellationToken)
+    public async Task<IActionResult> LockUser(Guid userId, [FromBody] LockUserRequest body,
+        CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminLockUserCommand(userId, body.Reason, CurrentAdminId, body.RowVersion, ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -89,7 +89,7 @@ public sealed partial class AdminUsersController
         [FromBody] AdminRowVersionRequest body,
         CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminUnlockUserCommand(userId, CurrentAdminId, body.RowVersion, ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -104,7 +104,7 @@ public sealed partial class AdminUsersController
         [FromBody] AdminRowVersionRequest body,
         CancellationToken cancellationToken)
     {
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await Sender.Send(
                 new ImpersonateUserCommand(userId, CurrentAdminId, body.RowVersion, ClientIp),
                 cancellationToken);
@@ -119,7 +119,7 @@ public sealed partial class AdminUsersController
         [FromBody] AdminRowVersionRequest body,
         CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminResetTwoFactorCommand(CurrentAdminId, userId, body.RowVersion, ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -133,7 +133,7 @@ public sealed partial class AdminUsersController
         [FromBody] AdminResetPasswordRequest body,
         CancellationToken cancellationToken)
     {
-        Result<bool, Error> result =
+        var result =
             await Sender.Send(
                 new AdminResetPasswordCommand(CurrentAdminId, userId, body.NewPassword, body.RowVersion, ClientIp),
                 cancellationToken);
@@ -147,7 +147,7 @@ public sealed partial class AdminUsersController
         [FromBody] AdminRowVersionRequest body,
         CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminMarkEmailVerifiedCommand(CurrentAdminId, userId, body.RowVersion, ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -160,7 +160,7 @@ public sealed partial class AdminUsersController
         [FromBody] AdminRowVersionRequest body,
         CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminResendEmailVerificationCommand(CurrentAdminId, userId, body.RowVersion, ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -173,7 +173,7 @@ public sealed partial class AdminUsersController
         [FromBody] AdminRowVersionRequest body,
         CancellationToken cancellationToken)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminRevokeUserSessionsCommand(CurrentAdminId, userId, body.RowVersion, ClientIp),
             cancellationToken);
         return MatchApiEmpty(result);

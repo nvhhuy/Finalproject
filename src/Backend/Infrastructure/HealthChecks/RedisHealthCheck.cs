@@ -9,9 +9,13 @@ public sealed class RedisHealthCheck : IHealthCheck
     private const string ProbeKey = "_healthcheck_:redis";
     private readonly IDistributedCache _cache;
 
-    public RedisHealthCheck(IDistributedCache cache) => _cache = cache;
+    public RedisHealthCheck(IDistributedCache cache)
+    {
+        _cache = cache;
+    }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -20,7 +24,7 @@ public sealed class RedisHealthCheck : IHealthCheck
                 DateTimeOffset.UtcNow.ToString("O"),
                 new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30) },
                 cancellationToken);
-            string? value = await _cache.GetStringAsync(ProbeKey, cancellationToken);
+            var value = await _cache.GetStringAsync(ProbeKey, cancellationToken);
             return value is null
                 ? HealthCheckResult.Degraded("Cache write succeeded but read returned null.")
                 : HealthCheckResult.Healthy();

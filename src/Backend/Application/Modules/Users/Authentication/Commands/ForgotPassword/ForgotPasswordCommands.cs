@@ -1,30 +1,31 @@
+using System.Net;
+using System.Security.Cryptography;
 using Application.Contracts.Caching;
 using Application.Contracts.Email;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Transactions;
 using Application.Modules.Users.Authentication.Options;
-using MediatR;
+using Domains.UserAggregate;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Security;
-using System.Security.Cryptography;
 
 namespace Application.Modules.Users.Authentication.Commands.ForgotPassword;
 
 public sealed record ForgotPasswordCommand(string Email) : IRequest<Result<bool, Error>>;
-public sealed record ResetPasswordCommand(string TokenId, string Token, string NewPassword) : IRequest<Result<bool, Error>>;
+
+public sealed record ResetPasswordCommand(string TokenId, string Token, string NewPassword)
+    : IRequest<Result<bool, Error>>;
 
 internal sealed record PasswordResetTokenPayload(Guid UserId, string TokenHash);
 
 public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, Result<bool, Error>>
 {
-    private readonly IUserReadRepository _users;
     private readonly ICacheService _cache;
     private readonly IEmailSender _emailSender;
     private readonly PasswordResetEmailOptions _resetEmail;
+    private readonly IUserReadRepository _users;
 
     public ForgotPasswordCommandHandler(
         IUserReadRepository users,
@@ -40,25 +41,26 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
 
     public async Task<Result<bool, Error>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
-        Domains.UserAggregate.User? user = await _users.GetByEmailAsync(request.Email, cancellationToken: cancellationToken);
+        var user = await _users.GetByEmailAsync(request.Email, cancellationToken: cancellationToken);
         if (user is null)
             return true; // prevent account enumeration
 
-        string tokenId = Guid.NewGuid().ToString("N");
-        string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        string tokenHash = TokenHasher.Sha256(token);
-        string cacheKey = AuthCacheKeys.PasswordResetPrefix + tokenId;
+        var tokenId = Guid.NewGuid().ToString("N");
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var tokenHash = TokenHasher.Sha256(token);
+        var cacheKey = AuthCacheKeys.PasswordResetPrefix + tokenId;
 
-        int ttlMinutes = _resetEmail.TokenTtlMinutes > 0 ? _resetEmail.TokenTtlMinutes : 30;
-        TimeSpan ttl = TimeSpan.FromMinutes(ttlMinutes);
+        var ttlMinutes = _resetEmail.TokenTtlMinutes > 0 ? _resetEmail.TokenTtlMinutes : 30;
+        var ttl = TimeSpan.FromMinutes(ttlMinutes);
 
-        await _cache.SetAsync(cacheKey, new PasswordResetTokenPayload(user.Id.Value, tokenHash), ttl, cancellationToken);
+        await _cache.SetAsync(cacheKey, new PasswordResetTokenPayload(user.Id.Value, tokenHash), ttl,
+            cancellationToken);
 
-        string baseUrl = (_resetEmail.PublicAppBaseUrl ?? "").Trim().TrimEnd('/');
+        var baseUrl = (_resetEmail.PublicAppBaseUrl ?? "").Trim().TrimEnd('/');
         string instructions;
         if (!string.IsNullOrEmpty(baseUrl))
         {
-            string query = $"tokenId={Uri.EscapeDataString(tokenId)}&token={Uri.EscapeDataString(token)}";
+            var query = $"tokenId={Uri.EscapeDataString(tokenId)}&token={Uri.EscapeDataString(token)}";
             instructions =
                 $"Open this link to choose a new password (valid for {ttlMinutes} minutes):{Environment.NewLine}" +
                 $"{baseUrl}/reset-password?{query}";
@@ -71,7 +73,7 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
                 $"Token: {token}";
         }
 
-        string body =
+        var body =
             "We received a request to reset your password." +
             $"{Environment.NewLine}{Environment.NewLine}{instructions}" +
             $"{Environment.NewLine}{Environment.NewLine}If you did not request this, you can ignore this message.";
@@ -82,15 +84,15 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
 
 public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, Result<bool, Error>>
 {
-    private readonly IUserWriteRepository _users;
     private readonly ICacheService _cache;
-    private readonly IPasswordHasher<Domains.UserAggregate.User> _passwordHasher;
+    private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IUnitOfWork _uow;
+    private readonly IUserWriteRepository _users;
 
     public ResetPasswordCommandHandler(
         IUserWriteRepository users,
         ICacheService cache,
-        IPasswordHasher<Domains.UserAggregate.User> passwordHasher,
+        IPasswordHasher<User> passwordHasher,
         IUnitOfWork uow)
     {
         _users = users;
@@ -101,18 +103,21 @@ public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordC
 
     public async Task<Result<bool, Error>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
-        string cacheKey = AuthCacheKeys.PasswordResetPrefix + request.TokenId;
-        PasswordResetTokenPayload? payload = await _cache.GetAsync<PasswordResetTokenPayload>(cacheKey, cancellationToken);
+        var cacheKey = AuthCacheKeys.PasswordResetPrefix + request.TokenId;
+        var payload = await _cache.GetAsync<PasswordResetTokenPayload>(cacheKey, cancellationToken);
         if (payload is null)
-            return new Error("InvalidOrExpiredResetToken", (int)System.Net.HttpStatusCode.BadRequest, "Reset token is invalid or expired.");
+            return new Error("InvalidOrExpiredResetToken", (int)HttpStatusCode.BadRequest,
+                "Reset token is invalid or expired.");
 
-        string hash = TokenHasher.Sha256(request.Token);
+        var hash = TokenHasher.Sha256(request.Token);
         if (!string.Equals(payload.TokenHash, hash, StringComparison.Ordinal))
-            return new Error("InvalidOrExpiredResetToken", (int)System.Net.HttpStatusCode.BadRequest, "Reset token is invalid or expired.");
+            return new Error("InvalidOrExpiredResetToken", (int)HttpStatusCode.BadRequest,
+                "Reset token is invalid or expired.");
 
-        Domains.UserAggregate.User? user = await _users.GetByIdForUpdateAsync(payload.UserId, cancellationToken);
+        var user = await _users.GetByIdForUpdateAsync(payload.UserId, cancellationToken);
         if (user is null)
-            return new Error("InvalidResetTarget", (int)System.Net.HttpStatusCode.BadRequest, "Reset token target is no longer available.");
+            return new Error("InvalidResetTarget", (int)HttpStatusCode.BadRequest,
+                "Reset token target is no longer available.");
 
         user.UpdatePasswordHash(_passwordHasher.HashPassword(user, request.NewPassword));
         await _uow.SaveChangesAsync(cancellationToken);

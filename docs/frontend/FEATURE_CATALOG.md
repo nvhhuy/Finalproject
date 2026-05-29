@@ -34,7 +34,7 @@ Catalog of **existing** Frontend base features — routes, behavior, and backend
 | `/app/notifications` | Full notification list | ✓ |
 | `/app/wallet` | Personal credits (packages, demo top-up, metered debit) | ✓ |
 | `/app/subscribe` | MVP tenant + subscription checkout | ✓ |
-| `/app/tenant` | Org usage, billing portal, domains, SSO, invite members | ✓ |
+| `/app/tenant` | Org usage, billing actions (plan switch/cancel), domains, SSO, invite members | ✓ |
 
 Guard: `RequireAuth` in `app/app/layout.tsx`.
 
@@ -88,7 +88,7 @@ Guard: `RequireAuth` in `app/app/layout.tsx`.
 |------------|-----|-----|
 | Invite member | `/app/tenant` | `POST /tenants/{id}/members` |
 | Custom domains + SSO config | `/app/tenant` | `tenancy-api` |
-| Entitlements, cancel, change plan | `/app/tenant` | `billing-api` |
+| Entitlements, invoices, cancel, change plan | `/app/tenant` | `billing-api` |
 | Subscribe new tenant | `/app/subscribe` | `POST /billing/subscribe` |
 
 ---
@@ -97,7 +97,7 @@ Guard: `RequireAuth` in `app/app/layout.tsx`.
 
 | Capability | UI | API |
 |------------|-----|-----|
-| In-app list + mark read | Bell widget + `/app/notifications` | `GET/POST /notifications` |
+| In-app list + mark read | Bell widget + `/app/notifications` | `GET /notifications`, `POST /notifications/{id}/read` |
 | Realtime push | SignalR (dev: `/hubs` proxy + long polling) | `/hubs/notifications` |
 
 ---

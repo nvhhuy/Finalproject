@@ -6,8 +6,6 @@ using Application.Modules.Billing;
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Billing;
 
@@ -17,17 +15,20 @@ namespace Api.Controllers.Billing;
 [Route("api/v{version:apiVersion}/billing")]
 public sealed class BillingController : ApiControllerBase
 {
-    public BillingController(ISender sender) : base(sender) { }
+    public BillingController(ISender sender) : base(sender)
+    {
+    }
 
     /// <summary>
-    /// MVP checkout: provisions a new tenant and subscription for the authenticated user (owner).
-    /// Replace with payment-provider webhook flow in production.
+    ///     MVP checkout: provisions a new tenant and subscription for the authenticated user (owner).
+    ///     Replace with payment-provider webhook flow in production.
     /// </summary>
     [HttpPost("subscribe")]
     [ProducesResponseType(typeof(ApiResponse<SubscribeToPlanResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Subscribe([FromBody] SubscribeToPlanRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Subscribe([FromBody] SubscribeToPlanRequest request,
+        CancellationToken cancellationToken)
     {
-        Result<SubscribeToPlanResult, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new SubscribeToPlanCommand(
                 CurrentUserId,
                 request.PlanCode,
@@ -49,7 +50,7 @@ public sealed class BillingController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<SubscriptionResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTenantSubscription(Guid tenantId, CancellationToken cancellationToken)
     {
-        Result<SubscriptionSummaryDto, Error> result =
+        var result =
             await Sender.Send(new GetTenantSubscriptionQuery(tenantId), cancellationToken);
         return MatchApi(result, dto => OkApi(BillingApiMapping.ToResponse(dto)));
     }
@@ -58,7 +59,7 @@ public sealed class BillingController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<TenantEntitlementsResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTenantEntitlements(Guid tenantId, CancellationToken cancellationToken)
     {
-        Result<TenantEntitlementsDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new GetTenantEntitlementsQuery(tenantId, CurrentUserId),
             cancellationToken);
         return MatchApi(result, dto => OkApi(BillingApiMapping.ToEntitlementsResponse(dto)));
@@ -68,7 +69,7 @@ public sealed class BillingController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<SubscriptionResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CancelSubscription(Guid tenantId, CancellationToken cancellationToken)
     {
-        Result<SubscriptionSummaryDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new CancelTenantSubscriptionCommand(tenantId, CurrentUserId),
             cancellationToken);
         return MatchApi(result, dto => OkApi(BillingApiMapping.ToResponse(dto)));
@@ -76,9 +77,10 @@ public sealed class BillingController : ApiControllerBase
 
     [HttpPut("tenants/{tenantId:guid}/subscription/plan")]
     [ProducesResponseType(typeof(ApiResponse<SubscriptionResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ChangePlan(Guid tenantId, [FromBody] ChangeSubscriptionPlanRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ChangePlan(Guid tenantId, [FromBody] ChangeSubscriptionPlanRequest request,
+        CancellationToken cancellationToken)
     {
-        Result<SubscriptionSummaryDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new ChangeTenantSubscriptionPlanCommand(tenantId, CurrentUserId, request.PlanCode),
             cancellationToken);
         return MatchApi(result, dto => OkApi(BillingApiMapping.ToResponse(dto)));
@@ -92,7 +94,7 @@ public sealed class BillingController : ApiControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        Result<IReadOnlyList<BillingInvoiceListItemDto>, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new ListTenantBillingInvoicesQuery(tenantId, CurrentUserId, page, pageSize),
             cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(BillingApiMapping.ToResponse).ToList()));

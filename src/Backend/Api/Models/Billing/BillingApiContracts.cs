@@ -1,4 +1,5 @@
 using Application.Contracts.Billing;
+using Application.Modules.Billing;
 
 namespace Api.Models.Billing;
 
@@ -13,18 +14,21 @@ public sealed record PlanLimitsRequest(
     int ApiRequestsPerMinute = 120,
     long MonthlyCreditGrant = 0)
 {
-    public PlanLimits ToPlanLimits() => new()
+    public PlanLimits ToPlanLimits()
     {
-        MaxUsers = MaxUsers,
-        MaxStorageBytes = MaxStorageBytes,
-        Modules = Modules,
-        MaxOpenSupportTickets = MaxOpenSupportTickets,
-        AdminSeats = AdminSeats,
-        Impersonation = Impersonation,
-        BackupRestore = BackupRestore,
-        ApiRequestsPerMinute = ApiRequestsPerMinute,
-        MonthlyCreditGrant = MonthlyCreditGrant,
-    };
+        return new PlanLimits
+        {
+            MaxUsers = MaxUsers,
+            MaxStorageBytes = MaxStorageBytes,
+            Modules = Modules,
+            MaxOpenSupportTickets = MaxOpenSupportTickets,
+            AdminSeats = AdminSeats,
+            Impersonation = Impersonation,
+            BackupRestore = BackupRestore,
+            ApiRequestsPerMinute = ApiRequestsPerMinute,
+            MonthlyCreditGrant = MonthlyCreditGrant
+        };
+    }
 }
 
 public sealed record CreatePlanRequest(
@@ -139,8 +143,9 @@ public sealed record BillingInvoiceResponse(
 
 public static class BillingApiMapping
 {
-    public static PlanResponse ToResponse(Application.Modules.Billing.PlanDto dto) =>
-        new(
+    public static PlanResponse ToResponse(PlanDto dto)
+    {
+        return new PlanResponse(
             dto.Id,
             dto.Code,
             dto.Name,
@@ -160,9 +165,11 @@ public static class BillingApiMapping
                 dto.Limits.MonthlyCreditGrant),
             dto.IsActive,
             dto.SortOrder);
+    }
 
-    public static SubscriptionResponse ToResponse(Application.Modules.Billing.SubscriptionSummaryDto dto) =>
-        new(
+    public static SubscriptionResponse ToResponse(SubscriptionSummaryDto dto)
+    {
+        return new SubscriptionResponse(
             dto.Id,
             dto.TenantId,
             dto.PlanId,
@@ -172,9 +179,11 @@ public static class BillingApiMapping
             dto.CurrentPeriodStartUtc,
             dto.CurrentPeriodEndUtc,
             dto.AllowsWriteAccess);
+    }
 
-    public static TenantEntitlementsResponse ToEntitlementsResponse(Application.Modules.Billing.TenantEntitlementsDto dto) =>
-        new(
+    public static TenantEntitlementsResponse ToEntitlementsResponse(TenantEntitlementsDto dto)
+    {
+        return new TenantEntitlementsResponse(
             ToResponse(dto.Subscription),
             new PlanLimitsRequest(
                 dto.Limits.MaxUsers,
@@ -188,9 +197,11 @@ public static class BillingApiMapping
                 dto.Limits.MonthlyCreditGrant),
             new TenantUsageResponse(dto.Usage.MemberCount, dto.Usage.StorageBytes, dto.Usage.OpenSupportTicketCount),
             dto.AllowsWriteAccess);
+    }
 
-    public static CreditPackageResponse ToResponse(Application.Modules.Billing.CreditPackageDto dto) =>
-        new(
+    public static CreditPackageResponse ToResponse(CreditPackageDto dto)
+    {
+        return new CreditPackageResponse(
             dto.Id,
             dto.Code,
             dto.Name,
@@ -200,9 +211,11 @@ public static class BillingApiMapping
             dto.CreditsAmount,
             dto.IsActive,
             dto.SortOrder);
+    }
 
-    public static BillingInvoiceResponse ToResponse(Application.Modules.Billing.BillingInvoiceListItemDto dto) =>
-        new(
+    public static BillingInvoiceResponse ToResponse(BillingInvoiceListItemDto dto)
+    {
+        return new BillingInvoiceResponse(
             dto.Id,
             dto.TenantId,
             dto.UserId,
@@ -214,4 +227,5 @@ public static class BillingApiMapping
             dto.Status,
             dto.Provider,
             dto.IssuedAtUtc);
+    }
 }

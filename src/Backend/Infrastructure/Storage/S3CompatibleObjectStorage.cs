@@ -1,3 +1,5 @@
+using System.Net;
+using System.Runtime.CompilerServices;
 using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -8,15 +10,15 @@ using Microsoft.Extensions.Options;
 namespace Infrastructure.Storage;
 
 /// <summary>
-/// S3 v4 storage backend that talks to AWS S3, Cloudflare R2, MinIO or any other compatible service
-/// through a single set of credentials. The instance is registered as a singleton because
-/// <see cref="IAmazonS3"/> is thread-safe and cheap to share across the host.
+///     S3 v4 storage backend that talks to AWS S3, Cloudflare R2, MinIO or any other compatible service
+///     through a single set of credentials. The instance is registered as a singleton because
+///     <see cref="IAmazonS3" /> is thread-safe and cheap to share across the host.
 /// </summary>
 public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
 {
-    private readonly ObjectStorageOptions _options;
-    private readonly ILogger<S3CompatibleObjectStorage> _logger;
     private readonly IAmazonS3 _client;
+    private readonly ILogger<S3CompatibleObjectStorage> _logger;
+    private readonly ObjectStorageOptions _options;
 
     public S3CompatibleObjectStorage(IOptions<ObjectStorageOptions> options, ILogger<S3CompatibleObjectStorage> logger)
     {
@@ -27,7 +29,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
         {
             ForcePathStyle = _options.ForcePathStyle,
             // R2/MinIO require pre-signed v4; AWS supports it everywhere.
-            SignatureVersion = "4",
+            SignatureVersion = "4"
         };
 
         if (!string.IsNullOrWhiteSpace(_options.ServiceUrl))
@@ -38,7 +40,13 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
         _client = new AmazonS3Client(_options.AccessKey, _options.SecretKey, config);
     }
 
-    public async Task PutAsync(string key, Stream content, string contentType, CancellationToken cancellationToken = default)
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
+
+    public async Task PutAsync(string key, Stream content, string contentType,
+        CancellationToken cancellationToken = default)
     {
         var request = new PutObjectRequest
         {
@@ -49,7 +57,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             // AutoCloseStream=false so callers retain ownership; we never want the SDK to dispose
             // a stream the application is still managing.
             AutoCloseStream = false,
-            DisablePayloadSigning = true, // R2 rejects payload signing on PUT for streamed bodies
+            DisablePayloadSigning = true // R2 rejects payload signing on PUT for streamed bodies
         };
 
         await _client.PutObjectAsync(request, cancellationToken);
@@ -58,7 +66,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
 
     public async Task<Stream> GetAsync(string key, CancellationToken cancellationToken = default)
     {
-        GetObjectResponse response = await _client.GetObjectAsync(_options.Bucket, key, cancellationToken);
+        var response = await _client.GetObjectAsync(_options.Bucket, key, cancellationToken);
         return response.ResponseStream;
     }
 
@@ -79,7 +87,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
                 BucketName = _options.Bucket,
                 Key = key,
                 Verb = HttpVerb.GET,
-                Expires = DateTime.UtcNow.AddMinutes(_options.PresignedDownloadUrlExpirationMinutes),
+                Expires = DateTime.UtcNow.AddMinutes(_options.PresignedDownloadUrlExpirationMinutes)
             };
             return _client.GetPreSignedURL(request);
         }
@@ -92,7 +100,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
         // CdnBaseUrl to point at the worker route or a Cloudflare custom domain.
         if (!string.IsNullOrWhiteSpace(_options.ServiceUrl))
         {
-            string root = _options.ServiceUrl.TrimEnd('/');
+            var root = _options.ServiceUrl.TrimEnd('/');
             return _options.ForcePathStyle
                 ? $"{root}/{_options.Bucket}/{key.TrimStart('/')}"
                 : $"{root.Replace("//", $"//{_options.Bucket}.", StringComparison.Ordinal)}/{key.TrimStart('/')}";
@@ -111,7 +119,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             BucketName = _options.Bucket,
             Key = key,
             Verb = HttpVerb.GET,
-            Expires = DateTime.UtcNow.Add(expiration),
+            Expires = DateTime.UtcNow.Add(expiration)
         };
 
         return Task.FromResult(_client.GetPreSignedURL(request));
@@ -129,10 +137,10 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             Key = key,
             Verb = HttpVerb.PUT,
             Expires = DateTime.UtcNow.Add(expiration),
-            ContentType = contentType,
+            ContentType = contentType
         };
 
-        string url = _client.GetPreSignedURL(request);
+        var url = _client.GetPreSignedURL(request);
         return Task.FromResult(url);
     }
 
@@ -143,7 +151,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             await _client.GetObjectMetadataAsync(_options.Bucket, key, cancellationToken);
             return true;
         }
-        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             return false;
         }
@@ -153,12 +161,12 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
     {
         try
         {
-            GetObjectMetadataResponse meta = await _client.GetObjectMetadataAsync(_options.Bucket, key, cancellationToken);
+            var meta = await _client.GetObjectMetadataAsync(_options.Bucket, key, cancellationToken);
             return new ObjectMetadata(
-                ByteSize: meta.ContentLength,
-                ContentType: meta.Headers.ContentType ?? "application/octet-stream");
+                meta.ContentLength,
+                meta.Headers.ContentType ?? "application/octet-stream");
         }
-        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
         }
@@ -166,7 +174,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
 
     public async IAsyncEnumerable<ObjectListing> ListKeysAsync(
         string prefix,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         // S3 ListObjectsV2 returns at most 1000 entries per call and uses a continuation token for
         // paging. Yielding inside the loop streams results to the caller — no million-row buffer.
@@ -178,19 +186,15 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
                 BucketName = _options.Bucket,
                 Prefix = prefix,
                 ContinuationToken = continuationToken,
-                MaxKeys = 1000,
+                MaxKeys = 1000
             };
-            ListObjectsV2Response response = await _client.ListObjectsV2Async(request, cancellationToken);
-            foreach (S3Object obj in response.S3Objects ?? Enumerable.Empty<S3Object>())
-            {
+            var response = await _client.ListObjectsV2Async(request, cancellationToken);
+            foreach (var obj in response.S3Objects ?? Enumerable.Empty<S3Object>())
                 yield return new ObjectListing(
-                    Key: obj.Key,
-                    ByteSize: obj.Size,
-                    LastModifiedUtc: obj.LastModified.ToUniversalTime());
-            }
+                    obj.Key,
+                    obj.Size,
+                    obj.LastModified.ToUniversalTime());
             continuationToken = response.IsTruncated ? response.NextContinuationToken : null;
         } while (continuationToken is not null);
     }
-
-    public void Dispose() => _client.Dispose();
 }

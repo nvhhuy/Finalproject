@@ -1,21 +1,21 @@
 using Application.Contracts.Transactions;
+using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Api.Filters;
 
 /// <summary>
-/// Begins an EF Core database transaction before the action and commits or rolls back afterward.
-/// Pair with <see cref="TransactionalAttribute"/> on controllers or actions that call command handlers using the scoped write DbContext.
+///     Begins an EF Core database transaction before the action and commits or rolls back afterward.
+///     Pair with <see cref="TransactionalAttribute" /> on controllers or actions that call command handlers using the
+///     scoped write DbContext.
 /// </summary>
 public sealed class TransactionalActionFilter : IAsyncActionFilter, IOrderedFilter
 {
-    private readonly IUnitOfWork _unitOfWork;
     private readonly ApplicationDbContext _db;
+    private readonly IUnitOfWork _unitOfWork;
 
     public TransactionalActionFilter(IUnitOfWork unitOfWork, ApplicationDbContext db)
     {
@@ -23,11 +23,9 @@ public sealed class TransactionalActionFilter : IAsyncActionFilter, IOrderedFilt
         _db = db;
     }
 
-    public int Order => -1000;
-
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        CancellationToken ct = context.HttpContext.RequestAborted;
+        var ct = context.HttpContext.RequestAborted;
 
         if (!_db.Database.IsRelational())
         {
@@ -38,9 +36,11 @@ public sealed class TransactionalActionFilter : IAsyncActionFilter, IOrderedFilt
         // NpgsqlRetryingExecutionStrategy requires any explicit transaction to be created inside
         // CreateExecutionStrategy().ExecuteAsync, otherwise even a simple query inside the action
         // throws "does not support user-initiated transactions".
-        IExecutionStrategy strategy = _db.Database.CreateExecutionStrategy();
+        var strategy = _db.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async innerCt => await ExecuteOnceAsync(next, innerCt), ct);
     }
+
+    public int Order => -1000;
 
     private async Task ExecuteOnceAsync(ActionExecutionDelegate next, CancellationToken cancellationToken)
     {
@@ -63,7 +63,7 @@ public sealed class TransactionalActionFilter : IAsyncActionFilter, IOrderedFilt
             return;
         }
 
-        int statusCode = GetStatusCode(executed.Result);
+        var statusCode = GetStatusCode(executed.Result);
         if (statusCode >= 400)
             await _unitOfWork.RollbackAsync(cancellationToken);
         else

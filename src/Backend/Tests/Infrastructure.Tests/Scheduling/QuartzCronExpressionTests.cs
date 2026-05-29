@@ -12,7 +12,7 @@ public sealed class QuartzCronExpressionTests
     [InlineData("30 2 * * *", "0 30 2 * * ?")]
     public void ToQuartz_converts_standard_five_field_expressions(string unix, string expected)
     {
-        string quartz = QuartzCronExpression.ToQuartz(unix);
+        var quartz = QuartzCronExpression.ToQuartz(unix);
         Assert.Equal(expected, quartz);
         CronExpression.ValidateExpression(quartz);
     }

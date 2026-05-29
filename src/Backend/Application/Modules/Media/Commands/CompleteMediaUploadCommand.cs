@@ -5,18 +5,13 @@ using Application.Contracts.Transactions;
 using Application.Modules.Media.Common;
 using Application.Modules.Media.Dtos;
 using Domains.MediaAggregate;
-using FluentValidation;
-using MediatR;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Media.Commands;
 
 /// <summary>
-/// Called by the client once the presigned PUT to the bucket completes. Verifies the original
-/// exists, transitions the asset from <see cref="MediaAssetStatus.Pending"/> to
-/// <see cref="MediaAssetStatus.Uploaded"/>, and raises the integration event the worker consumes.
+///     Called by the client once the presigned PUT to the bucket completes. Verifies the original
+///     exists, transitions the asset from <see cref="MediaAssetStatus.Pending" /> to
+///     <see cref="MediaAssetStatus.Uploaded" />, and raises the integration event the worker consumes.
 /// </summary>
 public sealed record CompleteMediaUploadCommand(Guid MediaAssetId, Guid CallerUserId)
     : IRequest<Result<MediaAssetDto, Error>>;
@@ -33,10 +28,10 @@ public sealed class CompleteMediaUploadCommandValidator : AbstractValidator<Comp
 public sealed class CompleteMediaUploadCommandHandler
     : IRequestHandler<CompleteMediaUploadCommand, Result<MediaAssetDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
     private readonly IMediaAssetRepository _repo;
     private readonly IObjectStorage _storage;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public CompleteMediaUploadCommandHandler(
         IMediaAssetRepository repo,
@@ -54,7 +49,7 @@ public sealed class CompleteMediaUploadCommandHandler
         CompleteMediaUploadCommand request,
         CancellationToken cancellationToken)
     {
-        MediaAsset? asset = await _repo.GetByIdForUpdateAsync(request.MediaAssetId, cancellationToken);
+        var asset = await _repo.GetByIdForUpdateAsync(request.MediaAssetId, cancellationToken);
         if (asset is null)
             return new NotFoundError("Media asset not found.");
 
@@ -70,7 +65,7 @@ public sealed class CompleteMediaUploadCommandHandler
         // the bucket has no object at the expected key — either the client never PUT the bytes
         // or used the wrong URL. Surface a 400 instead of moving to Uploaded and triggering a
         // worker run that would immediately fail.
-        ObjectMetadata? meta = await _storage.GetMetadataAsync(asset.OriginalKey, cancellationToken);
+        var meta = await _storage.GetMetadataAsync(asset.OriginalKey, cancellationToken);
         if (meta is null)
             return new Error("MediaUploadNotFound", 400, "The uploaded object was not found in storage.");
 
@@ -79,11 +74,11 @@ public sealed class CompleteMediaUploadCommandHandler
         // media format we reject before raising the integration event. This stops the common
         // "declare image/jpeg, upload .exe" abuse vector. The probe streams only the first
         // 32 bytes — cheap regardless of file size.
-        Error? sniffError = await VerifyContentTypeAsync(asset, cancellationToken);
+        var sniffError = await VerifyContentTypeAsync(asset, cancellationToken);
         if (sniffError is not null)
             return sniffError;
 
-        asset.MarkUploaded(_clock.Now, verifiedByteSize: meta.ByteSize);
+        asset.MarkUploaded(_clock.Now, meta.ByteSize);
         await _uow.SaveChangesAsync(cancellationToken);
 
         return MediaAssetProjector.ToDto(asset, _storage);
@@ -91,34 +86,31 @@ public sealed class CompleteMediaUploadCommandHandler
 
     private async Task<Error?> VerifyContentTypeAsync(MediaAsset asset, CancellationToken cancellationToken)
     {
-        byte[] buffer = new byte[MediaContentTypeVerifier.RequiredHeaderBytes];
+        var buffer = new byte[MediaContentTypeVerifier.RequiredHeaderBytes];
         int bytesRead;
-        await using (Stream payload = await _storage.GetAsync(asset.OriginalKey, cancellationToken))
+        await using (var payload = await _storage.GetAsync(asset.OriginalKey, cancellationToken))
         {
-            bytesRead = await payload.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken);
+            bytesRead = await payload.ReadAtLeastAsync(buffer, buffer.Length, false, cancellationToken);
         }
 
         // A non-empty file shorter than 32 bytes can't be valid media — JPEG SOI alone is 3 bytes
         // but a real photo is always larger. Reject early instead of letting the worker choke.
         if (bytesRead < 8)
-            return new Error("MediaContentTypeMismatch", 400, "Uploaded payload is too small to be a valid media file.");
+            return new Error("MediaContentTypeMismatch", 400,
+                "Uploaded payload is too small to be a valid media file.");
 
-        string? detected = MediaContentTypeVerifier.Detect(buffer.AsSpan(0, bytesRead));
+        var detected = MediaContentTypeVerifier.Detect(buffer.AsSpan(0, bytesRead));
         if (detected is null)
-        {
             return new Error(
                 "MediaContentTypeMismatch",
                 400,
                 $"Uploaded payload was not recognised as a supported media format. Declared content type was '{asset.ContentType}'.");
-        }
 
         if (!MediaContentTypeVerifier.IsCompatible(asset.ContentType, detected))
-        {
             return new Error(
                 "MediaContentTypeMismatch",
                 400,
                 $"Declared content type '{asset.ContentType}' does not match the actual payload ('{detected}').");
-        }
 
         return null;
     }

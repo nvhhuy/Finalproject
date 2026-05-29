@@ -5,15 +5,11 @@ namespace Domains.Wallet;
 
 public sealed class PersonalWallet : AggregateRoot<Guid>
 {
-    public UserId UserId { get; private set; } = null!;
-    public long BalanceCredits { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime UpdatedAtUtc { get; private set; }
-
     private readonly List<WalletLedgerEntry> _entries = [];
-    public IReadOnlyList<WalletLedgerEntry> Entries => _entries.AsReadOnly();
 
-    private PersonalWallet() { }
+    private PersonalWallet()
+    {
+    }
 
     private PersonalWallet(Guid id, UserId userId, DateTime utcNow) : base(id)
     {
@@ -23,8 +19,16 @@ public sealed class PersonalWallet : AggregateRoot<Guid>
         UpdatedAtUtc = utcNow;
     }
 
-    public static PersonalWallet CreateForUser(UserId userId, DateTime utcNow) =>
-        new(Guid.NewGuid(), userId, utcNow);
+    public UserId UserId { get; private set; } = null!;
+    public long BalanceCredits { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime UpdatedAtUtc { get; private set; }
+    public IReadOnlyList<WalletLedgerEntry> Entries => _entries.AsReadOnly();
+
+    public static PersonalWallet CreateForUser(UserId userId, DateTime utcNow)
+    {
+        return new PersonalWallet(Guid.NewGuid(), userId, utcNow);
+    }
 
     public WalletLedgerEntry TopUp(long amountCredits, string? idempotencyKey, string? description, DateTime utcNow)
     {
@@ -43,7 +47,7 @@ public sealed class PersonalWallet : AggregateRoot<Guid>
             amountCredits,
             BalanceCredits,
             idempotencyKey,
-            actionCode: null,
+            null,
             description,
             utcNow);
         _entries.Add(entry);
@@ -64,7 +68,7 @@ public sealed class PersonalWallet : AggregateRoot<Guid>
         if (string.IsNullOrWhiteSpace(idempotencyKey))
             throw new ArgumentException("Idempotency key is required.", nameof(idempotencyKey));
 
-        WalletLedgerEntry? existing = _entries.FirstOrDefault(e => e.IdempotencyKey == idempotencyKey);
+        var existing = _entries.FirstOrDefault(e => e.IdempotencyKey == idempotencyKey);
         if (existing is not null)
             return existing;
 

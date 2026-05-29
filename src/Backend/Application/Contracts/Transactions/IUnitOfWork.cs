@@ -1,16 +1,16 @@
 namespace Application.Contracts.Transactions;
 
 /// <summary>
-/// Unit of work over the scoped write DbContext (EF Core).
-/// <para>
-/// Owns <c>SaveChanges</c> for the current request: handlers stage mutations via repositories,
-/// then call <see cref="SaveChangesAsync(CancellationToken)"/> exactly once before returning.
-/// </para>
-/// <para>
-/// Also exposes ambient transaction control used by <c>TransactionalActionFilter</c>. A single
-/// SQL transaction cannot span two PostgreSQL instances; use the outbox or sagas when coordinating
-/// multiple physical databases.
-/// </para>
+///     Unit of work over the scoped write DbContext (EF Core).
+///     <para>
+///         Owns <c>SaveChanges</c> for the current request: handlers stage mutations via repositories,
+///         then call <see cref="SaveChangesAsync(CancellationToken)" /> exactly once before returning.
+///     </para>
+///     <para>
+///         Also exposes ambient transaction control used by <c>TransactionalActionFilter</c>. A single
+///         SQL transaction cannot span two PostgreSQL instances; use the outbox or sagas when coordinating
+///         multiple physical databases.
+///     </para>
 /// </summary>
 public interface IUnitOfWork
 {

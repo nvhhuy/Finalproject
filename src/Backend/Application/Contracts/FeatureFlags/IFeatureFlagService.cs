@@ -1,8 +1,8 @@
 namespace Application.Contracts.FeatureFlags;
 
 /// <summary>
-/// Evaluates feature flags with support for environment overrides, percentage rollout,
-/// and database-backed toggles.
+///     Evaluates feature flags with support for environment overrides, percentage rollout,
+///     and database-backed toggles.
 /// </summary>
 public interface IFeatureFlagService
 {

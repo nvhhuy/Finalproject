@@ -1,8 +1,8 @@
 namespace Domains.MediaAggregate;
 
 /// <summary>
-/// Identifies what a generated variant represents. Multiple variants of the same kind can exist
-/// when the pipeline targets several sizes (e.g. <see cref="ImageThumbnail"/> at 256 px and 512 px).
+///     Identifies what a generated variant represents. Multiple variants of the same kind can exist
+///     when the pipeline targets several sizes (e.g. <see cref="ImageThumbnail" /> at 256 px and 512 px).
 /// </summary>
 public enum MediaVariantKind
 {
@@ -28,9 +28,9 @@ public enum MediaVariantKind
     VideoMp4Av1 = 23,
 
     /// <summary>
-    /// HLS master playlist (the single <c>master.m3u8</c> a player loads first). The accompanying
-    /// per-rung media playlists and <c>.ts</c> segments live under the same prefix but aren't
-    /// individually tracked as variants — listing them all would explode the row count.
+    ///     HLS master playlist (the single <c>master.m3u8</c> a player loads first). The accompanying
+    ///     per-rung media playlists and <c>.ts</c> segments live under the same prefix but aren't
+    ///     individually tracked as variants — listing them all would explode the row count.
     /// </summary>
-    VideoHlsMaster = 24,
+    VideoHlsMaster = 24
 }

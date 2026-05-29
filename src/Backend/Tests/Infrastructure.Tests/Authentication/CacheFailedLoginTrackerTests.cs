@@ -12,7 +12,7 @@ public sealed class CacheFailedLoginTrackerTests
     {
         var tracker = NewTracker(out _);
 
-        TimeSpan? remaining = await tracker.GetLockoutRemainingAsync("nobody@example.com");
+        var remaining = await tracker.GetLockoutRemainingAsync("nobody@example.com");
 
         Assert.Null(remaining);
     }
@@ -22,8 +22,8 @@ public sealed class CacheFailedLoginTrackerTests
     {
         var tracker = NewTracker(out _, opts => opts.MaxFailures = 3);
 
-        bool locked1 = await tracker.RegisterFailureAsync("user@example.com");
-        bool locked2 = await tracker.RegisterFailureAsync("user@example.com");
+        var locked1 = await tracker.RegisterFailureAsync("user@example.com");
+        var locked2 = await tracker.RegisterFailureAsync("user@example.com");
 
         Assert.False(locked1);
         Assert.False(locked2);
@@ -40,10 +40,10 @@ public sealed class CacheFailedLoginTrackerTests
         });
 
         await tracker.RegisterFailureAsync("user@example.com");
-        bool locked = await tracker.RegisterFailureAsync("user@example.com");
+        var locked = await tracker.RegisterFailureAsync("user@example.com");
 
         Assert.True(locked);
-        TimeSpan? remaining = await tracker.GetLockoutRemainingAsync("user@example.com");
+        var remaining = await tracker.GetLockoutRemainingAsync("user@example.com");
         Assert.NotNull(remaining);
         Assert.InRange(remaining!.Value.TotalSeconds, 1, 60);
     }
@@ -54,7 +54,7 @@ public sealed class CacheFailedLoginTrackerTests
         var tracker = NewTracker(out _, opts => opts.MaxFailures = 2);
 
         await tracker.RegisterFailureAsync(" User@Example.com ");
-        bool locked = await tracker.RegisterFailureAsync("user@example.com");
+        var locked = await tracker.RegisterFailureAsync("user@example.com");
 
         Assert.True(locked);
     }
@@ -62,7 +62,7 @@ public sealed class CacheFailedLoginTrackerTests
     [Fact]
     public async Task Reset_clears_both_counter_and_lock()
     {
-        var tracker = NewTracker(out InMemoryCache cache, opts =>
+        var tracker = NewTracker(out var cache, opts =>
         {
             opts.MaxFailures = 1;
             opts.LockoutSeconds = 60;
@@ -80,17 +80,18 @@ public sealed class CacheFailedLoginTrackerTests
     [Fact]
     public async Task Empty_identity_is_ignored()
     {
-        var tracker = NewTracker(out InMemoryCache cache);
+        var tracker = NewTracker(out var cache);
 
-        bool locked = await tracker.RegisterFailureAsync("   ");
-        TimeSpan? remaining = await tracker.GetLockoutRemainingAsync("");
+        var locked = await tracker.RegisterFailureAsync("   ");
+        var remaining = await tracker.GetLockoutRemainingAsync("");
 
         Assert.False(locked);
         Assert.Null(remaining);
         Assert.Empty(cache.Snapshot);
     }
 
-    private static CacheFailedLoginTracker NewTracker(out InMemoryCache cache, Action<AccountLockoutOptions>? configure = null)
+    private static CacheFailedLoginTracker NewTracker(out InMemoryCache cache,
+        Action<AccountLockoutOptions>? configure = null)
     {
         var options = new AccountLockoutOptions();
         configure?.Invoke(options);
@@ -108,7 +109,7 @@ internal sealed class InMemoryCache : ICacheService
 
     public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
-        if (_store.TryGetValue(key, out object? value))
+        if (_store.TryGetValue(key, out var value))
             return Task.FromResult((T?)value);
         return Task.FromResult<T?>(default);
     }
@@ -127,7 +128,7 @@ internal sealed class InMemoryCache : ICacheService
 
     public Task RemoveManyAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
     {
-        foreach (string key in keys)
+        foreach (var key in keys)
             _store.TryRemove(key, out _);
         return Task.CompletedTask;
     }
@@ -135,10 +136,27 @@ internal sealed class InMemoryCache : ICacheService
 
 internal sealed class TestOptionsMonitor<T> : IOptionsMonitor<T> where T : class
 {
-    public TestOptionsMonitor(T value) => CurrentValue = value;
-    public T CurrentValue { get; }
-    public T Get(string? name) => CurrentValue;
-    public IDisposable OnChange(Action<T, string?> listener) => new EmptyDisposable();
+    public TestOptionsMonitor(T value)
+    {
+        CurrentValue = value;
+    }
 
-    private sealed class EmptyDisposable : IDisposable { public void Dispose() { } }
+    public T CurrentValue { get; }
+
+    public T Get(string? name)
+    {
+        return CurrentValue;
+    }
+
+    public IDisposable OnChange(Action<T, string?> listener)
+    {
+        return new EmptyDisposable();
+    }
+
+    private sealed class EmptyDisposable : IDisposable
+    {
+        public void Dispose()
+        {
+        }
+    }
 }

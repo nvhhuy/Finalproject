@@ -1,30 +1,26 @@
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Api.Authorization;
 using Api.Configuration;
+using Api.ExceptionHandling;
+using Api.Filters;
+using Api.Hubs;
 using Api.Realtime;
 using Application.Contracts.Billing;
 using Application.Contracts.Notifications;
 using Application.Contracts.Tenancy;
-using Infrastructure.Modules.Billing;
-using Api.ExceptionHandling;
-using Api.Filters;
-using Api.Hubs;
 using Asp.Versioning;
 using Domains.UserAggregate;
 using Infrastructure.HealthChecks;
+using Infrastructure.Modules.Billing;
+using Infrastructure.Modules.Notifications;
 using Infrastructure.Persistence;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Threading.RateLimiting;
 
 namespace Api;
 
-/// <summary>Registers API-only services so <see cref="Program"/> stays a thin host composition root.</summary>
+/// <summary>Registers API-only services so <see cref="Program" /> stays a thin host composition root.</summary>
 public static class DependencyInjection
 {
     public static IServiceCollection AddWebApi(this IServiceCollection services, IConfiguration configuration)
@@ -35,10 +31,7 @@ public static class DependencyInjection
         services.AddCorsPolicy(configuration);
         services.AddScoped<TransactionalActionFilter>();
         services.AddScoped<IdempotencyActionFilter>();
-        services.AddControllers(options =>
-        {
-            options.Filters.AddService<IdempotencyActionFilter>();
-        });
+        services.AddControllers(options => { options.Filters.AddService<IdempotencyActionFilter>(); });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
@@ -69,7 +62,7 @@ public static class DependencyInjection
         services.Configure<TenantRateLimitOptions>(configuration.GetSection(TenantRateLimitOptions.SectionName));
         services.AddScoped<ITenantRateLimitProvider, TenantRateLimitProvider>();
 
-        bool disableRateLimiting = configuration.GetValue<bool>("IntegrationTesting:DisableRateLimiting");
+        var disableRateLimiting = configuration.GetValue<bool>("IntegrationTesting:DisableRateLimiting");
 
         services.AddRateLimiter(options =>
         {
@@ -87,14 +80,14 @@ public static class DependencyInjection
                 if (disableRateLimiting || IsTenantRateLimitExempt(httpContext))
                     return RateLimitPartition.GetNoLimiter("exempt");
 
-                ITenantRateLimitProvider provider =
+                var provider =
                     httpContext.RequestServices.GetRequiredService<ITenantRateLimitProvider>();
-                ITenantContext tenantContext =
+                var tenantContext =
                     httpContext.RequestServices.GetRequiredService<ITenantContext>();
 
-                Guid? tenantId = tenantContext.TenantId;
-                int permitLimit = provider.GetRequestsPerMinute(tenantId);
-                string partitionKey = tenantId is { } id && id != Guid.Empty
+                var tenantId = tenantContext.TenantId;
+                var permitLimit = provider.GetRequestsPerMinute(tenantId);
+                var partitionKey = tenantId is { } id && id != Guid.Empty
                     ? $"tenant:{id:N}"
                     : $"ip:{httpContext.Connection.RemoteIpAddress}";
 
@@ -105,7 +98,7 @@ public static class DependencyInjection
                         PermitLimit = permitLimit,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 0,
+                        QueueLimit = 0
                     });
             });
 
@@ -115,13 +108,13 @@ public static class DependencyInjection
                     return RateLimitPartition.GetNoLimiter("exempt");
 
                 return RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? context.Request.Headers.Host.ToString(),
-                    factory: _ => new FixedWindowRateLimiterOptions
+                    context.Connection.RemoteIpAddress?.ToString() ?? context.Request.Headers.Host.ToString(),
+                    _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 30,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 5,
+                        QueueLimit = 5
                     });
             });
 
@@ -134,9 +127,9 @@ public static class DependencyInjection
                 if (disableRateLimiting)
                     return RateLimitPartition.GetNoLimiter("exempt");
 
-                string partitionKey = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                    ?? context.Connection.RemoteIpAddress?.ToString()
-                    ?? "anonymous";
+                var partitionKey = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                   ?? context.Connection.RemoteIpAddress?.ToString()
+                                   ?? "anonymous";
                 return RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey,
                     _ => new FixedWindowRateLimiterOptions
@@ -144,14 +137,14 @@ public static class DependencyInjection
                         PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 0,
+                        QueueLimit = 0
                     });
             });
         });
 
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>(
-                name: "database",
+                "database",
                 tags: new[] { "db", "ready" })
             .AddCheck<RedisHealthCheck>("redis", tags: new[] { "cache", "ready" })
             .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: new[] { "messaging", "ready" })
@@ -165,16 +158,16 @@ public static class DependencyInjection
 
     private static bool IsTenantRateLimitExempt(HttpContext context)
     {
-        PathString path = context.Request.Path;
+        var path = context.Request.Path;
         return path.StartsWithSegments("/health")
-            || path.StartsWithSegments("/swagger")
-            || path.StartsWithSegments("/hubs")
-            || path.Value?.Contains("/webhooks/", StringComparison.OrdinalIgnoreCase) == true;
+               || path.StartsWithSegments("/swagger")
+               || path.StartsWithSegments("/hubs")
+               || path.Value?.Contains("/webhooks/", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
     {
-        CorsOptions opts = configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
+        var opts = configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
         services.AddCors(o => o.AddPolicy(CorsOptions.PolicyName, builder =>
         {
             // Empty origin list = browser CORS not needed (backend-to-backend only). We still
@@ -201,10 +194,10 @@ public static class DependencyInjection
 
     private static void AddRealtimeServices(IServiceCollection services, IConfiguration configuration)
     {
-        RealtimeOptions? opts = configuration.GetSection(RealtimeOptions.SectionName).Get<RealtimeOptions>();
+        var opts = configuration.GetSection(RealtimeOptions.SectionName).Get<RealtimeOptions>();
         if (opts?.Enabled == true)
         {
-            ISignalRServerBuilder signalR = services.AddSignalR(hub =>
+            var signalR = services.AddSignalR(hub =>
             {
                 hub.MaximumReceiveMessageSize = 32 * 1024;
                 hub.EnableDetailedErrors = false;
@@ -218,14 +211,14 @@ public static class DependencyInjection
         }
         else
         {
-            services.AddSingleton<INotificationDispatcher, Infrastructure.Modules.Notifications.NullNotificationDispatcher>();
+            services.AddSingleton<INotificationDispatcher, NullNotificationDispatcher>();
         }
     }
 
-    /// <summary>Maps SignalR hubs when <see cref="RealtimeOptions.Enabled"/> is true.</summary>
+    /// <summary>Maps SignalR hubs when <see cref="RealtimeOptions.Enabled" /> is true.</summary>
     public static WebApplication MapRealtimeHubs(this WebApplication app)
     {
-        RealtimeOptions? opts = app.Configuration.GetSection(RealtimeOptions.SectionName).Get<RealtimeOptions>();
+        var opts = app.Configuration.GetSection(RealtimeOptions.SectionName).Get<RealtimeOptions>();
         if (opts?.Enabled == true)
             app.MapHub<NotificationHub>("/hubs/notifications");
         return app;

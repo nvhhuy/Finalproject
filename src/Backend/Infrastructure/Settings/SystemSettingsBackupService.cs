@@ -11,11 +11,11 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
 {
     private const string BackupPrefix = "system-backups/settings/";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly IAppSettingsService _appSettingsService;
+    private readonly long _maxImportBytes;
 
     private readonly ApplicationReadDbContext _read;
     private readonly IObjectStorage _storage;
-    private readonly IAppSettingsService _appSettingsService;
-    private readonly long _maxImportBytes;
 
     public SystemSettingsBackupService(
         ApplicationReadDbContext read,
@@ -29,36 +29,36 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
         _maxImportBytes = Math.Max(1, options.Value.MaxSettingsImportBytes);
     }
 
-    public async Task<CreateSystemSettingsBackupResult> CreateBackupAsync(string triggerSource, CancellationToken cancellationToken = default)
+    public async Task<CreateSystemSettingsBackupResult> CreateBackupAsync(string triggerSource,
+        CancellationToken cancellationToken = default)
     {
-        DateTime now = DateTime.UtcNow;
-        List<AppSettingSnapshotItem> items = await _read.AppSettings
+        var now = DateTime.UtcNow;
+        var items = await _read.AppSettings
             .AsNoTracking()
             .OrderBy(x => x.Key)
             .Select(x => new AppSettingSnapshotItem(x.Key, x.Value))
             .ToListAsync(cancellationToken);
 
         var payload = new SystemSettingsBackupPayload(
-            Version: 1,
-            TriggerSource: triggerSource,
-            CreatedAtUtc: now,
-            Items: items);
+            1,
+            triggerSource,
+            now,
+            items);
 
-        string backupKey = $"{BackupPrefix}{now:yyyyMMddHHmmssfff}-settings.json";
-        byte[] json = JsonSerializer.SerializeToUtf8Bytes(payload, JsonOptions);
+        var backupKey = $"{BackupPrefix}{now:yyyyMMddHHmmssfff}-settings.json";
+        var json = JsonSerializer.SerializeToUtf8Bytes(payload, JsonOptions);
         await using var stream = new MemoryStream(json);
         await _storage.PutAsync(backupKey, stream, "application/json", cancellationToken);
         return new CreateSystemSettingsBackupResult(backupKey, now, json.LongLength);
     }
 
-    public async Task<IReadOnlyList<SystemSettingsBackupItem>> ListBackupsAsync(int take, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SystemSettingsBackupItem>> ListBackupsAsync(int take,
+        CancellationToken cancellationToken = default)
     {
-        int boundedTake = Math.Clamp(take, 1, 100);
+        var boundedTake = Math.Clamp(take, 1, 100);
         var entries = new List<SystemSettingsBackupItem>(boundedTake);
-        await foreach (ObjectListing obj in _storage.ListKeysAsync(BackupPrefix, cancellationToken))
-        {
+        await foreach (var obj in _storage.ListKeysAsync(BackupPrefix, cancellationToken))
             entries.Add(new SystemSettingsBackupItem(obj.Key, obj.LastModifiedUtc, obj.ByteSize));
-        }
 
         return entries
             .OrderByDescending(x => x.CreatedAtUtc)
@@ -71,28 +71,29 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
         if (string.IsNullOrWhiteSpace(key) || !key.StartsWith(BackupPrefix, StringComparison.Ordinal))
             return false;
 
-        await using Stream stream = await _storage.GetAsync(key, cancellationToken);
-        if (!TryParseSettingsBackup(stream, out Dictionary<string, string>? settings) || settings is null)
+        await using var stream = await _storage.GetAsync(key, cancellationToken);
+        if (!TryParseSettingsBackup(stream, out var settings) || settings is null)
             return false;
 
         await ApplySettingsAsync(settings, cancellationToken);
         return true;
     }
 
-    public async Task<SystemBackupDownloadResult?> DownloadBackupAsync(string key, CancellationToken cancellationToken = default)
+    public async Task<SystemBackupDownloadResult?> DownloadBackupAsync(string key,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(key) || !key.StartsWith(BackupPrefix, StringComparison.Ordinal))
             return null;
 
         try
         {
-            await using Stream stream = await _storage.GetAsync(key, cancellationToken);
+            await using var stream = await _storage.GetAsync(key, cancellationToken);
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer, cancellationToken);
             if (buffer.Length == 0)
                 return null;
 
-            string fileName = ResolveDownloadFileName(key, "settings-backup.json");
+            var fileName = ResolveDownloadFileName(key, "settings-backup.json");
             return new SystemBackupDownloadResult(buffer.ToArray(), "application/json", fileName);
         }
         catch (Exception)
@@ -114,13 +115,13 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
             return null;
 
         buffer.Position = 0;
-        if (!TryParseSettingsBackup(buffer, out Dictionary<string, string>? settings) || settings is null || settings.Count == 0)
+        if (!TryParseSettingsBackup(buffer, out var settings) || settings is null || settings.Count == 0)
             return null;
 
         await ApplySettingsAsync(settings, cancellationToken);
 
-        DateTime now = DateTime.UtcNow;
-        string backupKey = $"{BackupPrefix}imported/{now:yyyyMMddHHmmssfff}-settings.json";
+        var now = DateTime.UtcNow;
+        var backupKey = $"{BackupPrefix}imported/{now:yyyyMMddHHmmssfff}-settings.json";
         buffer.Position = 0;
         await _storage.PutAsync(backupKey, buffer, "application/json", cancellationToken);
         return new ImportSystemSettingsBackupResult(backupKey, now, buffer.Length, settings.Count);
@@ -128,10 +129,10 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
 
     public async Task<int> CleanupExpiredBackupsAsync(int retentionDays, CancellationToken cancellationToken = default)
     {
-        int boundedDays = Math.Max(1, retentionDays);
-        DateTime cutoffUtc = DateTime.UtcNow.AddDays(-boundedDays);
-        int deleted = 0;
-        await foreach (ObjectListing obj in _storage.ListKeysAsync(BackupPrefix, cancellationToken))
+        var boundedDays = Math.Max(1, retentionDays);
+        var cutoffUtc = DateTime.UtcNow.AddDays(-boundedDays);
+        var deleted = 0;
+        await foreach (var obj in _storage.ListKeysAsync(BackupPrefix, cancellationToken))
         {
             if (obj.LastModifiedUtc >= cutoffUtc)
                 continue;
@@ -145,10 +146,8 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
 
     private async Task ApplySettingsAsync(Dictionary<string, string> settings, CancellationToken cancellationToken)
     {
-        foreach ((string itemKey, string itemValue) in settings)
-        {
+        foreach (var (itemKey, itemValue) in settings)
             await _appSettingsService.SetValueAsync(itemKey, itemValue, cancellationToken);
-        }
     }
 
     internal static bool TryParseSettingsBackup(Stream stream, out Dictionary<string, string>? settings)
@@ -156,10 +155,10 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
         settings = null;
         try
         {
-            using JsonDocument doc = JsonDocument.Parse(stream);
-            JsonElement root = doc.RootElement;
+            using var doc = JsonDocument.Parse(stream);
+            var root = doc.RootElement;
             if (root.ValueKind == JsonValueKind.Object
-                && root.TryGetProperty("items", out JsonElement itemsElement)
+                && root.TryGetProperty("items", out var itemsElement)
                 && itemsElement.ValueKind == JsonValueKind.Array)
             {
                 settings = ParseItemArray(itemsElement);
@@ -175,7 +174,7 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
             if (root.ValueKind == JsonValueKind.Object)
             {
                 settings = new Dictionary<string, string>(StringComparer.Ordinal);
-                foreach (JsonProperty property in root.EnumerateObject())
+                foreach (var property in root.EnumerateObject())
                 {
                     if (property.NameEquals("version")
                         || property.NameEquals("triggerSource")
@@ -189,7 +188,7 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
                         JsonValueKind.True => bool.TrueString,
                         JsonValueKind.False => bool.FalseString,
                         JsonValueKind.Number => property.Value.GetRawText(),
-                        _ => property.Value.GetRawText(),
+                        _ => property.Value.GetRawText()
                     };
                 }
 
@@ -206,33 +205,33 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
 
     private static string ResolveDownloadFileName(string key, string fallback)
     {
-        string segment = key.TrimEnd('/').Split('/').LastOrDefault() ?? string.Empty;
+        var segment = key.TrimEnd('/').Split('/').LastOrDefault() ?? string.Empty;
         return string.IsNullOrWhiteSpace(segment) ? fallback : segment;
     }
 
     private static Dictionary<string, string> ParseItemArray(JsonElement array)
     {
         var settings = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (JsonElement element in array.EnumerateArray())
+        foreach (var element in array.EnumerateArray())
         {
             if (element.ValueKind != JsonValueKind.Object)
                 continue;
 
-            if (!element.TryGetProperty("key", out JsonElement keyElement))
+            if (!element.TryGetProperty("key", out var keyElement))
                 continue;
 
-            string? key = keyElement.GetString();
+            var key = keyElement.GetString();
             if (string.IsNullOrWhiteSpace(key))
                 continue;
 
-            string value = element.TryGetProperty("value", out JsonElement valueElement)
+            var value = element.TryGetProperty("value", out var valueElement)
                 ? valueElement.ValueKind switch
                 {
                     JsonValueKind.String => valueElement.GetString() ?? string.Empty,
                     JsonValueKind.True => bool.TrueString,
                     JsonValueKind.False => bool.FalseString,
                     JsonValueKind.Number => valueElement.GetRawText(),
-                    _ => valueElement.GetRawText(),
+                    _ => valueElement.GetRawText()
                 }
                 : string.Empty;
 

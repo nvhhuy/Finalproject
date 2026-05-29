@@ -9,12 +9,12 @@ internal static partial class EmailBodyParser
         if (string.IsNullOrWhiteSpace(body))
             return null;
 
-        Match tokenId = TokenIdLine().Match(body);
-        Match token = TokenLine().Match(body);
+        var tokenId = TokenIdLine().Match(body);
+        var token = TokenLine().Match(body);
         if (tokenId.Success && token.Success)
             return (tokenId.Groups[1].Value, token.Groups[1].Value);
 
-        Match query = QueryString().Match(body);
+        var query = QueryString().Match(body);
         if (query.Success)
             return (query.Groups[1].Value, query.Groups[2].Value);
 

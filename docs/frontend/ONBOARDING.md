@@ -7,7 +7,7 @@ Helps new developers **run the Frontend locally in ~15 minutes** and know **what
 ## Where am I in the repo?
 
 ```
-BaseProject/
+Finalproject/
 ├── src/Frontend/           ← Next.js app (this file)
 ├── src/Backend/Api/        ← API
 ├── src/Admin/              ← Admin SPA (operators)
@@ -36,7 +36,7 @@ BaseProject/
 
 ### 1. Install prerequisites
 
-- [Node.js ≥ 20.19](https://nodejs.org/) (required by Next.js 15)
+- [Node.js 20 LTS](https://nodejs.org/) (recommended for Next.js 15)
 - Backend API + Postgres (see [`docs/backend/ONBOARDING.md`](../backend/ONBOARDING.md))
 - Docker: `docker compose -f local/docker-compose.yml up -d postgres` (from repo root)
 

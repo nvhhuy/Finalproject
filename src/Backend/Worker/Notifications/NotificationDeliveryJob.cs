@@ -1,17 +1,15 @@
 using Application.Contracts.Scheduling;
 using Application.Modules.Notifications;
 using MediatR;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Worker.Notifications;
 
 public sealed class NotificationDeliveryJob : ICronJob
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly WorkerSchedulingOptions _options;
     private readonly ILogger<NotificationDeliveryJob> _logger;
+    private readonly WorkerSchedulingOptions _options;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public NotificationDeliveryJob(
         IServiceScopeFactory scopeFactory,
@@ -28,9 +26,9 @@ public sealed class NotificationDeliveryJob : ICronJob
 
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using IServiceScope scope = _scopeFactory.CreateScope();
-        ISender sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        Shared.Common.Result<int, Shared.Errors.Error> result = await sender.Send(
+        using var scope = _scopeFactory.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+        var result = await sender.Send(
             new ProcessPendingNotificationDeliveriesCommand(_options.NotificationDeliveryBatchSize),
             stoppingToken);
         if (result.IsFailure)

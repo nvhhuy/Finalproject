@@ -4,7 +4,7 @@ public enum TenantHostResolutionSource
 {
     None = 0,
     Subdomain = 1,
-    CustomDomain = 2,
+    CustomDomain = 2
 }
 
 public sealed record TenantHostResolution(

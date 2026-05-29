@@ -1,11 +1,11 @@
 using Application.Contracts.Persistence;
 using Application.Contracts.Tenancy;
 using Domains.Administration;
+using Domains.Billing;
 using Domains.MediaAggregate;
 using Domains.Notifications;
 using Domains.Support;
 using Domains.SystemSettings;
-using Domains.Billing;
 using Domains.Tenancy;
 using Domains.UserAggregate;
 using Domains.Wallet;
@@ -14,9 +14,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Persistence;
 
 /// <summary>
-/// CQRS read-side DbContext. Tracking and write paths are disabled — calling <c>SaveChanges</c>
-/// (sync or async) throws <see cref="InvalidOperationException"/> so accidental writes through
-/// the read context fail fast at runtime.
+///     CQRS read-side DbContext. Tracking and write paths are disabled — calling <c>SaveChanges</c>
+///     (sync or async) throws <see cref="InvalidOperationException" /> so accidental writes through
+///     the read context fail fast at runtime.
 /// </summary>
 public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbContext
 {
@@ -35,10 +35,11 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
         SavingChanges += (_, _) => throw new InvalidOperationException(WriteForbiddenMessage);
     }
 
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ExternalUserLogin> ExternalLogins => Set<ExternalUserLogin>();
-    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
@@ -64,15 +65,24 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
         base.OnModelCreating(modelBuilder);
     }
 
-    public override int SaveChanges() =>
+    public override int SaveChanges()
+    {
         throw new InvalidOperationException(WriteForbiddenMessage);
+    }
 
-    public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
         throw new InvalidOperationException(WriteForbiddenMessage);
+    }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
         throw new InvalidOperationException(WriteForbiddenMessage);
+    }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default) =>
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
         throw new InvalidOperationException(WriteForbiddenMessage);
+    }
 }

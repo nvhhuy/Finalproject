@@ -1,28 +1,37 @@
+using Application.Contracts.Tenancy;
 using Domains.Administration;
+using Domains.Billing;
 using Domains.MediaAggregate;
 using Domains.Notifications;
 using Domains.Support;
-using Domains.Billing;
-using Domains.Tenancy;
-using Domains.Wallet;
-using Domains.UserAggregate;
 using Domains.SystemSettings;
+using Domains.Tenancy;
+using Domains.UserAggregate;
+using Domains.Wallet;
 using Infrastructure.Idempotency;
 using Infrastructure.Messaging.Outbox;
 using Infrastructure.Persistence.Interceptors;
-using Application.Contracts.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
 
 /// <summary>
-/// CQRS write-side DbContext. Tracking enabled. Use <c>IUnitOfWork.SaveChangesAsync</c> from
-/// command handlers — do not call <c>SaveChanges</c> directly on this context.
+///     CQRS write-side DbContext. Tracking enabled. Use <c>IUnitOfWork.SaveChangesAsync</c> from
+///     command handlers — do not call <c>SaveChanges</c> directly on this context.
 /// </summary>
 public sealed class ApplicationDbContext : DbContext
 {
     private readonly DomainEventsSaveChangesInterceptor _domainEventsInterceptor;
     private readonly ITenantContext _tenantContext;
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        DomainEventsSaveChangesInterceptor domainEventsInterceptor,
+        ITenantContext tenantContext) : base(options)
+    {
+        _domainEventsInterceptor = domainEventsInterceptor;
+        _tenantContext = tenantContext;
+    }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -47,15 +56,6 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<BillingInvoice> BillingInvoices => Set<BillingInvoice>();
     public DbSet<PersonalWallet> PersonalWallets => Set<PersonalWallet>();
     public DbSet<WalletLedgerEntry> WalletLedgerEntries => Set<WalletLedgerEntry>();
-
-    public ApplicationDbContext(
-        DbContextOptions<ApplicationDbContext> options,
-        DomainEventsSaveChangesInterceptor domainEventsInterceptor,
-        ITenantContext tenantContext) : base(options)
-    {
-        _domainEventsInterceptor = domainEventsInterceptor;
-        _tenantContext = tenantContext;
-    }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

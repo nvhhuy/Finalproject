@@ -1,5 +1,3 @@
-using Domains.UserAggregate;
-
 namespace Api.Authorization;
 
 public static class AuthorizationPolicies

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { listPlans } from '@/shared/api/admin-api'
@@ -20,7 +20,9 @@ export function TenantAssignPlanDialog({
   onSubmit: (planCode: string) => Promise<void>
 }) {
   const { t } = useTranslation()
-  const [planCode, setPlanCode] = useState('')
+  const [planSelection, setPlanSelection] = useState<{ tenantId: string; value: string } | null>(
+    null,
+  )
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -31,22 +33,25 @@ export function TenantAssignPlanDialog({
   })
 
   const activePlans = (plans ?? []).filter((p) => p.isActive)
+  const selectedPlanCode =
+    planSelection?.tenantId === tenant?.id
+    ? (planSelection?.value ?? '')
+      : (tenant?.subscriptionPlanCode ?? '')
 
-  useEffect(() => {
-    if (open && tenant) {
-      setPlanCode(tenant.subscriptionPlanCode ?? '')
-      setError(null)
-    }
-  }, [open, tenant])
+  function handleClose() {
+    setPlanSelection(null)
+    setError(null)
+    onClose()
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!planCode) return
+    if (!selectedPlanCode) return
     setError(null)
     setLoading(true)
     try {
-      await onSubmit(planCode)
-      onClose()
+      await onSubmit(selectedPlanCode)
+      handleClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errors.saveFailed'))
     } finally {
@@ -57,7 +62,7 @@ export function TenantAssignPlanDialog({
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('tenants.assignPlanTitle', { name: tenant?.displayName ?? '' })}
     >
       {tenant ? (
@@ -74,8 +79,12 @@ export function TenantAssignPlanDialog({
             {t('tenants.planCode')}
             <select
               className={formSelectClass}
-              value={planCode}
-              onChange={(e) => setPlanCode(e.target.value)}
+              value={selectedPlanCode}
+              onChange={(e) => {
+                if (!tenant) return
+                setPlanSelection({ tenantId: tenant.id, value: e.target.value })
+                setError(null)
+              }}
               required
             >
               <option value="">{t('tenants.selectPlan')}</option>
@@ -88,7 +97,7 @@ export function TenantAssignPlanDialog({
           </label>
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={handleClose}>
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading || activePlans.length === 0}>

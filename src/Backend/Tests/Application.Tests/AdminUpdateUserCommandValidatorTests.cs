@@ -18,7 +18,7 @@ public sealed class AdminUpdateUserCommandValidatorTests
             "u1",
             "u1@e.com",
             "Moderator",
-            ExpectedRowVersion: 0);
+            0);
 
         var result = await _validator.ValidateAsync(command);
 
@@ -29,8 +29,8 @@ public sealed class AdminUpdateUserCommandValidatorTests
     [Fact]
     public async Task AdminUpdateUser_accepts_User_and_Admin_roles()
     {
-        Guid adminId = Guid.NewGuid();
-        Guid targetId = Guid.NewGuid();
+        var adminId = Guid.NewGuid();
+        var targetId = Guid.NewGuid();
         var asUser = new AdminUpdateUserCommand(adminId, targetId, "A", "B", "u1", "u1@e.com", UserRoles.User, 0);
         var asAdmin = new AdminUpdateUserCommand(adminId, targetId, "A", "B", "u2", "u2@e.com", UserRoles.Admin, 0);
 

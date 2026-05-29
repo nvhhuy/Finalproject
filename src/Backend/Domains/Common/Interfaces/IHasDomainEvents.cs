@@ -1,9 +1,8 @@
-﻿namespace Domains.Common.Interfaces
+﻿namespace Domains.Common.Interfaces;
+
+public interface IHasDomainEvents
 {
-    public interface IHasDomainEvents
-    {
-        public IReadOnlyList<IDomainEvent> DomainEvents { get; }
-        public void AddDomainEvent(IDomainEvent domainEvent);
-        public void ClearDomainEvents();
-    }
+    public IReadOnlyList<IDomainEvent> DomainEvents { get; }
+    public void AddDomainEvent(IDomainEvent domainEvent);
+    public void ClearDomainEvents();
 }

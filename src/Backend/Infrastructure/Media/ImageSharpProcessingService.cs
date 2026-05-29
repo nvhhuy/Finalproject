@@ -8,14 +8,14 @@ using SixLabors.ImageSharp.Processing;
 namespace Infrastructure.Media;
 
 /// <summary>
-/// <see cref="IImageProcessingService"/> backed by <c>SixLabors.ImageSharp</c>. Each operation
-/// decodes the source once, applies EXIF auto-orientation (so iPhone portrait shots don't render
-/// sideways), then re-encodes the output at the requested format + quality.
+///     <see cref="IImageProcessingService" /> backed by <c>SixLabors.ImageSharp</c>. Each operation
+///     decodes the source once, applies EXIF auto-orientation (so iPhone portrait shots don't render
+///     sideways), then re-encodes the output at the requested format + quality.
 /// </summary>
 /// <remarks>
-/// Supported output codecs: JPEG (progressive) and WebP (lossy, q=quality). HEIC/AVIF outputs are
-/// not enabled because ImageSharp 3.x has no native encoder for them — that would require a
-/// libheif/libaom interop layer.
+///     Supported output codecs: JPEG (progressive) and WebP (lossy, q=quality). HEIC/AVIF outputs are
+///     not enabled because ImageSharp 3.x has no native encoder for them — that would require a
+///     libheif/libaom interop layer.
 /// </remarks>
 public sealed class ImageSharpProcessingService : IImageProcessingService
 {
@@ -27,14 +27,14 @@ public sealed class ImageSharpProcessingService : IImageProcessingService
     {
         if (sizePx <= 0) throw new ArgumentOutOfRangeException(nameof(sizePx));
 
-        using Image image = await Image.LoadAsync(source, cancellationToken);
+        using var image = await Image.LoadAsync(source, cancellationToken);
         image.Mutate(ctx => ctx
             .AutoOrient()
             .Resize(new ResizeOptions
             {
                 Mode = ResizeMode.Crop, // centre-crop to a square
                 Size = new Size(sizePx, sizePx),
-                Sampler = KnownResamplers.Lanczos3,
+                Sampler = KnownResamplers.Lanczos3
             }));
 
         return await EncodeAsync(image, encoding, cancellationToken);
@@ -48,49 +48,53 @@ public sealed class ImageSharpProcessingService : IImageProcessingService
     {
         if (maxEdgePx <= 0) throw new ArgumentOutOfRangeException(nameof(maxEdgePx));
 
-        using Image image = await Image.LoadAsync(source, cancellationToken);
+        using var image = await Image.LoadAsync(source, cancellationToken);
         image.Mutate(ctx => ctx.AutoOrient());
 
-        bool needsResize = image.Width > maxEdgePx || image.Height > maxEdgePx;
+        var needsResize = image.Width > maxEdgePx || image.Height > maxEdgePx;
         if (needsResize)
-        {
             image.Mutate(ctx => ctx.Resize(new ResizeOptions
             {
                 Mode = ResizeMode.Max, // fit inside the box, preserve aspect ratio
                 Size = new Size(maxEdgePx, maxEdgePx),
-                Sampler = KnownResamplers.Lanczos3,
+                Sampler = KnownResamplers.Lanczos3
             }));
-        }
 
         return await EncodeAsync(image, encoding, cancellationToken);
     }
 
     public async Task<ImageProbeResult> ProbeAsync(Stream source, CancellationToken cancellationToken = default)
     {
-        ImageInfo info = await Image.IdentifyAsync(source, cancellationToken);
+        var info = await Image.IdentifyAsync(source, cancellationToken);
         return new ImageProbeResult(info.Width, info.Height, info.Metadata.DecodedImageFormat?.Name ?? "unknown");
     }
 
     private static async Task<ProcessedImage> EncodeAsync(Image image, ImageEncoding encoding, CancellationToken ct)
     {
-        IImageEncoder encoder = BuildEncoder(encoding);
+        var encoder = BuildEncoder(encoding);
         var output = new MemoryStream();
         await image.SaveAsync(output, encoder, ct);
         output.Position = 0;
         return new ProcessedImage(output, encoding.ContentType, image.Width, image.Height, output.Length);
     }
 
-    private static IImageEncoder BuildEncoder(ImageEncoding encoding) => encoding.Format switch
+    private static IImageEncoder BuildEncoder(ImageEncoding encoding)
     {
-        ImageFormat.Jpeg => new JpegEncoder { Quality = Clamp(encoding.Quality), Interleaved = true },
-        ImageFormat.Webp => new WebpEncoder
+        return encoding.Format switch
         {
-            Quality = Clamp(encoding.Quality),
-            FileFormat = WebpFileFormatType.Lossy,
-            Method = WebpEncodingMethod.Default, // good speed/size tradeoff for worker throughput
-        },
-        _ => throw new InvalidOperationException($"Unsupported image format {encoding.Format}."),
-    };
+            ImageFormat.Jpeg => new JpegEncoder { Quality = Clamp(encoding.Quality), Interleaved = true },
+            ImageFormat.Webp => new WebpEncoder
+            {
+                Quality = Clamp(encoding.Quality),
+                FileFormat = WebpFileFormatType.Lossy,
+                Method = WebpEncodingMethod.Default // good speed/size tradeoff for worker throughput
+            },
+            _ => throw new InvalidOperationException($"Unsupported image format {encoding.Format}.")
+        };
+    }
 
-    private static int Clamp(int quality) => Math.Clamp(quality, 1, 100);
+    private static int Clamp(int quality)
+    {
+        return Math.Clamp(quality, 1, 100);
+    }
 }

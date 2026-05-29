@@ -2,13 +2,11 @@ using Api.Authorization;
 using Api.Controllers.Base;
 using Api.Models;
 using Application.Modules.Users.Administration.Queries;
-using AdminExportAuditLogsQuery = Application.Modules.Users.Administration.Queries.AdminExportAuditLogsQuery;
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
+using AdminExportAuditLogsQuery = Application.Modules.Users.Administration.Queries.AdminExportAuditLogsQuery;
 
 namespace Api.Controllers.Admin;
 
@@ -31,7 +29,7 @@ public sealed class AdminAuditLogsController : ApiControllerBase
         [FromQuery] Guid? targetUserId = null,
         CancellationToken cancellationToken = default)
     {
-        Result<AdminAuditLogListDto, Error> result =
+        var result =
             await Sender.Send(new AdminListAuditLogsQuery(page, pageSize, targetUserId), cancellationToken);
         return MatchApi(result);
     }
@@ -45,7 +43,7 @@ public sealed class AdminAuditLogsController : ApiControllerBase
         [FromQuery] int maxRows = 10_000,
         CancellationToken cancellationToken = default)
     {
-        Result<AdminAuditExportDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminExportAuditLogsQuery(fromUtc, toUtc, targetUserId, maxRows),
             cancellationToken);
         return MatchApi(result, dto => File(dto.Content, dto.ContentType, dto.FileName));

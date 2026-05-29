@@ -9,8 +9,6 @@ using Application.Modules.UserWallet;
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Wallet;
 
@@ -20,22 +18,25 @@ namespace Api.Controllers.Wallet;
 [Route("api/v{version:apiVersion}/wallet")]
 public sealed class WalletController : ApiControllerBase
 {
-    public WalletController(ISender sender) : base(sender) { }
+    public WalletController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpGet("balance")]
     [ProducesResponseType(typeof(ApiResponse<WalletBalanceResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBalance(CancellationToken cancellationToken)
     {
-        Result<Application.Contracts.Wallet.WalletBalanceDto, Error> result =
+        var result =
             await Sender.Send(new GetWalletBalanceQuery(CurrentUserId), cancellationToken);
         return MatchApi(result, dto => OkApi(WalletApiMapping.ToResponse(dto)));
     }
 
     [HttpGet("ledger")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<WalletLedgerEntryResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLedger([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetLedger([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        Result<IReadOnlyList<Application.Contracts.Wallet.WalletLedgerEntryDto>, Error> result =
+        var result =
             await Sender.Send(new GetWalletLedgerQuery(CurrentUserId, page, pageSize), cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(WalletApiMapping.ToResponse).ToList()));
     }
@@ -44,7 +45,7 @@ public sealed class WalletController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<MeteredActionResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListActions(CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<Application.Contracts.Wallet.MeteredActionDto>, Error> result =
+        var result =
             await Sender.Send(new ListMeteredActionsQuery(), cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(WalletApiMapping.ToResponse).ToList()));
     }
@@ -55,9 +56,9 @@ public sealed class WalletController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<WalletBalanceResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> TopUp([FromBody] TopUpWalletRequest request, CancellationToken cancellationToken)
     {
-        string idempotencyKey = ResolveIdempotencyKey();
+        var idempotencyKey = ResolveIdempotencyKey();
 
-        Result<Application.Contracts.Wallet.WalletBalanceDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new TopUpWalletCommand(CurrentUserId, request.AmountCredits, idempotencyKey),
             cancellationToken);
         return MatchApi(result, dto => OkApi(WalletApiMapping.ToResponse(dto)));
@@ -67,10 +68,11 @@ public sealed class WalletController : ApiControllerBase
     [HttpPost("purchase")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<WalletBalanceResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Purchase([FromBody] PurchaseCreditPackageRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Purchase([FromBody] PurchaseCreditPackageRequest request,
+        CancellationToken cancellationToken)
     {
-        Result<Application.Contracts.Wallet.WalletBalanceDto, Error> result = await Sender.Send(
-            new Application.Modules.Billing.PurchaseCreditPackageCommand(
+        var result = await Sender.Send(
+            new PurchaseCreditPackageCommand(
                 CurrentUserId,
                 request.PackageCode,
                 ResolveIdempotencyKey()),
@@ -81,9 +83,10 @@ public sealed class WalletController : ApiControllerBase
     [HttpPost("debit")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<WalletDebitResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Debit([FromBody] DebitWalletActionRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Debit([FromBody] DebitWalletActionRequest request,
+        CancellationToken cancellationToken)
     {
-        Result<Application.Contracts.Wallet.WalletDebitResultDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new DebitWalletActionCommand(CurrentUserId, request.ActionCode, ResolveIdempotencyKey()),
             cancellationToken);
         return MatchApi(result, dto => OkApi(WalletApiMapping.ToResponse(dto)));
@@ -107,7 +110,7 @@ public sealed class WalletController : ApiControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        Result<IReadOnlyList<BillingInvoiceListItemDto>, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new ListMyWalletInvoicesQuery(CurrentUserId, page, pageSize),
             cancellationToken);
         return MatchApi(result, rows => OkApi(rows.Select(BillingApiMapping.ToResponse).ToList()));

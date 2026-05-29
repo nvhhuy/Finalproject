@@ -15,6 +15,7 @@ public sealed class ExternalUserLoginConfiguration : IEntityTypeConfiguration<Ex
         builder.Property(e => e.Provider).HasMaxLength(64).IsRequired();
         builder.Property(e => e.ProviderSubject).HasMaxLength(256).IsRequired();
         builder.HasIndex(e => new { e.Provider, e.ProviderSubject }).IsUnique();
-        builder.HasOne<User>().WithMany(u => u.ExternalLogins).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<User>().WithMany(u => u.ExternalLogins).HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

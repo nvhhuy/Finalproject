@@ -1,6 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Security.Claims;
 using Api;
 using Api.Authentication;
-using Api.ExceptionHandling;
+using Api.Configuration;
 using Api.Middleware;
 using Application;
 using Asp.Versioning.ApiExplorer;
@@ -12,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Observability;
 using Serilog;
-using System.Net;
+using IPNetwork = Microsoft.AspNetCore.HttpOverrides.IPNetwork;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,9 +30,9 @@ builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 // Operators can override each knob via the `Hsts` config section if a different deployment
 // posture is required. Disabled in Development by Program.cs (`app.UseHsts()` only runs outside
 // Development) — these options take effect when it does run.
-int hstsMaxAgeDays = builder.Configuration.GetValue("Hsts:MaxAgeDays", 730);
-bool hstsIncludeSubDomains = builder.Configuration.GetValue("Hsts:IncludeSubDomains", true);
-bool hstsPreload = builder.Configuration.GetValue("Hsts:Preload", true);
+var hstsMaxAgeDays = builder.Configuration.GetValue("Hsts:MaxAgeDays", 730);
+var hstsIncludeSubDomains = builder.Configuration.GetValue("Hsts:IncludeSubDomains", true);
+var hstsPreload = builder.Configuration.GetValue("Hsts:Preload", true);
 builder.Services.AddHsts(options =>
 {
     options.Preload = hstsPreload;
@@ -47,20 +50,18 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     // refresh-token IP audit log see only the LB / ingress IP for every request (which means
     // either rate limits hit the wrong partition, or one client can DOS the whole fleet).
     // Each entry can be a single IP ("10.0.0.5") or a CIDR network ("10.0.0.0/8").
-    foreach (string entry in builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
-    {
-        if (IPAddress.TryParse(entry, out IPAddress? proxyIp))
+    foreach (var entry in builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ??
+                          Array.Empty<string>())
+        if (IPAddress.TryParse(entry, out var proxyIp))
             options.KnownProxies.Add(proxyIp);
-    }
-    foreach (string entry in builder.Configuration.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ?? Array.Empty<string>())
+    foreach (var entry in builder.Configuration.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ??
+                          Array.Empty<string>())
     {
-        string[] parts = entry.Split('/', 2);
+        var parts = entry.Split('/', 2);
         if (parts.Length == 2
-            && IPAddress.TryParse(parts[0], out IPAddress? prefix)
-            && int.TryParse(parts[1], out int prefixLength))
-        {
-            options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(prefix, prefixLength));
-        }
+            && IPAddress.TryParse(parts[0], out var prefix)
+            && int.TryParse(parts[1], out var prefixLength))
+            options.KnownNetworks.Add(new IPNetwork(prefix, prefixLength));
     }
 
     // Limit the number of forwarded headers we honour to defend against header-stuffing tricks
@@ -74,7 +75,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // Must run AFTER AddInfrastructure registers the JwtBearer scheme: PostConfigure unifies the
 // 401/403 response shape with the ApiResponse<T> envelope used by every other endpoint.
 builder.Services.AddJwtEnvelopeErrorResponses();
-builder.Services.AddPlatformOpenTelemetry(builder.Configuration, serviceNameFallback: "baseproject.api");
+builder.Services.AddPlatformOpenTelemetry(builder.Configuration, "baseproject.api");
 
 var app = builder.Build();
 
@@ -85,13 +86,11 @@ var app = builder.Build();
 // wildcard so misconfiguration is loud rather than silent.
 if (!app.Environment.IsDevelopment())
 {
-    string allowedHosts = app.Configuration.GetValue("AllowedHosts", "*") ?? "*";
+    var allowedHosts = app.Configuration.GetValue("AllowedHosts", "*") ?? "*";
     if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts == "*")
-    {
         throw new InvalidOperationException(
             "AllowedHosts must be set to the deployment's public hostname(s) outside Development " +
             "(e.g. \"api.example.com;www.example.com\"). Refusing to start with the wildcard value.");
-    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -102,30 +101,31 @@ if (app.Environment.IsDevelopment())
 // rely on a build-time OpenAPI artefact shipped separately. When it IS exposed in production,
 // the deployment should reverse-proxy /swagger behind whatever ingress auth your gateway uses
 // (we don't gate per-user here because Swagger UI is anonymous-friendly tooling).
-bool exposeSwagger = app.Environment.IsDevelopment()
-    || app.Configuration.GetValue("Swagger:ExposeInProduction", false);
+var exposeSwagger = app.Environment.IsDevelopment()
+                    || app.Configuration.GetValue("Swagger:ExposeInProduction", false);
 if (exposeSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        IApiVersionDescriptionProvider provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
-        foreach (ApiVersionDescription description in provider.ApiVersionDescriptions)
-            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        foreach (var description in provider.ApiVersionDescriptions)
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant());
         options.DocumentTitle = "API";
     });
 }
 
-bool applyPendingMigrations = app.Environment.IsDevelopment()
-    || app.Configuration.GetValue("Database:ApplyPendingMigrations", false);
-bool seedBootstrapAdmin = app.Environment.IsDevelopment()
-    || app.Configuration.GetValue("Seed:Admin:Enabled", false);
+var applyPendingMigrations = app.Environment.IsDevelopment()
+                             || app.Configuration.GetValue("Database:ApplyPendingMigrations", false);
+var seedBootstrapAdmin = app.Environment.IsDevelopment()
+                         || app.Configuration.GetValue("Seed:Admin:Enabled", false);
 
 if (applyPendingMigrations || seedBootstrapAdmin)
 {
-    using IServiceScope scope = app.Services.CreateScope();
-    Microsoft.Extensions.Logging.ILogger logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
-    ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
         if (applyPendingMigrations)
@@ -167,15 +167,16 @@ app.UseSerilogRequestLogging(options =>
 {
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
     {
-        if (httpContext.Items.TryGetValue(CorrelationIdMiddleware.HttpContextItemKey, out object? cid) && cid is string correlationId)
+        if (httpContext.Items.TryGetValue(CorrelationIdMiddleware.HttpContextItemKey, out var cid) &&
+            cid is string correlationId)
             diagnosticContext.Set("CorrelationId", correlationId);
         diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
 
         // We log the user id (sub claim) instead of `Identity.Name` so the structured log lines
         // never carry email / username PII. Anonymous and unauthenticated paths show "anonymous".
-        string sub = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? httpContext.User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
-            ?? "anonymous";
+        var sub = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? httpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                  ?? "anonymous";
         diagnosticContext.Set("UserSub", sub);
 
         // SignalR's WebSocket handshake passes the JWT via `?access_token=...` because the
@@ -194,10 +195,10 @@ app.UseSerilogRequestLogging(options =>
 // after CORS so a CORS preflight that the browser sends every 10 minutes doesn't burn
 // a token bucket entry on its own.
 app.UseRouting();
-app.UseCors(Api.Configuration.CorsOptions.PolicyName);
+app.UseCors(CorsOptions.PolicyName);
 
 app.UseAuthentication();
-app.UseMiddleware<Api.Middleware.TenantContextMiddleware>();
+app.UseMiddleware<TenantContextMiddleware>();
 
 app.UseRateLimiter();
 
@@ -222,11 +223,9 @@ app.Use(async (context, next) =>
     // other path we restrict to self + the configured asset origins. Tighten further once an SPA
     // origin policy is finalised.
     if (!context.Request.Path.StartsWithSegments("/swagger"))
-    {
         context.Response.Headers.Append(
             "Content-Security-Policy",
             "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
-    }
     await next();
 });
 
@@ -269,7 +268,7 @@ internal static class HealthCheckResponseWriter
     public static Task WriteMinimalJson(HttpContext context, HealthReport report)
     {
         context.Response.ContentType = "application/json";
-        string status = report.Status == HealthStatus.Healthy ? "Healthy" : "Unhealthy";
+        var status = report.Status == HealthStatus.Healthy ? "Healthy" : "Unhealthy";
         return context.Response.WriteAsync($"{{\"status\":\"{status}\"}}");
     }
 }

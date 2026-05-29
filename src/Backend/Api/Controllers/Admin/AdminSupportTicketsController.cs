@@ -8,7 +8,6 @@ using Domains.Support;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
 using Shared.Errors;
 
 namespace Api.Controllers.Admin;
@@ -20,20 +19,9 @@ namespace Api.Controllers.Admin;
 [Route("api/v{version:apiVersion}/admin/support/tickets")]
 public sealed class AdminSupportTicketsController : ApiControllerBase
 {
-    public AdminSupportTicketsController(ISender sender) : base(sender) { }
-
-    public sealed record AssignRequest(Guid? AssignedAdminUserId);
-    public sealed record ChangeStatusRequest(string Status);
-    public sealed record ChangePriorityRequest(string Priority);
-    public sealed record SupportTicketAttachmentRequest(
-        string StorageKey,
-        string FileName,
-        string ContentType,
-        long ByteSize);
-    public sealed record AddMessageRequest(
-        string Body,
-        bool IsInternalNote = false,
-        IReadOnlyList<SupportTicketAttachmentRequest>? Attachments = null);
+    public AdminSupportTicketsController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<SupportTicketListDto>), StatusCodes.Status200OK)]
@@ -46,7 +34,7 @@ public sealed class AdminSupportTicketsController : ApiControllerBase
         [FromQuery] Guid? assignedAdminUserId = null,
         CancellationToken cancellationToken = default)
     {
-        Result<SupportTicketListDto, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminListSupportTicketsQuery(page, pageSize, search, status, priority, assignedAdminUserId),
             cancellationToken);
         return MatchApi(result, OkApi);
@@ -56,16 +44,17 @@ public sealed class AdminSupportTicketsController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<SupportTicketDetailDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Detail(Guid ticketId, CancellationToken cancellationToken = default)
     {
-        Result<SupportTicketDetailDto, Error> result = await Sender.Send(new AdminGetSupportTicketByIdQuery(ticketId), cancellationToken);
+        var result = await Sender.Send(new AdminGetSupportTicketByIdQuery(ticketId), cancellationToken);
         return MatchApi(result, OkApi);
     }
 
     [HttpPost("{ticketId:guid}/assign")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Assign(Guid ticketId, [FromBody] AssignRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Assign(Guid ticketId, [FromBody] AssignRequest request,
+        CancellationToken cancellationToken = default)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminAssignSupportTicketCommand(ticketId, request.AssignedAdminUserId),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -74,12 +63,13 @@ public sealed class AdminSupportTicketsController : ApiControllerBase
     [HttpPost("{ticketId:guid}/status")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ChangeStatus(Guid ticketId, [FromBody] ChangeStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ChangeStatus(Guid ticketId, [FromBody] ChangeStatusRequest request,
+        CancellationToken cancellationToken = default)
     {
-        if (!Enum.TryParse(request.Status, ignoreCase: true, out SupportTicketStatus status))
+        if (!Enum.TryParse(request.Status, true, out SupportTicketStatus status))
             return FailApi(new Error("BadRequest", 400, "Invalid status value."));
 
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminChangeSupportTicketStatusCommand(ticketId, status),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -88,12 +78,13 @@ public sealed class AdminSupportTicketsController : ApiControllerBase
     [HttpPost("{ticketId:guid}/priority")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ChangePriority(Guid ticketId, [FromBody] ChangePriorityRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ChangePriority(Guid ticketId, [FromBody] ChangePriorityRequest request,
+        CancellationToken cancellationToken = default)
     {
-        if (!Enum.TryParse(request.Priority, ignoreCase: true, out SupportTicketPriority priority))
+        if (!Enum.TryParse(request.Priority, true, out SupportTicketPriority priority))
             return FailApi(new Error("BadRequest", 400, "Invalid priority value."));
 
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminChangeSupportTicketPriorityCommand(ticketId, priority),
             cancellationToken);
         return MatchApiEmpty(result);
@@ -103,16 +94,35 @@ public sealed class AdminSupportTicketsController : ApiControllerBase
     [Transactional]
     [RequiresIdempotencyKey(Scope = "support.ticket.admin.message")]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> AddMessage(Guid ticketId, [FromBody] AddMessageRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> AddMessage(Guid ticketId, [FromBody] AddMessageRequest request,
+        CancellationToken cancellationToken = default)
     {
-        Result<bool, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new AdminAddSupportTicketMessageCommand(
                 ticketId,
                 CurrentAdminId,
                 request.Body,
                 request.IsInternalNote,
-                request.Attachments?.Select(a => new SupportTicketAttachmentInput(a.StorageKey, a.FileName, a.ContentType, a.ByteSize)).ToList()),
+                request.Attachments?.Select(a =>
+                    new SupportTicketAttachmentInput(a.StorageKey, a.FileName, a.ContentType, a.ByteSize)).ToList()),
             cancellationToken);
         return MatchApiEmpty(result);
     }
+
+    public sealed record AssignRequest(Guid? AssignedAdminUserId);
+
+    public sealed record ChangeStatusRequest(string Status);
+
+    public sealed record ChangePriorityRequest(string Priority);
+
+    public sealed record SupportTicketAttachmentRequest(
+        string StorageKey,
+        string FileName,
+        string ContentType,
+        long ByteSize);
+
+    public sealed record AddMessageRequest(
+        string Body,
+        bool IsInternalNote = false,
+        IReadOnlyList<SupportTicketAttachmentRequest>? Attachments = null);
 }

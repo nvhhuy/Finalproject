@@ -6,7 +6,9 @@ public sealed class SupportTicketMessage : Entity<Guid>
 {
     private readonly List<SupportTicketAttachment> _attachments = [];
 
-    private SupportTicketMessage() { }
+    private SupportTicketMessage()
+    {
+    }
 
     private SupportTicketMessage(Guid id, Guid ticketId, Guid authorUserId, string body, bool isInternalNote)
         : base(id)
@@ -27,7 +29,9 @@ public sealed class SupportTicketMessage : Entity<Guid>
     public IReadOnlyList<SupportTicketAttachment> Attachments => _attachments.AsReadOnly();
 
     public static SupportTicketMessage Create(Guid ticketId, Guid authorUserId, string body, bool isInternalNote)
-        => new(Guid.NewGuid(), ticketId, authorUserId, body, isInternalNote);
+    {
+        return new SupportTicketMessage(Guid.NewGuid(), ticketId, authorUserId, body, isInternalNote);
+    }
 
     public void AddAttachment(string storageKey, string fileName, string contentType, long byteSize)
     {

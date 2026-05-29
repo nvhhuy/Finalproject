@@ -1,3 +1,4 @@
+using Application.Modules.SystemSettings.Admin.Commands;
 using Application.Modules.Users.Authentication.Commands.CompleteTwoFactorLogin;
 using Application.Modules.Users.Authentication.Commands.GoogleSignIn;
 using Application.Modules.Users.Authentication.Commands.RefreshSession;
@@ -5,20 +6,17 @@ using Application.Modules.Users.Authentication.Commands.ResendVerification;
 using Application.Modules.Users.Authentication.Commands.VerifyEmail;
 using Application.Modules.Users.Profile.Commands;
 using Application.Modules.Users.Profile.Commands.TwoFactor;
-using Application.Modules.SystemSettings.Admin.Commands;
-using FluentValidation;
 
 namespace Application.Common.Validators;
 
 /// <summary>
-/// Validators for commands that were previously letting invalid input bubble all the way to the
-/// handler (which would throw <see cref="ArgumentException"/> from the aggregate constructor and
-/// surface as a 500 via the global exception handler). Each validator is intentionally narrow:
-/// just enough to reject obvious garbage at the boundary. Deeper invariants (e.g. token
-/// hash matching, TOTP code validity) still live in the handler because they require service
-/// dependencies.
+///     Validators for commands that were previously letting invalid input bubble all the way to the
+///     handler (which would throw <see cref="ArgumentException" /> from the aggregate constructor and
+///     surface as a 500 via the global exception handler). Each validator is intentionally narrow:
+///     just enough to reject obvious garbage at the boundary. Deeper invariants (e.g. token
+///     hash matching, TOTP code validity) still live in the handler because they require service
+///     dependencies.
 /// </summary>
-
 public sealed class RefreshSessionCommandValidator : AbstractValidator<RefreshSessionCommand>
 {
     public RefreshSessionCommandValidator()
@@ -92,7 +90,10 @@ public sealed class UpdateMyProfileCommandValidator : AbstractValidator<UpdateMy
 
 public sealed class BeginTwoFactorSetupCommandValidator : AbstractValidator<BeginTwoFactorSetupCommand>
 {
-    public BeginTwoFactorSetupCommandValidator() => RuleFor(c => c.UserId).NotEmpty();
+    public BeginTwoFactorSetupCommandValidator()
+    {
+        RuleFor(c => c.UserId).NotEmpty();
+    }
 }
 
 public sealed class ConfirmTwoFactorSetupCommandValidator : AbstractValidator<ConfirmTwoFactorSetupCommand>

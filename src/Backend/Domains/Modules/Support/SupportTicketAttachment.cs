@@ -4,7 +4,9 @@ namespace Domains.Support;
 
 public sealed class SupportTicketAttachment : Entity<Guid>
 {
-    private SupportTicketAttachment() { }
+    private SupportTicketAttachment()
+    {
+    }
 
     private SupportTicketAttachment(
         Guid id,
@@ -34,6 +36,9 @@ public sealed class SupportTicketAttachment : Entity<Guid>
         string storageKey,
         string fileName,
         string contentType,
-        long byteSize) =>
-        new(Guid.NewGuid(), ticketMessageId, storageKey, fileName, contentType, byteSize);
+        long byteSize)
+    {
+        return new SupportTicketAttachment(Guid.NewGuid(), ticketMessageId, storageKey, fileName, contentType,
+            byteSize);
+    }
 }

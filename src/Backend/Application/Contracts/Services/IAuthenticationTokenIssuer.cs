@@ -1,6 +1,4 @@
 using Domains.UserAggregate;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Application.Contracts.Services;
 

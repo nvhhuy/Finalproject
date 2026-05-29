@@ -1,9 +1,8 @@
 using Application.Contracts.Messaging;
-using Microsoft.Extensions.Logging;
 
 namespace Worker.Samples;
 
-/// <summary>Example queue consumer worker. Replace <see cref="SampleUserEvent"/> with real integration events.</summary>
+/// <summary>Example queue consumer worker. Replace <see cref="SampleUserEvent" /> with real integration events.</summary>
 public sealed class SampleQueueConsumerService : QueueConsumerBackgroundService<SampleUserEvent>
 {
     private readonly ILogger<SampleQueueConsumerService> _logger;

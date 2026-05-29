@@ -1,24 +1,22 @@
 using Application.Contracts.Administration;
+using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
 using Application.Contracts.Transactions;
 using Application.Modules.Users.Administration;
 using Application.Modules.Users.Authentication.Commands.RefreshSession;
-using Application.Modules.Users.Authentication.Common;
 using Domains.UserAggregate;
 using Domains.UserAggregate.ValueObjects;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.Authentication;
 using Shared.Security;
 
 namespace Application.Tests;
 
 /// <summary>
-/// Tests for refresh-token rotation with theft detection.
+///     Tests for refresh-token rotation with theft detection.
 /// </summary>
 public sealed class RefreshSessionCommandHandlerTests
 {
@@ -34,7 +32,7 @@ public sealed class RefreshSessionCommandHandlerTests
 
         var handler = BuildHandler(write);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new RefreshSessionCommand(RawToken), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -44,9 +42,9 @@ public sealed class RefreshSessionCommandHandlerTests
     [Fact]
     public async Task Handle_triggers_theft_detection_when_revoked_token_is_replayed()
     {
-        UserId userId = UserId.CreateNew();
+        var userId = UserId.CreateNew();
         // Build a token, revoke it, then verify the handler detects reuse and mass-revokes.
-        RefreshToken token = RefreshToken.Issue(userId, TokenHash, DateTime.UtcNow.AddDays(7), DateTime.UtcNow, "1.2.3.4");
+        var token = RefreshToken.Issue(userId, TokenHash, DateTime.UtcNow.AddDays(7), DateTime.UtcNow, "1.2.3.4");
         token.Revoke();
 
         var write = new Mock<IUserWriteRepository>();
@@ -59,7 +57,7 @@ public sealed class RefreshSessionCommandHandlerTests
         var audit = new Mock<IAdminAuditLogWriter>();
         var handler = BuildHandler(write, audit: audit);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new RefreshSessionCommand(RawToken, "9.9.9.9"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -79,9 +77,9 @@ public sealed class RefreshSessionCommandHandlerTests
     [Fact]
     public async Task Handle_rotates_token_and_issues_pair_on_success()
     {
-        UserId userId = UserId.CreateNew();
-        RefreshToken token = RefreshToken.Issue(userId, TokenHash, DateTime.UtcNow.AddDays(7), DateTime.UtcNow, "1.2.3.4");
-        User user = User.CreateNew("F", "L", "u1", "u1@example.com", "hash");
+        var userId = UserId.CreateNew();
+        var token = RefreshToken.Issue(userId, TokenHash, DateTime.UtcNow.AddDays(7), DateTime.UtcNow, "1.2.3.4");
+        var user = User.CreateNew("F", "L", "u1", "u1@example.com", "hash");
 
         var write = new Mock<IUserWriteRepository>();
         write.Setup(w => w.GetRefreshTokenByHashForUpdateAsync(TokenHash, It.IsAny<CancellationToken>()))
@@ -92,17 +90,18 @@ public sealed class RefreshSessionCommandHandlerTests
         // see the default value so we must specify it explicitly via It.IsAny.
         read.Setup(r => r.GetByIdAsync(
                 userId.Value,
-                It.IsAny<Application.Contracts.Caching.CacheOptions>(),
+                It.IsAny<CacheOptions>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         var tokens = new Mock<IAuthenticationTokenIssuer>();
         tokens.Setup(t => t.IssueAsync(user, It.IsAny<string?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
-            .ReturnsAsync(new AuthenticationTokenPair("new-access", DateTime.UtcNow.AddMinutes(15), "new-refresh", DateTime.UtcNow.AddDays(7)));
+            .ReturnsAsync(new AuthenticationTokenPair("new-access", DateTime.UtcNow.AddMinutes(15), "new-refresh",
+                DateTime.UtcNow.AddDays(7)));
 
         var handler = BuildHandler(write, read, tokens);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new RefreshSessionCommand(RawToken), CancellationToken.None);
 
         Assert.True(result.IsSuccess);

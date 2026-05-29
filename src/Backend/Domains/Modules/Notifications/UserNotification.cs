@@ -3,7 +3,9 @@ namespace Domains.Notifications;
 /// <summary>In-app notification persisted for a user; pushed live via SignalR when enabled.</summary>
 public sealed class UserNotification
 {
-    private UserNotification() { }
+    private UserNotification()
+    {
+    }
 
     public UserNotification(Guid userId, string title, string body, string? linkUrl = null)
     {
@@ -26,7 +28,13 @@ public sealed class UserNotification
 
     public bool IsRead => ReadAtUtc is not null;
 
-    public void MarkRead(DateTime utcNow) => ReadAtUtc = utcNow;
+    public void MarkRead(DateTime utcNow)
+    {
+        ReadAtUtc = utcNow;
+    }
 
-    public void MarkLiveDelivered(DateTime utcNow) => LiveDeliveredAtUtc = utcNow;
+    public void MarkLiveDelivered(DateTime utcNow)
+    {
+        LiveDeliveredAtUtc = utcNow;
+    }
 }

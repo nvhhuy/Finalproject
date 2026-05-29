@@ -2,8 +2,6 @@ using Application.Common.Behaviors;
 using Application.Contracts.Media;
 using Application.Modules.Media;
 using Application.Modules.Media.Pipeline;
-using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,7 +11,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddMediatR(configuration => configuration.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
+        services.AddMediatR(configuration =>
+            configuration.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
 
         // Pipeline order is outer-to-inner: Logging wraps Validation wraps Authorization wraps the handler.
@@ -30,10 +29,11 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Binds <see cref="MediaUploadOptions"/> from the configuration root. Host packages call this
-    /// in addition to <see cref="AddApplication"/> so the binding can read their <c>IConfiguration</c>.
+    ///     Binds <see cref="MediaUploadOptions" /> from the configuration root. Host packages call this
+    ///     in addition to <see cref="AddApplication" /> so the binding can read their <c>IConfiguration</c>.
     /// </summary>
-    public static IServiceCollection AddMediaApplicationOptions(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddMediaApplicationOptions(this IServiceCollection services,
+        IConfiguration configuration)
     {
         services.Configure<MediaUploadOptions>(configuration.GetSection(MediaUploadOptions.SectionName));
         return services;

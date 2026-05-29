@@ -12,19 +12,19 @@ public sealed record WalletPurchaseWebhookMetadata(Guid UserId, string PackageCo
     {
         try
         {
-            using JsonDocument doc = JsonDocument.Parse(payloadJson);
-            JsonElement root = doc.RootElement;
+            using var doc = JsonDocument.Parse(payloadJson);
+            var root = doc.RootElement;
 
-            if (TryParseFromMetadata(root, out WalletPurchaseWebhookMetadata? fromRoot))
+            if (TryParseFromMetadata(root, out var fromRoot))
                 return fromRoot;
 
-            if (root.TryGetProperty("data", out JsonElement data) &&
-                data.TryGetProperty("object", out JsonElement stripeObj) &&
-                TryParseFromMetadata(stripeObj, out WalletPurchaseWebhookMetadata? fromStripe))
+            if (root.TryGetProperty("data", out var data) &&
+                data.TryGetProperty("object", out var stripeObj) &&
+                TryParseFromMetadata(stripeObj, out var fromStripe))
                 return fromStripe;
 
-            if (root.TryGetProperty("metadata", out JsonElement metadata) &&
-                TryParseMetadataObject(metadata, out WalletPurchaseWebhookMetadata? fromMeta))
+            if (root.TryGetProperty("metadata", out var metadata) &&
+                TryParseMetadataObject(metadata, out var fromMeta))
                 return fromMeta;
         }
         catch (JsonException)
@@ -38,7 +38,7 @@ public sealed record WalletPurchaseWebhookMetadata(Guid UserId, string PackageCo
     private static bool TryParseFromMetadata(JsonElement container, out WalletPurchaseWebhookMetadata? result)
     {
         result = null;
-        if (container.TryGetProperty("metadata", out JsonElement metadata))
+        if (container.TryGetProperty("metadata", out var metadata))
             return TryParseMetadataObject(metadata, out result);
         return TryParseMetadataObject(container, out result);
     }
@@ -49,13 +49,13 @@ public sealed record WalletPurchaseWebhookMetadata(Guid UserId, string PackageCo
         if (metadata.ValueKind != JsonValueKind.Object)
             return false;
 
-        string? purpose = GetString(metadata, "purpose");
+        var purpose = GetString(metadata, "purpose");
         if (!string.Equals(purpose, PurposeValue, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        string? userIdRaw = GetString(metadata, "user_id", "userId");
-        string? packageCode = GetString(metadata, "package_code", "packageCode");
-        if (!Guid.TryParse(userIdRaw, out Guid userId) || string.IsNullOrWhiteSpace(packageCode))
+        var userIdRaw = GetString(metadata, "user_id", "userId");
+        var packageCode = GetString(metadata, "package_code", "packageCode");
+        if (!Guid.TryParse(userIdRaw, out var userId) || string.IsNullOrWhiteSpace(packageCode))
             return false;
 
         result = new WalletPurchaseWebhookMetadata(userId, CreditPackage.NormalizeCode(packageCode));
@@ -64,15 +64,13 @@ public sealed record WalletPurchaseWebhookMetadata(Guid UserId, string PackageCo
 
     private static string? GetString(JsonElement metadata, params string[] keys)
     {
-        foreach (string key in keys)
-        {
-            if (metadata.TryGetProperty(key, out JsonElement value) && value.ValueKind == JsonValueKind.String)
+        foreach (var key in keys)
+            if (metadata.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String)
             {
-                string? s = value.GetString();
+                var s = value.GetString();
                 if (!string.IsNullOrWhiteSpace(s))
                     return s;
             }
-        }
 
         return null;
     }

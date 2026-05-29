@@ -1,8 +1,4 @@
 using Application.Contracts.Notifications;
-using MediatR;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Notifications.Commands;
 
@@ -13,13 +9,16 @@ public sealed class MarkNotificationReadCommandHandler
 {
     private readonly IUserNotificationWriter _writer;
 
-    public MarkNotificationReadCommandHandler(IUserNotificationWriter writer) => _writer = writer;
+    public MarkNotificationReadCommandHandler(IUserNotificationWriter writer)
+    {
+        _writer = writer;
+    }
 
     public async Task<Result<bool, Error>> Handle(
         MarkNotificationReadCommand request,
         CancellationToken cancellationToken)
     {
-        bool ok = await _writer.MarkReadAsync(request.UserId, request.NotificationId, cancellationToken);
+        var ok = await _writer.MarkReadAsync(request.UserId, request.NotificationId, cancellationToken);
         if (!ok)
             return new NotFoundError("Notification was not found.");
 

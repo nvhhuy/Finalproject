@@ -1,4 +1,4 @@
-using Api.Models;
+using Application.Modules.Tenancy;
 
 namespace Api.Models.Tenancy;
 
@@ -81,8 +81,9 @@ public sealed record TenantSsoPublicResponse(
 
 public static class TenantApiMapping
 {
-    public static TenantSummaryResponse ToResponse(Application.Modules.Tenancy.TenantSummaryDto dto) =>
-        new(
+    public static TenantSummaryResponse ToResponse(TenantSummaryDto dto)
+    {
+        return new TenantSummaryResponse(
             dto.Id,
             dto.Slug,
             dto.DisplayName,
@@ -91,15 +92,21 @@ public static class TenantApiMapping
             dto.CreatedAtUtc,
             dto.SubscriptionPlanCode,
             dto.SubscriptionStatus);
+    }
 
-    public static TenantPublicResponse ToResponse(Application.Modules.Tenancy.TenantPublicDto dto) =>
-        new(dto.Id, dto.Slug, dto.DisplayName, dto.PublicTagline, dto.PublicDescription);
+    public static TenantPublicResponse ToResponse(TenantPublicDto dto)
+    {
+        return new TenantPublicResponse(dto.Id, dto.Slug, dto.DisplayName, dto.PublicTagline, dto.PublicDescription);
+    }
 
-    public static TenantHostResolutionResponse ToResponse(Application.Modules.Tenancy.TenantHostResolutionDto dto) =>
-        new(dto.TenantId, dto.Slug, dto.DisplayName, dto.Source);
+    public static TenantHostResolutionResponse ToResponse(TenantHostResolutionDto dto)
+    {
+        return new TenantHostResolutionResponse(dto.TenantId, dto.Slug, dto.DisplayName, dto.Source);
+    }
 
-    public static TenantDomainResponse ToResponse(Application.Modules.Tenancy.TenantDomainDto dto) =>
-        new(
+    public static TenantDomainResponse ToResponse(TenantDomainDto dto)
+    {
+        return new TenantDomainResponse(
             dto.Id,
             dto.TenantId,
             dto.Hostname,
@@ -110,9 +117,11 @@ public static class TenantApiMapping
             dto.CnameTarget,
             dto.CreatedAtUtc,
             dto.VerifiedAtUtc);
+    }
 
-    public static TenantSsoSettingsResponse ToResponse(Application.Modules.Tenancy.TenantSsoSettingsDto dto) =>
-        new(
+    public static TenantSsoSettingsResponse ToResponse(TenantSsoSettingsDto dto)
+    {
+        return new TenantSsoSettingsResponse(
             dto.Id,
             dto.TenantId,
             dto.IsEnabled,
@@ -120,7 +129,11 @@ public static class TenantApiMapping
             dto.OidcClientId,
             dto.HasClientSecret,
             dto.UpdatedAtUtc);
+    }
 
-    public static TenantSsoPublicResponse ToResponse(Application.Modules.Tenancy.TenantSsoPublicDto dto) =>
-        new(dto.TenantId, dto.TenantSlug, dto.IsEnabled, dto.OidcAuthority, dto.OidcClientId);
+    public static TenantSsoPublicResponse ToResponse(TenantSsoPublicDto dto)
+    {
+        return new TenantSsoPublicResponse(dto.TenantId, dto.TenantSlug, dto.IsEnabled, dto.OidcAuthority,
+            dto.OidcClientId);
+    }
 }

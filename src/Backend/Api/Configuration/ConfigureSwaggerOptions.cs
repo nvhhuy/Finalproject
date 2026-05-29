@@ -10,21 +10,22 @@ public sealed class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOption
 {
     private readonly IApiVersionDescriptionProvider _provider;
 
-    public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider) => _provider = provider;
+    public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
+    {
+        _provider = provider;
+    }
 
     public void Configure(SwaggerGenOptions options)
     {
         options.CustomSchemaIds(type => type.FullName?.Replace("+", ".", StringComparison.Ordinal));
 
-        foreach (ApiVersionDescription description in _provider.ApiVersionDescriptions)
-        {
+        foreach (var description in _provider.ApiVersionDescriptions)
             options.SwaggerDoc(description.GroupName, new OpenApiInfo
             {
                 Title = $"API {description.GroupName.ToUpperInvariant()}",
                 Version = description.ApiVersion.ToString(),
                 Description = description.IsDeprecated ? "This API version has been deprecated." : null
             });
-        }
 
         // Bearer security definition + global requirement so Swagger UI surfaces an Authorize
         // button. Without these, the UI's "Try it out" cannot call any [Authorize] endpoint.

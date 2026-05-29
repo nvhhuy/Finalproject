@@ -4,6 +4,7 @@ using Application.Contracts.Services;
 using Application.Contracts.Transactions;
 using Domains.Billing;
 using Domains.Tenancy.ValueObjects;
+using Domains.UserAggregate.ValueObjects;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,11 +12,11 @@ namespace Infrastructure.Modules.Billing;
 
 public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
 {
+    private readonly IDateTimeProvider _clock;
     private readonly ApplicationDbContext _db;
     private readonly IApplicationReadDbContext _read;
     private readonly IBillingReceiptNotifier _receipts;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public BillingInvoiceIssuer(
         ApplicationDbContext db,
@@ -38,20 +39,20 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
         string provider,
         CancellationToken cancellationToken = default)
     {
-        Plan? plan = await _read.Plans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, cancellationToken);
-        int amount = plan?.PriceMonthlyCents ?? 0;
-        string currency = plan?.Currency ?? "USD";
-        string desc = plan is null
+        var plan = await _read.Plans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, cancellationToken);
+        var amount = plan?.PriceMonthlyCents ?? 0;
+        var currency = plan?.Currency ?? "USD";
+        var desc = plan is null
             ? "Subscription"
             : $"Subscription — {plan.Name} ({plan.Code})";
 
         return await IssueAsync(
             TenantId.Create(tenantId),
             subscriptionId,
-            userId: null,
+            null,
             desc,
             amount,
-            amountCredits: null,
+            null,
             currency,
             provider,
             cancellationToken);
@@ -62,8 +63,10 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
         Guid subscriptionId,
         Guid planId,
         string provider,
-        CancellationToken cancellationToken = default) =>
-        IssueSubscriptionInvoiceAsync(tenantId, subscriptionId, planId, provider, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return IssueSubscriptionInvoiceAsync(tenantId, subscriptionId, planId, provider, cancellationToken);
+    }
 
     public async Task<BillingInvoiceDto> IssueWalletTopUpReceiptAsync(
         Guid userId,
@@ -73,10 +76,10 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
         string provider,
         CancellationToken cancellationToken = default)
     {
-        string desc = $"Wallet top-up — {amountCredits} credits";
+        var desc = $"Wallet top-up — {amountCredits} credits";
         return await IssueAsync(
-            tenantId: null,
-            subscriptionId: null,
+            null,
+            null,
             userId,
             desc,
             amountCents,
@@ -97,9 +100,9 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
         string provider,
         CancellationToken cancellationToken)
     {
-        DateTime now = _clock.Now;
-        string number = BillingInvoice.GenerateInvoiceNumber(now);
-        BillingInvoice invoice = tenantId is not null
+        var now = _clock.Now;
+        var number = BillingInvoice.GenerateInvoiceNumber(now);
+        var invoice = tenantId is not null
             ? BillingInvoice.ForSubscription(
                 tenantId,
                 subscriptionId!.Value,
@@ -122,8 +125,8 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
         _db.BillingInvoices.Add(invoice);
         await _uow.SaveChangesAsync(cancellationToken);
 
-        BillingInvoiceDto dto = ToDto(invoice);
-        string? email = await ResolveRecipientEmailAsync(tenantId, userId, cancellationToken);
+        var dto = ToDto(invoice);
+        var email = await ResolveRecipientEmailAsync(tenantId, userId, cancellationToken);
         if (!string.IsNullOrWhiteSpace(email))
             await _receipts.SendReceiptAsync(dto, email, cancellationToken);
 
@@ -136,17 +139,15 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
         CancellationToken cancellationToken)
     {
         if (tenantId is not null)
-        {
             return await _read.Tenants.AsNoTracking()
                 .Where(t => t.Id == tenantId)
                 .Join(_read.Users.AsNoTracking(), t => t.OwnerUserId, u => u.Id, (_, u) => u.Email)
                 .FirstOrDefaultAsync(cancellationToken);
-        }
 
         if (userId is not null)
         {
-            Domains.UserAggregate.ValueObjects.UserId userKey =
-                Domains.UserAggregate.ValueObjects.UserId.Create(userId.Value);
+            var userKey =
+                UserId.Create(userId.Value);
             return await _read.Users.AsNoTracking()
                 .Where(u => u.Id == userKey)
                 .Select(u => u.Email)
@@ -156,8 +157,9 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
         return null;
     }
 
-    private static BillingInvoiceDto ToDto(BillingInvoice invoice) =>
-        new(
+    private static BillingInvoiceDto ToDto(BillingInvoice invoice)
+    {
+        return new BillingInvoiceDto(
             invoice.Id,
             invoice.TenantId?.Value,
             invoice.UserId,
@@ -169,4 +171,5 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
             invoice.Status.ToString(),
             invoice.Provider,
             invoice.IssuedAtUtc);
+    }
 }

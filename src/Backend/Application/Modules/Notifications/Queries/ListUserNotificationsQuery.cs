@@ -1,10 +1,5 @@
 using Application.Contracts.Persistence;
-using Domains.Notifications;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Notifications.Queries;
 
@@ -24,16 +19,19 @@ public sealed class ListUserNotificationsQueryHandler
 {
     private readonly IApplicationReadDbContext _read;
 
-    public ListUserNotificationsQueryHandler(IApplicationReadDbContext read) => _read = read;
+    public ListUserNotificationsQueryHandler(IApplicationReadDbContext read)
+    {
+        _read = read;
+    }
 
     public async Task<Result<IReadOnlyList<NotificationDto>, Error>> Handle(
         ListUserNotificationsQuery request,
         CancellationToken cancellationToken)
     {
-        int page = request.Page < 1 ? 1 : request.Page;
-        int size = request.PageSize is < 1 or > 100 ? 20 : request.PageSize;
+        var page = request.Page < 1 ? 1 : request.Page;
+        var size = request.PageSize is < 1 or > 100 ? 20 : request.PageSize;
 
-        List<NotificationDto> items = await _read.UserNotifications
+        var items = await _read.UserNotifications
             .AsNoTracking()
             .Where(n => n.UserId == request.UserId)
             .OrderByDescending(n => n.CreatedAtUtc)

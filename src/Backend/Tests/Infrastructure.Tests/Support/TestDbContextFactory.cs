@@ -1,5 +1,4 @@
 using Application.Contracts.Events;
-using Application.Contracts.Services;
 using Application.Contracts.Tenancy;
 using Infrastructure.Modules.Users.Persistence.Conversions;
 using Infrastructure.Persistence;
@@ -9,10 +8,11 @@ using Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Infrastructure.Tests.Support;
 
-/// <summary>Builds an <see cref="ApplicationDbContext"/> backed by EF Core InMemory for fast in-process tests.</summary>
+/// <summary>Builds an <see cref="ApplicationDbContext" /> backed by EF Core InMemory for fast in-process tests.</summary>
 internal static class TestDbContextFactory
 {
     static TestDbContextFactory()
@@ -31,9 +31,9 @@ internal static class TestDbContextFactory
         var domainEvents = new DomainEventsSaveChangesInterceptor(
             publisher, afterCommitQueue, new AsyncLocalCorrelationContext());
 
-        DbContextOptions<ApplicationDbContext> options = new DbContextOptionsBuilder<ApplicationDbContext>()
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName ?? Guid.NewGuid().ToString())
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         return new ApplicationDbContext(options, domainEvents, new TestTenantContext());
@@ -44,11 +44,19 @@ internal sealed class TestTenantContext : ITenantContext
 {
     public Guid? TenantId { get; private set; }
     public bool BypassTenantIsolation { get; private set; }
-    public void SetTenant(Guid tenantId) => TenantId = tenantId;
-    public void EnableBypass() => BypassTenantIsolation = true;
+
+    public void SetTenant(Guid tenantId)
+    {
+        TenantId = tenantId;
+    }
+
+    public void EnableBypass()
+    {
+        BypassTenantIsolation = true;
+    }
 }
 
-/// <summary>MediatR <see cref="IPublisher"/> stub that records every notification it sees.</summary>
+/// <summary>MediatR <see cref="IPublisher" /> stub that records every notification it sees.</summary>
 internal sealed class RecordingPublisher : IPublisher
 {
     private readonly List<INotification> _published = new();

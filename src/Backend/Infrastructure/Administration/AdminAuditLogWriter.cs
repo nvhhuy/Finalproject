@@ -7,8 +7,8 @@ namespace Infrastructure.Administration;
 
 public sealed class AdminAuditLogWriter : IAdminAuditLogWriter
 {
-    private readonly ApplicationDbContext _db;
     private readonly IDateTimeProvider _clock;
+    private readonly ApplicationDbContext _db;
 
     public AdminAuditLogWriter(ApplicationDbContext db, IDateTimeProvider clock)
     {

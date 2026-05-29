@@ -5,9 +5,9 @@ using Domains.MediaAggregate;
 namespace Application.Tests.Media;
 
 /// <summary>
-/// Unit tests for <see cref="MediaKeyPlanner"/>. The planner is the single source of truth for
-/// bucket layout — changes here cascade to every existing storage object, so any modification
-/// must be deliberate. These tests pin the current scheme so accidental drift breaks loudly.
+///     Unit tests for <see cref="MediaKeyPlanner" />. The planner is the single source of truth for
+///     bucket layout — changes here cascade to every existing storage object, so any modification
+///     must be deliberate. These tests pin the current scheme so accidental drift breaks loudly.
 /// </summary>
 public sealed class MediaKeyPlannerTests
 {
@@ -45,7 +45,7 @@ public sealed class MediaKeyPlannerTests
     {
         // Codec in the filename means orphan cleanup + projection don't need to consult a DB
         // column to classify variants — the URL is self-describing.
-        string key = MediaKeyPlanner.VideoVariantKey(Owner, Asset, 1080, codec);
+        var key = MediaKeyPlanner.VideoVariantKey(Owner, Asset, 1080, codec);
         Assert.EndsWith(expectedTail, key);
     }
 
@@ -54,7 +54,7 @@ public sealed class MediaKeyPlannerTests
     {
         // Critical for the orphan cleanup + delete-asset workflows: every artefact of one asset
         // lives under media/{owner}/{asset}/, and the HLS subtree is no exception.
-        string prefix = MediaKeyPlanner.AssetPrefix(Owner, Asset);
+        var prefix = MediaKeyPlanner.AssetPrefix(Owner, Asset);
         Assert.StartsWith(prefix, MediaKeyPlanner.HlsMasterKey(Owner, Asset));
         Assert.StartsWith(prefix, MediaKeyPlanner.HlsMediaPlaylistKey(Owner, Asset, 720));
         Assert.StartsWith(prefix, MediaKeyPlanner.HlsSegmentPrefix(Owner, Asset, 720));
@@ -65,12 +65,12 @@ public sealed class MediaKeyPlannerTests
     {
         // The master.m3u8 references rungs as "{height}p/index.m3u8" — verify the keys we PUT
         // match what the player will GET via relative resolution from master.m3u8's URL.
-        string master = MediaKeyPlanner.HlsMasterKey(Owner, Asset);
-        string playlist = MediaKeyPlanner.HlsMediaPlaylistKey(Owner, Asset, 720);
+        var master = MediaKeyPlanner.HlsMasterKey(Owner, Asset);
+        var playlist = MediaKeyPlanner.HlsMediaPlaylistKey(Owner, Asset, 720);
 
         // Relative path from master.m3u8 to playlist must be "720p/index.m3u8".
-        string masterDir = master[..(master.LastIndexOf('/') + 1)];
-        string relative = playlist[masterDir.Length..];
+        var masterDir = master[..(master.LastIndexOf('/') + 1)];
+        var relative = playlist[masterDir.Length..];
         Assert.Equal("720p/index.m3u8", relative);
     }
 
@@ -79,10 +79,14 @@ public sealed class MediaKeyPlannerTests
     [InlineData("image/png", MediaKind.Image)]
     [InlineData("video/mp4", MediaKind.Video)]
     [InlineData("video/webm", MediaKind.Video)]
-    public void KindFromContentType_recognises_supported_media_types(string contentType, MediaKind expected) =>
+    public void KindFromContentType_recognises_supported_media_types(string contentType, MediaKind expected)
+    {
         Assert.Equal(expected, MediaKeyPlanner.KindFromContentType(contentType));
+    }
 
     [Fact]
-    public void KindFromContentType_rejects_unsupported_types() =>
+    public void KindFromContentType_rejects_unsupported_types()
+    {
         Assert.Throws<ArgumentException>(() => MediaKeyPlanner.KindFromContentType("application/zip"));
+    }
 }

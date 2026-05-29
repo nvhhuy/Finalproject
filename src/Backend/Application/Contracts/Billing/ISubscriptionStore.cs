@@ -7,7 +7,8 @@ public interface ISubscriptionStore
 {
     Task<Subscription?> GetByTenantForUpdateAsync(TenantId tenantId, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Subscription>> ListExpiredActiveOrTrialingAsync(DateTime utcNow, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Subscription>> ListExpiredActiveOrTrialingAsync(DateTime utcNow,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Subscription>> ListPastDueAsync(CancellationToken cancellationToken = default);
 

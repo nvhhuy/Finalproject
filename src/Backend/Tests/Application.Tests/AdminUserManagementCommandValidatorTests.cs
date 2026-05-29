@@ -29,7 +29,7 @@ public sealed class AdminUserManagementCommandValidatorTests
     {
         var validator = new AdminCreateUserCommandValidator();
         var asUser = new AdminCreateUserCommand(
-            Guid.NewGuid(), "A", "B", "u1", "u1@e.com", "Password12", UserRoles.User);
+            Guid.NewGuid(), "A", "B", "u1", "u1@e.com", "Password12");
         var asAdmin = new AdminCreateUserCommand(
             Guid.NewGuid(), "A", "B", "u2", "u2@e.com", "Password12", UserRoles.Admin);
 
@@ -42,7 +42,7 @@ public sealed class AdminUserManagementCommandValidatorTests
     {
         var validator = new AdminCreateUserCommandValidator();
         var command = new AdminCreateUserCommand(
-            Guid.NewGuid(), "A", "B", "u1", "u1@e.com", "password12", UserRoles.User);
+            Guid.NewGuid(), "A", "B", "u1", "u1@e.com", "password12");
 
         var result = await validator.ValidateAsync(command);
 
@@ -54,7 +54,7 @@ public sealed class AdminUserManagementCommandValidatorTests
     public async Task AdminResetPassword_rejects_short_password()
     {
         var validator = new AdminResetPasswordCommandValidator();
-        var command = new AdminResetPasswordCommand(Guid.NewGuid(), Guid.NewGuid(), "short", ExpectedRowVersion: 0);
+        var command = new AdminResetPasswordCommand(Guid.NewGuid(), Guid.NewGuid(), "short", 0);
 
         var result = await validator.ValidateAsync(command);
 

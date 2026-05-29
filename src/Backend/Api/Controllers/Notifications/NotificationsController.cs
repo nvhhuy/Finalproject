@@ -6,7 +6,6 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
 
 namespace Api.Controllers.Notifications;
 
@@ -16,7 +15,9 @@ namespace Api.Controllers.Notifications;
 [Route("api/v{version:apiVersion}/notifications")]
 public sealed class NotificationsController : ApiControllerBase
 {
-    public NotificationsController(ISender sender) : base(sender) { }
+    public NotificationsController(ISender sender) : base(sender)
+    {
+    }
 
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<NotificationDto>>), StatusCodes.Status200OK)]
@@ -25,7 +26,7 @@ public sealed class NotificationsController : ApiControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        Result<IReadOnlyList<NotificationDto>, Shared.Errors.Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new ListUserNotificationsQuery(CurrentUserId, page, pageSize),
             cancellationToken);
         return MatchApi(result, OkApi);
@@ -35,7 +36,7 @@ public sealed class NotificationsController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> MarkRead(Guid id, CancellationToken cancellationToken = default)
     {
-        Result<bool, Shared.Errors.Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new MarkNotificationReadCommand(CurrentUserId, id),
             cancellationToken);
         return MatchApi(result, _ => OkApi(true));

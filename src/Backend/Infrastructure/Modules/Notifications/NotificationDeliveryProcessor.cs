@@ -1,5 +1,4 @@
 using Application.Contracts.Notifications;
-using Domains.Notifications;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,7 +17,7 @@ public sealed class NotificationDeliveryProcessor : INotificationDeliveryProcess
 
     public async Task<bool> TryDeliverAsync(Guid notificationId, CancellationToken cancellationToken = default)
     {
-        UserNotification? row = await _db.UserNotifications
+        var row = await _db.UserNotifications
             .FirstOrDefaultAsync(n => n.Id == notificationId, cancellationToken);
         if (row is null || row.LiveDeliveredAtUtc is not null)
             return false;

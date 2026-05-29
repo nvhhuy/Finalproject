@@ -10,11 +10,15 @@ public sealed class RabbitMqHealthCheck : IHealthCheck
 {
     private readonly IOptionsMonitor<RabbitMqOptions> _options;
 
-    public RabbitMqHealthCheck(IOptionsMonitor<RabbitMqOptions> options) => _options = options;
-
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public RabbitMqHealthCheck(IOptionsMonitor<RabbitMqOptions> options)
     {
-        RabbitMqOptions o = _options.CurrentValue;
+        _options = options;
+    }
+
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var o = _options.CurrentValue;
         if (!o.Enabled)
             return Task.FromResult(HealthCheckResult.Healthy("RabbitMQ disabled by configuration."));
 
@@ -30,7 +34,7 @@ public sealed class RabbitMqHealthCheck : IHealthCheck
                 RequestedConnectionTimeout = TimeSpan.FromSeconds(3),
                 AutomaticRecoveryEnabled = false
             };
-            using IConnection connection = factory.CreateConnection("healthcheck");
+            using var connection = factory.CreateConnection("healthcheck");
             return Task.FromResult(connection.IsOpen
                 ? HealthCheckResult.Healthy()
                 : HealthCheckResult.Unhealthy("RabbitMQ connection not open."));

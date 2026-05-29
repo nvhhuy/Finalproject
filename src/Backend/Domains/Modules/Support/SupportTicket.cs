@@ -6,7 +6,9 @@ public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
 {
     private readonly List<SupportTicketMessage> _messages = [];
 
-    private SupportTicket() { }
+    private SupportTicket()
+    {
+    }
 
     private SupportTicket(
         Guid id,
@@ -33,8 +35,7 @@ public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
         LastMessageByUserId = createdByUserId;
     }
 
-    public Guid TenantId { get; private set; }
-    public Guid CreatedByUserId { get; private set; }
+    public Guid CreatedByUserId { get; }
     public string TicketNumber { get; private set; } = null!;
     public string Subject { get; private set; } = null!;
     public string NormalizedSubject { get; private set; } = null!;
@@ -43,7 +44,7 @@ public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
     public SupportTicketPriority Priority { get; private set; }
     public SupportTicketStatus Status { get; private set; }
     public Guid? AssignedAdminUserId { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime CreatedAtUtc { get; }
     public DateTime UpdatedAtUtc { get; private set; }
     public DateTime LastMessageAtUtc { get; private set; }
     public Guid LastMessageByUserId { get; private set; }
@@ -51,6 +52,8 @@ public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
     public DateTime? ClosedAtUtc { get; private set; }
 
     public IReadOnlyList<SupportTicketMessage> Messages => _messages.AsReadOnly();
+
+    public Guid TenantId { get; }
 
     public static SupportTicket Create(
         Guid tenantId,
@@ -63,7 +66,8 @@ public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
     {
         if (tenantId == Guid.Empty)
             throw new ArgumentException("Tenant id is required.", nameof(tenantId));
-        return new SupportTicket(Guid.NewGuid(), tenantId, createdByUserId, ticketNumber, subject, description, category, priority);
+        return new SupportTicket(Guid.NewGuid(), tenantId, createdByUserId, ticketNumber, subject, description,
+            category, priority);
     }
 
     public SupportTicketMessage AddMessage(
@@ -74,10 +78,8 @@ public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
     {
         var message = SupportTicketMessage.Create(Id, authorUserId, body, isInternalNote);
         if (attachments is not null)
-        {
-            foreach (SupportTicketAttachmentDraft a in attachments)
+            foreach (var a in attachments)
                 message.AddAttachment(a.StorageKey, a.FileName, a.ContentType, a.ByteSize);
-        }
 
         _messages.Add(message);
         UpdatedAtUtc = DateTime.UtcNow;
@@ -107,7 +109,10 @@ public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
-    private static string Normalize(string value) => value.Trim().ToUpperInvariant();
+    private static string Normalize(string value)
+    {
+        return value.Trim().ToUpperInvariant();
+    }
 }
 
 public sealed record SupportTicketAttachmentDraft(

@@ -4,9 +4,24 @@ namespace Domains.MediaAggregate.ValueObjects;
 
 public record MediaAssetId : IValueObject
 {
+    private MediaAssetId()
+    {
+    }
+
+    private MediaAssetId(Guid value)
+    {
+        Value = value;
+    }
+
     public Guid Value { get; private set; }
-    private MediaAssetId() { }
-    private MediaAssetId(Guid value) { Value = value; }
-    public static MediaAssetId Create(Guid value) => new(value);
-    public static MediaAssetId CreateNew() => new(Guid.NewGuid());
+
+    public static MediaAssetId Create(Guid value)
+    {
+        return new MediaAssetId(value);
+    }
+
+    public static MediaAssetId CreateNew()
+    {
+        return new MediaAssetId(Guid.NewGuid());
+    }
 }

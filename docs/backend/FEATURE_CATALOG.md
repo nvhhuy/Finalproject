@@ -25,6 +25,7 @@ List of **features already included in the base** — usable immediately after l
 | Resend verification email | Ready | `POST /api/v1/auth/resend-verification` |
 | Verify email (token) | Ready | `POST /api/v1/auth/verify-email` |
 | Email/password login | Ready | `POST /api/v1/auth/login` |
+| Tenant OIDC SSO login | Ready | `POST /api/v1/auth/tenant-sso/{tenantSlug}` |
 | Refresh token (rotation) | Ready | `POST /api/v1/auth/refresh` |
 | Refresh token reuse detection | Ready | Automatic in refresh handler; revokes all sessions + audit |
 | Google sign-in | Needs config | `POST /api/v1/auth/google` — `Authentication:Google:ClientId` |
@@ -74,7 +75,22 @@ All write operations are audited via `IAdminAuditLogWriter` (same transaction as
 
 ---
 
-## 4. Admin — settings, audit, metrics
+## 4. Support tickets (member + admin)
+
+| Feature | Endpoint |
+|---------|----------|
+| User create ticket | `POST /api/v1/support/tickets` |
+| User list / detail ticket | `GET /api/v1/support/tickets`, `GET /api/v1/support/tickets/{ticketId}` |
+| User add message | `POST /api/v1/support/tickets/{ticketId}/messages` |
+| User close / reopen ticket | `POST /api/v1/support/tickets/{ticketId}/close`, `POST /api/v1/support/tickets/{ticketId}/reopen` |
+| Admin list / detail tickets | `GET /api/v1/admin/support/tickets`, `GET /api/v1/admin/support/tickets/{ticketId}` |
+| Admin assign ticket | `POST /api/v1/admin/support/tickets/{ticketId}/assign` |
+| Admin change status / priority | `POST /api/v1/admin/support/tickets/{ticketId}/status`, `POST /api/v1/admin/support/tickets/{ticketId}/priority` |
+| Admin reply/internal note | `POST /api/v1/admin/support/tickets/{ticketId}/messages` |
+
+---
+
+## 5. Admin — settings, audit, metrics
 
 | Feature | Endpoint |
 |---------|----------|
@@ -95,6 +111,7 @@ All write operations are audited via `IAdminAuditLogWriter` (same transaction as
 | Restore database backup | `POST /api/v1/admin/settings/database-backup/restore` |
 | Import + restore database (legacy migration) | `POST /api/v1/admin/settings/database-backup/import-restore` (multipart: `file`, `confirmation` = `IMPORT_RESTORE_DATABASE`; `pg_dump -Fc`) |
 | View audit log (paginated) | `GET /api/v1/admin/audit-logs` |
+| Export audit log CSV | `GET /api/v1/admin/audit-logs/export` |
 | Dashboard metrics (user counts, …) | `GET /api/v1/admin/metrics/dashboard` |
 | Broadcast in-app announcement to all active members | `POST /api/v1/admin/notifications/broadcast` |
 
@@ -102,7 +119,7 @@ All write operations are audited via `IAdminAuditLogWriter` (same transaction as
 
 ---
 
-## 5. Admin — messaging (DLQ)
+## 6. Admin — messaging (DLQ)
 
 **Requires:** RabbitMQ enabled + queue configured with DLQ.
 
@@ -116,7 +133,7 @@ Peek/replay/drain are audit-logged.
 
 ---
 
-## 6. Media (images & video)
+## 7. Media (images & video)
 
 **Standard flow:** initiate → client PUT to object storage → complete → worker processes → GET asset.
 
@@ -144,7 +161,7 @@ Peek/replay/drain are audit-logged.
 
 ---
 
-## 7. Messaging & transactional outbox
+## 8. Messaging & transactional outbox
 
 | Component | Description |
 |-----------|-------------|
@@ -160,7 +177,7 @@ Peek/replay/drain are audit-logged.
 
 ---
 
-## 8. Worker & scheduling
+## 9. Worker & scheduling
 
 | Job / consumer | Type | Purpose |
 |----------------|------|---------|
@@ -180,7 +197,7 @@ Run worker: `dotnet run --project src/Backend/Worker`
 
 ---
 
-## 9. Realtime (SignalR)
+## 10. Realtime (SignalR)
 
 | Feature | Notes |
 |---------|-------|
@@ -190,7 +207,7 @@ Run worker: `dotnet run --project src/Backend/Worker`
 
 ---
 
-## 10. Platform — API, security, ops
+## 11. Platform — API, security, ops
 
 | Feature | Notes |
 |---------|-------|
@@ -214,7 +231,7 @@ Run worker: `dotnet run --project src/Backend/Worker`
 
 ---
 
-## 11. Developer tooling (included in repo)
+## 12. Developer tooling (included in repo)
 
 | Tool | Path | Purpose |
 |------|------|---------|
@@ -228,7 +245,7 @@ Run worker: `dotnet run --project src/Backend/Worker`
 
 ---
 
-## 12. Samples (learning / dev only)
+## 13. Samples (learning / dev only)
 
 | Endpoint | Purpose |
 |----------|---------|
@@ -239,25 +256,35 @@ Not for production use.
 
 ---
 
-## 13. Tenancy & SaaS billing (MVP)
+## 14. Tenancy & SaaS billing (MVP)
 
 | Feature | Status | Endpoint |
 |---------|--------|----------|
 | List my tenants | Ready (JWT) | `GET /api/v1/tenants/mine` |
 | Public tenant by slug | Ready | `GET /api/v1/public/tenants/{slug}` |
 | Invite tenant member | Ready | `POST /api/v1/tenants/{tenantId}/members` |
+| Tenant domains (list/add/verify/remove) | Ready | `GET/POST /api/v1/tenants/{tenantId}/domains`, `POST /api/v1/tenants/{tenantId}/domains/{domainId}/verify`, `DELETE /api/v1/tenants/{tenantId}/domains/{domainId}` |
+| Tenant SSO settings (owner) | Ready | `GET/PUT /api/v1/tenants/{tenantId}/sso` |
 | Public plans | Ready | `GET /api/v1/public/plans` |
+| Public tenant resolve host | Ready | `GET /api/v1/public/tenants/resolve-host?host=` |
+| Public tenant SSO metadata | Ready | `GET /api/v1/public/tenants/{slug}/sso` |
 | Subscribe (MVP checkout) | Ready | `POST /api/v1/billing/subscribe` |
 | Tenant subscription | Ready | `GET /api/v1/billing/tenants/{tenantId}/subscription` |
+| Tenant invoices | Ready | `GET /api/v1/billing/tenants/{tenantId}/invoices` |
 | Platform plan CRUD | Admin JWT | `GET/POST/PUT/DELETE /api/v1/platform/plans` |
+| Platform tenant CRUD-lite + subscription assign | Admin JWT | `GET/POST /api/v1/platform/tenants`, `GET/POST /api/v1/platform/tenants/{tenantId}/subscription` |
+| Platform billing invoices | Admin JWT | `GET /api/v1/platform/invoices` |
 | Personal wallet balance | Ready | `GET /api/v1/wallet/balance` |
 | Wallet ledger | Ready | `GET /api/v1/wallet/ledger` |
+| Wallet metered action catalog | Ready | `GET /api/v1/wallet/actions` |
+| Wallet invoice history | Ready | `GET /api/v1/wallet/invoices` |
 | Credit packages (public catalog) | Ready | `GET /api/v1/public/credit-packages` |
 | Credit packages (admin CRUD) | Ready | `GET/POST/PUT/DELETE /api/v1/platform/credit-packages` |
 | Wallet purchase package (MVP instant) | Ready | `POST /api/v1/wallet/purchase` |
 | Wallet top-up (manual MVP) | Ready | `POST /api/v1/wallet/top-up` |
 | Wallet metered debit | Ready | `POST /api/v1/wallet/debit` |
 | Stripe webhook inbox | Ready | `POST /api/v1/webhooks/stripe` |
+| VNPay / PayOS webhook inbox | Ready | `POST /api/v1/webhooks/vnpay`, `POST /api/v1/webhooks/payos` |
 | Tenant entitlements / usage | Ready | `GET /api/v1/billing/tenants/{tenantId}/entitlements` |
 | Cancel subscription (owner) | Ready | `POST /api/v1/billing/tenants/{tenantId}/subscription/cancel` |
 | Change plan (owner) | Ready | `PUT /api/v1/billing/tenants/{tenantId}/subscription/plan` |
@@ -269,7 +296,7 @@ Not for production use.
 
 ---
 
-## 14. Tests (current coverage)
+## 15. Tests (current coverage)
 
 | Project | Scope |
 |---------|-------|

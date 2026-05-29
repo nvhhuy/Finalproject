@@ -9,7 +9,7 @@ namespace Infrastructure.Modules.Users.Persistence.Configuration;
 
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    /// <summary>Purpose string for <see cref="IDataProtector"/> — changing it breaks decryption of stored secrets.</summary>
+    /// <summary>Purpose string for <see cref="IDataProtector" /> — changing it breaks decryption of stored secrets.</summary>
     public const string TwoFactorSecretProtectorPurpose = "User.TwoFactorSecret.v1";
 
     public void Configure(EntityTypeBuilder<User> builder)
@@ -28,7 +28,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.Role).HasMaxLength(64).IsRequired();
         builder.Property(e => e.LockReason).HasMaxLength(512);
 
-        IDataProtector twoFactorProtector = UserDataProtection.Provider.CreateProtector(TwoFactorSecretProtectorPurpose);
+        var twoFactorProtector = UserDataProtection.Provider.CreateProtector(TwoFactorSecretProtectorPurpose);
         builder.Property(e => e.TwoFactorSecret)
             .HasMaxLength(1024)
             .HasConversion(new EncryptedStringConverter(twoFactorProtector));

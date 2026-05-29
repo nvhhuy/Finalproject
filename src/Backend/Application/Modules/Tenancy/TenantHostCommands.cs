@@ -4,13 +4,8 @@ using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
 using Domains.Tenancy;
 using Domains.Tenancy.ValueObjects;
-using FluentValidation;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Tenancy;
 
@@ -22,10 +17,11 @@ public sealed record TenantHostResolutionDto(
 
 public sealed record ResolveTenantByHostQuery(string Host) : IRequest<Result<TenantHostResolutionDto, Error>>;
 
-public sealed class ResolveTenantByHostQueryHandler : IRequestHandler<ResolveTenantByHostQuery, Result<TenantHostResolutionDto, Error>>
+public sealed class
+    ResolveTenantByHostQueryHandler : IRequestHandler<ResolveTenantByHostQuery, Result<TenantHostResolutionDto, Error>>
 {
-    private readonly ITenantHostResolver _resolver;
     private readonly IApplicationReadDbContext _db;
+    private readonly ITenantHostResolver _resolver;
 
     public ResolveTenantByHostQueryHandler(ITenantHostResolver resolver, IApplicationReadDbContext db)
     {
@@ -40,11 +36,11 @@ public sealed class ResolveTenantByHostQueryHandler : IRequestHandler<ResolveTen
         if (string.IsNullOrWhiteSpace(request.Host))
             return new ValidationError(nameof(request.Host), "Host is required.");
 
-        TenantHostResolution? resolution = await _resolver.ResolveAsync(request.Host, cancellationToken);
+        var resolution = await _resolver.ResolveAsync(request.Host, cancellationToken);
         if (resolution is null)
             return new NotFoundError("No tenant is mapped to this host.");
 
-        TenantPublicDto? tenant = await _db.Tenants
+        var tenant = await _db.Tenants
             .AsNoTracking()
             .Where(t => t.Id == TenantId.Create(resolution.TenantId) && t.Status == TenantStatus.Active)
             .Select(t => new TenantPublicDto(
@@ -81,7 +77,9 @@ public sealed record TenantDomainDto(
 public sealed record ListTenantDomainsQuery(Guid TenantId, Guid UserId)
     : IRequest<Result<IReadOnlyList<TenantDomainDto>, Error>>;
 
-public sealed class ListTenantDomainsQueryHandler : IRequestHandler<ListTenantDomainsQuery, Result<IReadOnlyList<TenantDomainDto>, Error>>
+public sealed class
+    ListTenantDomainsQueryHandler : IRequestHandler<ListTenantDomainsQuery,
+    Result<IReadOnlyList<TenantDomainDto>, Error>>
 {
     private readonly IApplicationReadDbContext _db;
     private readonly ITenantMembershipService _membership;
@@ -104,9 +102,9 @@ public sealed class ListTenantDomainsQueryHandler : IRequestHandler<ListTenantDo
         if (!await _membership.IsMemberAsync(request.TenantId, request.UserId, cancellationToken))
             return new ForbiddenError("You are not a member of this tenant.");
 
-        TenancyHostOptions hostOptions = _options.Value;
-        TenantId tenantKey = TenantId.Create(request.TenantId);
-        List<TenantDomain> rows = await _db.TenantDomains
+        var hostOptions = _options.Value;
+        var tenantKey = TenantId.Create(request.TenantId);
+        var rows = await _db.TenantDomains
             .AsNoTracking()
             .Where(d => d.TenantId == tenantKey && d.Status != TenantDomainStatus.Disabled)
             .OrderByDescending(d => d.CreatedAtUtc)
@@ -117,16 +115,16 @@ public sealed class ListTenantDomainsQueryHandler : IRequestHandler<ListTenantDo
 
     internal static TenantDomainDto ToDto(TenantDomain domain, TenancyHostOptions options)
     {
-        string prefix = options.VerificationTxtPrefix.Trim('.');
-        return new(
+        var prefix = options.VerificationTxtPrefix.Trim('.');
+        return new TenantDomainDto(
             domain.Id,
             domain.TenantId.Value,
             domain.Hostname,
             domain.Status.ToString(),
             domain.VerificationToken,
-            TxtRecordName: $"{prefix}.{domain.Hostname}",
-            TxtRecordValue: domain.VerificationToken,
-            CnameTarget: options.PlatformCnameTarget,
+            $"{prefix}.{domain.Hostname}",
+            domain.VerificationToken,
+            options.PlatformCnameTarget,
             domain.CreatedAtUtc,
             domain.VerifiedAtUtc);
     }
@@ -145,13 +143,14 @@ public sealed class AddTenantDomainCommandValidator : AbstractValidator<AddTenan
     }
 }
 
-public sealed class AddTenantDomainCommandHandler : IRequestHandler<AddTenantDomainCommand, Result<TenantDomainDto, Error>>
+public sealed class
+    AddTenantDomainCommandHandler : IRequestHandler<AddTenantDomainCommand, Result<TenantDomainDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
     private readonly ITenantDomainStore _domains;
     private readonly ITenantMembershipService _membership;
-    private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
     private readonly IOptions<TenancyHostOptions> _options;
+    private readonly IUnitOfWork _uow;
 
     public AddTenantDomainCommandHandler(
         ITenantDomainStore domains,
@@ -184,19 +183,19 @@ public sealed class AddTenantDomainCommandHandler : IRequestHandler<AddTenantDom
             return new ValidationError(nameof(request.Hostname), ex.Message);
         }
 
-        TenancyHostOptions hostOptions = _options.Value;
+        var hostOptions = _options.Value;
         if (!string.IsNullOrWhiteSpace(hostOptions.SubdomainBaseHost)
             && (hostname == hostOptions.SubdomainBaseHost.Trim().ToLowerInvariant()
-                || hostname.EndsWith($".{hostOptions.SubdomainBaseHost.Trim().ToLowerInvariant()}", StringComparison.Ordinal)))
-        {
-            return new ValidationError(nameof(request.Hostname), "Use your tenant subdomain instead of the platform base host.");
-        }
+                || hostname.EndsWith($".{hostOptions.SubdomainBaseHost.Trim().ToLowerInvariant()}",
+                    StringComparison.Ordinal)))
+            return new ValidationError(nameof(request.Hostname),
+                "Use your tenant subdomain instead of the platform base host.");
 
         if (await _domains.HostnameExistsAsync(hostname, cancellationToken))
             return new ValidationError(nameof(request.Hostname), "This hostname is already registered.");
 
-        TenantId tenantKey = TenantId.Create(request.TenantId);
-        TenantDomain domain = TenantDomain.Create(
+        var tenantKey = TenantId.Create(request.TenantId);
+        var domain = TenantDomain.Create(
             tenantKey,
             hostname,
             TenantDomain.CreateVerificationToken(),
@@ -211,14 +210,15 @@ public sealed class AddTenantDomainCommandHandler : IRequestHandler<AddTenantDom
 public sealed record VerifyTenantDomainCommand(Guid TenantId, Guid UserId, Guid DomainId)
     : IRequest<Result<TenantDomainDto, Error>>;
 
-public sealed class VerifyTenantDomainCommandHandler : IRequestHandler<VerifyTenantDomainCommand, Result<TenantDomainDto, Error>>
+public sealed class
+    VerifyTenantDomainCommandHandler : IRequestHandler<VerifyTenantDomainCommand, Result<TenantDomainDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
+    private readonly ITenantDomainDnsVerifier _dnsVerifier;
     private readonly ITenantDomainStore _domains;
     private readonly ITenantMembershipService _membership;
-    private readonly ITenantDomainDnsVerifier _dnsVerifier;
-    private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
     private readonly IOptions<TenancyHostOptions> _options;
+    private readonly IUnitOfWork _uow;
 
     public VerifyTenantDomainCommandHandler(
         ITenantDomainStore domains,
@@ -243,21 +243,21 @@ public sealed class VerifyTenantDomainCommandHandler : IRequestHandler<VerifyTen
         if (!await _membership.IsOwnerAsync(request.TenantId, request.UserId, cancellationToken))
             return new ForbiddenError("Only the tenant owner can verify custom domains.");
 
-        TenantId tenantKey = TenantId.Create(request.TenantId);
-        TenantDomain? domain = await _domains.GetForUpdateAsync(request.DomainId, tenantKey, cancellationToken);
+        var tenantKey = TenantId.Create(request.TenantId);
+        var domain = await _domains.GetForUpdateAsync(request.DomainId, tenantKey, cancellationToken);
         if (domain is null)
             return new NotFoundError("Domain was not found.");
         if (domain.Status == TenantDomainStatus.Disabled)
             return new ValidationError("domain", "Domain is disabled.");
 
-        bool verified = await _dnsVerifier.HasVerificationTxtRecordAsync(
+        var verified = await _dnsVerifier.HasVerificationTxtRecordAsync(
             domain.Hostname,
             domain.VerificationToken,
             cancellationToken);
         if (!verified)
         {
-            TenancyHostOptions opts = _options.Value;
-            string prefix = opts.VerificationTxtPrefix.Trim('.');
+            var opts = _options.Value;
+            var prefix = opts.VerificationTxtPrefix.Trim('.');
             return new ValidationError(
                 "dns",
                 $"Add TXT record {prefix}.{domain.Hostname} = {domain.VerificationToken} (or CNAME to {opts.PlatformCnameTarget ?? "your platform host"}) then retry.");
@@ -296,8 +296,8 @@ public sealed class RemoveTenantDomainCommandHandler : IRequestHandler<RemoveTen
         if (!await _membership.IsOwnerAsync(request.TenantId, request.UserId, cancellationToken))
             return new ForbiddenError("Only the tenant owner can remove custom domains.");
 
-        TenantId tenantKey = TenantId.Create(request.TenantId);
-        TenantDomain? domain = await _domains.GetForUpdateAsync(request.DomainId, tenantKey, cancellationToken);
+        var tenantKey = TenantId.Create(request.TenantId);
+        var domain = await _domains.GetForUpdateAsync(request.DomainId, tenantKey, cancellationToken);
         if (domain is null)
             return new NotFoundError("Domain was not found.");
 
@@ -306,4 +306,3 @@ public sealed class RemoveTenantDomainCommandHandler : IRequestHandler<RemoveTen
         return Unit.Value;
     }
 }
-

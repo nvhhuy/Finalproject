@@ -1,12 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Persistence
+namespace Infrastructure.Persistence;
+
+public static class DataSeed
 {
-    public static class DataSeed
+    public static void Seed(ModelBuilder modelBuilder)
     {
-        public static void Seed(ModelBuilder modelBuilder)
-        {
-            
-        }
     }
 }

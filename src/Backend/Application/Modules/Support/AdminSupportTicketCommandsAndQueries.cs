@@ -2,11 +2,7 @@ using Application.Contracts.Authorization;
 using Application.Contracts.Persistence;
 using Application.Contracts.Support;
 using Domains.Support;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Support;
 
@@ -23,9 +19,14 @@ public sealed class AdminListSupportTicketsQueryHandler
     : IRequestHandler<AdminListSupportTicketsQuery, Result<SupportTicketListDto, Error>>
 {
     private readonly IApplicationReadDbContext _read;
-    public AdminListSupportTicketsQueryHandler(IApplicationReadDbContext read) => _read = read;
 
-    public async Task<Result<SupportTicketListDto, Error>> Handle(AdminListSupportTicketsQuery request, CancellationToken cancellationToken)
+    public AdminListSupportTicketsQueryHandler(IApplicationReadDbContext read)
+    {
+        _read = read;
+    }
+
+    public async Task<Result<SupportTicketListDto, Error>> Handle(AdminListSupportTicketsQuery request,
+        CancellationToken cancellationToken)
     {
         if (request.Page < 1 || request.PageSize is < 1 or > 200)
             return new Error("BadRequest", 400, "Page must be at least 1 and page size between 1 and 200.");
@@ -39,12 +40,12 @@ public sealed class AdminListSupportTicketsQueryHandler
             q = q.Where(t => t.AssignedAdminUserId == request.AssignedAdminUserId);
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            string s = request.Search.Trim().ToUpperInvariant();
+            var s = request.Search.Trim().ToUpperInvariant();
             q = q.Where(t => t.NormalizedSubject.Contains(s) || t.TicketNumber.Contains(request.Search.Trim()));
         }
 
-        int total = await q.CountAsync(cancellationToken);
-        List<SupportTicketSummaryDto> items = await q
+        var total = await q.CountAsync(cancellationToken);
+        var items = await q
             .OrderByDescending(t => t.UpdatedAtUtc)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
@@ -71,11 +72,16 @@ public sealed class AdminGetSupportTicketByIdQueryHandler
     : IRequestHandler<AdminGetSupportTicketByIdQuery, Result<SupportTicketDetailDto, Error>>
 {
     private readonly IApplicationReadDbContext _read;
-    public AdminGetSupportTicketByIdQueryHandler(IApplicationReadDbContext read) => _read = read;
 
-    public async Task<Result<SupportTicketDetailDto, Error>> Handle(AdminGetSupportTicketByIdQuery request, CancellationToken cancellationToken)
+    public AdminGetSupportTicketByIdQueryHandler(IApplicationReadDbContext read)
     {
-        SupportTicketDetailDto? ticket = await _read.SupportTickets
+        _read = read;
+    }
+
+    public async Task<Result<SupportTicketDetailDto, Error>> Handle(AdminGetSupportTicketByIdQuery request,
+        CancellationToken cancellationToken)
+    {
+        var ticket = await _read.SupportTickets
             .Where(t => t.Id == request.TicketId)
             .Select(t => new SupportTicketDetailDto(
                 t.Id,
@@ -100,7 +106,9 @@ public sealed class AdminGetSupportTicketByIdQueryHandler
                         m.IsInternalNote,
                         m.CreatedAtUtc,
                         m.Attachments
-                            .Select(a => new SupportTicketAttachmentDto(a.Id, a.FileName, a.ContentType, a.ByteSize, a.StorageKey))
+                            .Select(a =>
+                                new SupportTicketAttachmentDto(a.Id, a.FileName, a.ContentType, a.ByteSize,
+                                    a.StorageKey))
                             .ToList()))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
@@ -111,13 +119,20 @@ public sealed class AdminGetSupportTicketByIdQueryHandler
 public sealed record AdminAssignSupportTicketCommand(Guid TicketId, Guid? AssignedAdminUserId)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
-public sealed class AdminAssignSupportTicketCommandHandler : IRequestHandler<AdminAssignSupportTicketCommand, Result<bool, Error>>
+public sealed class
+    AdminAssignSupportTicketCommandHandler : IRequestHandler<AdminAssignSupportTicketCommand, Result<bool, Error>>
 {
     private readonly ISupportTicketService _service;
-    public AdminAssignSupportTicketCommandHandler(ISupportTicketService service) => _service = service;
-    public async Task<Result<bool, Error>> Handle(AdminAssignSupportTicketCommand request, CancellationToken cancellationToken)
+
+    public AdminAssignSupportTicketCommandHandler(ISupportTicketService service)
     {
-        bool ok = await _service.AssignAsync(request.TicketId, request.AssignedAdminUserId, cancellationToken);
+        _service = service;
+    }
+
+    public async Task<Result<bool, Error>> Handle(AdminAssignSupportTicketCommand request,
+        CancellationToken cancellationToken)
+    {
+        var ok = await _service.AssignAsync(request.TicketId, request.AssignedAdminUserId, cancellationToken);
         return ok ? true : new NotFoundError("Ticket not found.");
     }
 }
@@ -125,13 +140,21 @@ public sealed class AdminAssignSupportTicketCommandHandler : IRequestHandler<Adm
 public sealed record AdminChangeSupportTicketStatusCommand(Guid TicketId, SupportTicketStatus Status)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
-public sealed class AdminChangeSupportTicketStatusCommandHandler : IRequestHandler<AdminChangeSupportTicketStatusCommand, Result<bool, Error>>
+public sealed class
+    AdminChangeSupportTicketStatusCommandHandler : IRequestHandler<AdminChangeSupportTicketStatusCommand,
+    Result<bool, Error>>
 {
     private readonly ISupportTicketService _service;
-    public AdminChangeSupportTicketStatusCommandHandler(ISupportTicketService service) => _service = service;
-    public async Task<Result<bool, Error>> Handle(AdminChangeSupportTicketStatusCommand request, CancellationToken cancellationToken)
+
+    public AdminChangeSupportTicketStatusCommandHandler(ISupportTicketService service)
     {
-        bool ok = await _service.ChangeStatusAsync(request.TicketId, request.Status, cancellationToken);
+        _service = service;
+    }
+
+    public async Task<Result<bool, Error>> Handle(AdminChangeSupportTicketStatusCommand request,
+        CancellationToken cancellationToken)
+    {
+        var ok = await _service.ChangeStatusAsync(request.TicketId, request.Status, cancellationToken);
         return ok ? true : new NotFoundError("Ticket not found.");
     }
 }
@@ -139,13 +162,21 @@ public sealed class AdminChangeSupportTicketStatusCommandHandler : IRequestHandl
 public sealed record AdminChangeSupportTicketPriorityCommand(Guid TicketId, SupportTicketPriority Priority)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
-public sealed class AdminChangeSupportTicketPriorityCommandHandler : IRequestHandler<AdminChangeSupportTicketPriorityCommand, Result<bool, Error>>
+public sealed class
+    AdminChangeSupportTicketPriorityCommandHandler : IRequestHandler<AdminChangeSupportTicketPriorityCommand,
+    Result<bool, Error>>
 {
     private readonly ISupportTicketService _service;
-    public AdminChangeSupportTicketPriorityCommandHandler(ISupportTicketService service) => _service = service;
-    public async Task<Result<bool, Error>> Handle(AdminChangeSupportTicketPriorityCommand request, CancellationToken cancellationToken)
+
+    public AdminChangeSupportTicketPriorityCommandHandler(ISupportTicketService service)
     {
-        bool ok = await _service.ChangePriorityAsync(request.TicketId, request.Priority, cancellationToken);
+        _service = service;
+    }
+
+    public async Task<Result<bool, Error>> Handle(AdminChangeSupportTicketPriorityCommand request,
+        CancellationToken cancellationToken)
+    {
+        var ok = await _service.ChangePriorityAsync(request.TicketId, request.Priority, cancellationToken);
         return ok ? true : new NotFoundError("Ticket not found.");
     }
 }
@@ -158,15 +189,23 @@ public sealed record AdminAddSupportTicketMessageCommand(
     IReadOnlyList<SupportTicketAttachmentInput>? Attachments = null)
     : IRequest<Result<bool, Error>>, IRequireAdmin;
 
-public sealed class AdminAddSupportTicketMessageCommandHandler : IRequestHandler<AdminAddSupportTicketMessageCommand, Result<bool, Error>>
+public sealed class
+    AdminAddSupportTicketMessageCommandHandler : IRequestHandler<AdminAddSupportTicketMessageCommand,
+    Result<bool, Error>>
 {
     private readonly ISupportTicketService _service;
-    public AdminAddSupportTicketMessageCommandHandler(ISupportTicketService service) => _service = service;
-    public async Task<Result<bool, Error>> Handle(AdminAddSupportTicketMessageCommand request, CancellationToken cancellationToken)
+
+    public AdminAddSupportTicketMessageCommandHandler(ISupportTicketService service)
     {
-        IEnumerable<SupportTicketAttachmentDraft>? attachments = request.Attachments?
+        _service = service;
+    }
+
+    public async Task<Result<bool, Error>> Handle(AdminAddSupportTicketMessageCommand request,
+        CancellationToken cancellationToken)
+    {
+        var attachments = request.Attachments?
             .Select(a => new SupportTicketAttachmentDraft(a.StorageKey, a.FileName, a.ContentType, a.ByteSize));
-        bool ok = await _service.AddMessageAsync(
+        var ok = await _service.AddMessageAsync(
             request.TicketId,
             request.AdminUserId,
             request.Body.Trim(),

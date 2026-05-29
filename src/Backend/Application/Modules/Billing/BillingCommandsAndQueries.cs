@@ -8,12 +8,7 @@ using Domains.Billing;
 using Domains.Tenancy;
 using Domains.Tenancy.ValueObjects;
 using Domains.UserAggregate.ValueObjects;
-using FluentValidation;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Billing;
 
@@ -63,9 +58,9 @@ public sealed class CreatePlanCommandValidator : AbstractValidator<CreatePlanCom
 
 public sealed class CreatePlanCommandHandler : IRequestHandler<CreatePlanCommand, Result<PlanDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
     private readonly IPlanStore _plans;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public CreatePlanCommandHandler(IPlanStore plans, IUnitOfWork uow, IDateTimeProvider clock)
     {
@@ -76,11 +71,11 @@ public sealed class CreatePlanCommandHandler : IRequestHandler<CreatePlanCommand
 
     public async Task<Result<PlanDto, Error>> Handle(CreatePlanCommand request, CancellationToken cancellationToken)
     {
-        string code = Plan.NormalizeCode(request.Code);
+        var code = Plan.NormalizeCode(request.Code);
         if (await _plans.CodeExistsAsync(code, cancellationToken))
             return new ValidationError(nameof(request.Code), "Plan code already exists.");
 
-        Plan plan = Plan.Create(
+        var plan = Plan.Create(
             code,
             request.Name,
             request.Description,
@@ -95,8 +90,9 @@ public sealed class CreatePlanCommandHandler : IRequestHandler<CreatePlanCommand
         return ToDto(plan);
     }
 
-    internal static PlanDto ToDto(Plan plan) =>
-        new(
+    internal static PlanDto ToDto(Plan plan)
+    {
+        return new PlanDto(
             plan.Id,
             plan.Code,
             plan.Name,
@@ -107,6 +103,7 @@ public sealed class CreatePlanCommandHandler : IRequestHandler<CreatePlanCommand
             PlanLimits.Parse(plan.LimitsJson),
             plan.IsActive,
             plan.SortOrder);
+    }
 }
 
 public sealed record UpdatePlanCommand(
@@ -122,9 +119,9 @@ public sealed record UpdatePlanCommand(
 
 public sealed class UpdatePlanCommandHandler : IRequestHandler<UpdatePlanCommand, Result<PlanDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
     private readonly IPlanStore _plans;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public UpdatePlanCommandHandler(IPlanStore plans, IUnitOfWork uow, IDateTimeProvider clock)
     {
@@ -135,7 +132,7 @@ public sealed class UpdatePlanCommandHandler : IRequestHandler<UpdatePlanCommand
 
     public async Task<Result<PlanDto, Error>> Handle(UpdatePlanCommand request, CancellationToken cancellationToken)
     {
-        Plan? plan = await _plans.GetByIdForUpdateAsync(request.PlanId, cancellationToken);
+        var plan = await _plans.GetByIdForUpdateAsync(request.PlanId, cancellationToken);
         if (plan is null)
             return new NotFoundError("Plan not found.");
 
@@ -169,7 +166,7 @@ public sealed class DeletePlanCommandHandler : IRequestHandler<DeletePlanCommand
 
     public async Task<Result<bool, Error>> Handle(DeletePlanCommand request, CancellationToken cancellationToken)
     {
-        Plan? plan = await _plans.GetByIdForUpdateAsync(request.PlanId, cancellationToken);
+        var plan = await _plans.GetByIdForUpdateAsync(request.PlanId, cancellationToken);
         if (plan is null)
             return new NotFoundError("Plan not found.");
 
@@ -191,14 +188,18 @@ public sealed class ListPlansQueryHandler : IRequestHandler<ListPlansQuery, Resu
 {
     private readonly IApplicationReadDbContext _db;
 
-    public ListPlansQueryHandler(IApplicationReadDbContext db) => _db = db;
-
-    public async Task<Result<IReadOnlyList<PlanDto>, Error>> Handle(ListPlansQuery request, CancellationToken cancellationToken)
+    public ListPlansQueryHandler(IApplicationReadDbContext db)
     {
-        IQueryable<Plan> q = _db.Plans.AsNoTracking();
+        _db = db;
+    }
+
+    public async Task<Result<IReadOnlyList<PlanDto>, Error>> Handle(ListPlansQuery request,
+        CancellationToken cancellationToken)
+    {
+        var q = _db.Plans.AsNoTracking();
         if (request.ActiveOnly)
             q = q.Where(p => p.IsActive);
-        List<Plan> plans = await q
+        var plans = await q
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.Name)
             .ToListAsync(cancellationToken);
@@ -207,8 +208,8 @@ public sealed class ListPlansQueryHandler : IRequestHandler<ListPlansQuery, Resu
 }
 
 /// <summary>
-/// Manual checkout (MVP): authenticated user purchases a plan and becomes owner of a new tenant.
-/// Payment provider webhooks will call the same provisioning path in Phase 1B follow-up.
+///     Manual checkout (MVP): authenticated user purchases a plan and becomes owner of a new tenant.
+///     Payment provider webhooks will call the same provisioning path in Phase 1B follow-up.
 /// </summary>
 public sealed record SubscribeToPlanCommand(
     Guid UserId,
@@ -235,14 +236,15 @@ public sealed class SubscribeToPlanCommandValidator : AbstractValidator<Subscrib
     }
 }
 
-public sealed class SubscribeToPlanCommandHandler : IRequestHandler<SubscribeToPlanCommand, Result<SubscribeToPlanResult, Error>>
+public sealed class
+    SubscribeToPlanCommandHandler : IRequestHandler<SubscribeToPlanCommand, Result<SubscribeToPlanResult, Error>>
 {
+    private readonly IDateTimeProvider _clock;
+    private readonly IApplicationReadDbContext _db;
+    private readonly IBillingInvoiceIssuer _invoices;
     private readonly IPlanStore _plans;
     private readonly ITenantStore _tenantStore;
-    private readonly IBillingInvoiceIssuer _invoices;
-    private readonly IApplicationReadDbContext _db;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public SubscribeToPlanCommandHandler(
         IPlanStore plans,
@@ -260,27 +262,28 @@ public sealed class SubscribeToPlanCommandHandler : IRequestHandler<SubscribeToP
         _clock = clock;
     }
 
-    public async Task<Result<SubscribeToPlanResult, Error>> Handle(SubscribeToPlanCommand request, CancellationToken cancellationToken)
+    public async Task<Result<SubscribeToPlanResult, Error>> Handle(SubscribeToPlanCommand request,
+        CancellationToken cancellationToken)
     {
-        string planCode = Plan.NormalizeCode(request.PlanCode);
-        Plan? plan = await _plans.GetByCodeAsync(planCode, activeOnly: true, cancellationToken);
+        var planCode = Plan.NormalizeCode(request.PlanCode);
+        var plan = await _plans.GetByCodeAsync(planCode, true, cancellationToken);
         if (plan is null)
             return new NotFoundError("Plan not found or inactive.");
 
-        string slug = Tenant.NormalizeSlug(request.TenantSlug);
+        var slug = Tenant.NormalizeSlug(request.TenantSlug);
         if (await _tenantStore.SlugExistsAsync(slug, cancellationToken))
             return new ValidationError(nameof(request.TenantSlug), "Tenant slug is already in use.");
 
-        UserId ownerId = UserId.Create(request.UserId);
-        bool ownerExists = await _db.Users.AsNoTracking().AnyAsync(u => u.Id == ownerId, cancellationToken);
+        var ownerId = UserId.Create(request.UserId);
+        var ownerExists = await _db.Users.AsNoTracking().AnyAsync(u => u.Id == ownerId, cancellationToken);
         if (!ownerExists)
             return new NotFoundError("User not found.");
 
-        Tenant tenant = Tenant.Create(slug, request.TenantDisplayName, ownerId, _clock.Now);
+        var tenant = Tenant.Create(slug, request.TenantDisplayName, ownerId, _clock.Now);
         tenant.UpdateBranding(request.PublicTagline, request.PublicDescription, _clock.Now);
         _tenantStore.Add(tenant);
 
-        Subscription subscription = plan.TrialDays > 0
+        var subscription = plan.TrialDays > 0
             ? Subscription.CreateTrialing(tenant.Id, plan.Id, plan.TrialDays, _clock.Now)
             : Subscription.CreateActive(tenant.Id, plan.Id, _clock.Now);
         _plans.Add(subscription);
@@ -304,30 +307,35 @@ public sealed class SubscribeToPlanCommandHandler : IRequestHandler<SubscribeToP
 
 public sealed record GetTenantSubscriptionQuery(Guid TenantId) : IRequest<Result<SubscriptionSummaryDto, Error>>;
 
-public sealed class GetTenantSubscriptionQueryHandler : IRequestHandler<GetTenantSubscriptionQuery, Result<SubscriptionSummaryDto, Error>>
+public sealed class
+    GetTenantSubscriptionQueryHandler : IRequestHandler<GetTenantSubscriptionQuery,
+    Result<SubscriptionSummaryDto, Error>>
 {
     private readonly IApplicationReadDbContext _db;
 
-    public GetTenantSubscriptionQueryHandler(IApplicationReadDbContext db) => _db = db;
+    public GetTenantSubscriptionQueryHandler(IApplicationReadDbContext db)
+    {
+        _db = db;
+    }
 
     public async Task<Result<SubscriptionSummaryDto, Error>> Handle(
         GetTenantSubscriptionQuery request,
         CancellationToken cancellationToken)
     {
-        SubscriptionSummaryDto? row = await (
-            from s in _db.Subscriptions.AsNoTracking()
-            join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
-            where s.TenantId == TenantId.Create(request.TenantId)
-            select new SubscriptionSummaryDto(
-                s.Id,
-                s.TenantId.Value,
-                s.PlanId,
-                p.Code,
-                p.Name,
-                s.Status.ToString(),
-                s.CurrentPeriodStartUtc,
-                s.CurrentPeriodEndUtc,
-                s.Status == SubscriptionStatus.Trialing || s.Status == SubscriptionStatus.Active))
+        var row = await (
+                from s in _db.Subscriptions.AsNoTracking()
+                join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
+                where s.TenantId == TenantId.Create(request.TenantId)
+                select new SubscriptionSummaryDto(
+                    s.Id,
+                    s.TenantId.Value,
+                    s.PlanId,
+                    p.Code,
+                    p.Name,
+                    s.Status.ToString(),
+                    s.CurrentPeriodStartUtc,
+                    s.CurrentPeriodEndUtc,
+                    s.Status == SubscriptionStatus.Trialing || s.Status == SubscriptionStatus.Active))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)
@@ -341,7 +349,8 @@ public sealed class GetTenantSubscriptionQueryHandler : IRequestHandler<GetTenan
 public sealed record AdminAssignTenantSubscriptionCommand(Guid TenantId, string PlanCode)
     : IRequest<Result<SubscriptionSummaryDto, Error>>, IRequireAdmin;
 
-public sealed class AdminAssignTenantSubscriptionCommandValidator : AbstractValidator<AdminAssignTenantSubscriptionCommand>
+public sealed class
+    AdminAssignTenantSubscriptionCommandValidator : AbstractValidator<AdminAssignTenantSubscriptionCommand>
 {
     public AdminAssignTenantSubscriptionCommandValidator()
     {
@@ -353,12 +362,12 @@ public sealed class AdminAssignTenantSubscriptionCommandValidator : AbstractVali
 public sealed class AdminAssignTenantSubscriptionCommandHandler
     : IRequestHandler<AdminAssignTenantSubscriptionCommand, Result<SubscriptionSummaryDto, Error>>
 {
+    private readonly IDateTimeProvider _clock;
+    private readonly IApplicationReadDbContext _db;
+    private readonly IBillingInvoiceIssuer _invoices;
     private readonly IPlanStore _plans;
     private readonly ISubscriptionStore _subscriptions;
-    private readonly IBillingInvoiceIssuer _invoices;
-    private readonly IApplicationReadDbContext _db;
     private readonly IUnitOfWork _uow;
-    private readonly IDateTimeProvider _clock;
 
     public AdminAssignTenantSubscriptionCommandHandler(
         IPlanStore plans,
@@ -380,17 +389,17 @@ public sealed class AdminAssignTenantSubscriptionCommandHandler
         AdminAssignTenantSubscriptionCommand request,
         CancellationToken cancellationToken)
     {
-        string planCode = Plan.NormalizeCode(request.PlanCode);
-        Plan? plan = await _plans.GetByCodeAsync(planCode, activeOnly: true, cancellationToken);
+        var planCode = Plan.NormalizeCode(request.PlanCode);
+        var plan = await _plans.GetByCodeAsync(planCode, true, cancellationToken);
         if (plan is null)
             return new NotFoundError("Plan not found or inactive.");
 
-        TenantId tenantId = TenantId.Create(request.TenantId);
-        bool tenantExists = await _db.Tenants.AsNoTracking().AnyAsync(t => t.Id == tenantId, cancellationToken);
+        var tenantId = TenantId.Create(request.TenantId);
+        var tenantExists = await _db.Tenants.AsNoTracking().AnyAsync(t => t.Id == tenantId, cancellationToken);
         if (!tenantExists)
             return new NotFoundError("Tenant was not found.");
 
-        Subscription? subscription = await _subscriptions.GetByTenantForUpdateAsync(tenantId, cancellationToken);
+        var subscription = await _subscriptions.GetByTenantForUpdateAsync(tenantId, cancellationToken);
         if (subscription is null)
         {
             subscription = plan.TrialDays > 0
@@ -408,7 +417,7 @@ public sealed class AdminAssignTenantSubscriptionCommandHandler
         }
         else
         {
-            bool planChanged = subscription.PlanId != plan.Id;
+            var planChanged = subscription.PlanId != plan.Id;
             if (subscription.Status == SubscriptionStatus.Canceled)
                 subscription.Activate(_clock.Now);
 
@@ -422,14 +431,12 @@ public sealed class AdminAssignTenantSubscriptionCommandHandler
             await _uow.SaveChangesAsync(cancellationToken);
 
             if (planChanged)
-            {
                 await _invoices.IssuePlanChangeInvoiceAsync(
                     request.TenantId,
                     subscription.Id,
                     plan.Id,
                     "manual",
                     cancellationToken);
-            }
         }
 
         return await LoadSummaryAsync(subscription.Id, cancellationToken);
@@ -439,20 +446,20 @@ public sealed class AdminAssignTenantSubscriptionCommandHandler
         Guid subscriptionId,
         CancellationToken cancellationToken)
     {
-        SubscriptionSummaryDto? row = await (
-            from s in _db.Subscriptions.AsNoTracking()
-            join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
-            where s.Id == subscriptionId
-            select new SubscriptionSummaryDto(
-                s.Id,
-                s.TenantId.Value,
-                s.PlanId,
-                p.Code,
-                p.Name,
-                s.Status.ToString(),
-                s.CurrentPeriodStartUtc,
-                s.CurrentPeriodEndUtc,
-                s.Status == SubscriptionStatus.Trialing || s.Status == SubscriptionStatus.Active))
+        var row = await (
+                from s in _db.Subscriptions.AsNoTracking()
+                join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
+                where s.Id == subscriptionId
+                select new SubscriptionSummaryDto(
+                    s.Id,
+                    s.TenantId.Value,
+                    s.PlanId,
+                    p.Code,
+                    p.Name,
+                    s.Status.ToString(),
+                    s.CurrentPeriodStartUtc,
+                    s.CurrentPeriodEndUtc,
+                    s.Status == SubscriptionStatus.Trialing || s.Status == SubscriptionStatus.Active))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)

@@ -1,12 +1,6 @@
-using Application.Common;
 using Application.Contracts.Authorization;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Mapping;
-using Domains.UserAggregate;
-using MediatR;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Users.Administration.Queries;
 
@@ -37,9 +31,13 @@ public sealed class AdminListUsersQueryHandler : IRequestHandler<AdminListUsersQ
 {
     private readonly IUserReadRepository _users;
 
-    public AdminListUsersQueryHandler(IUserReadRepository users) => _users = users;
+    public AdminListUsersQueryHandler(IUserReadRepository users)
+    {
+        _users = users;
+    }
 
-    public async Task<Result<AdminUserListDto, Error>> Handle(AdminListUsersQuery request, CancellationToken cancellationToken)
+    public async Task<Result<AdminUserListDto, Error>> Handle(AdminListUsersQuery request,
+        CancellationToken cancellationToken)
     {
         if (request.Page < 1 || request.PageSize < 1 || request.PageSize > 200)
             return new Error("BadRequest", 400, "Page must be at least 1 and page size between 1 and 200.");
@@ -55,9 +53,9 @@ public sealed class AdminListUsersQueryHandler : IRequestHandler<AdminListUsersQ
             request.SortBy,
             request.SortDescending);
 
-        PagedList<User> page = await _users.GetUsersAdminPageAsync(p, cancellationToken);
+        var page = await _users.GetUsersAdminPageAsync(p, cancellationToken);
 
-        IReadOnlyList<AdminUserSummaryDto> items = page.ToAdminSummaryDtos();
+        var items = page.ToAdminSummaryDtos();
         return new AdminUserListDto(items, page.TotalCount, request.Page, request.PageSize);
     }
 }

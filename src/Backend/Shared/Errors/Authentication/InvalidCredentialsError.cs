@@ -1,7 +1,9 @@
-namespace Shared.Errors.Authentication
+namespace Shared.Errors.Authentication;
+
+public class InvalidCredentialsError : AuthenticationError
 {
-    public class InvalidCredentialsError : AuthenticationError
+    public InvalidCredentialsError(string errorMessage) : base("Authentication.InvalidCredentials",
+        errorMessage: errorMessage)
     {
-        public InvalidCredentialsError(string errorMessage) : base("Authentication.InvalidCredentials", errorMessage: errorMessage) { }
     }
 }

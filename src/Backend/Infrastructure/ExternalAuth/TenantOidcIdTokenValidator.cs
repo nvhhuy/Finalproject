@@ -11,7 +11,10 @@ public sealed class TenantOidcIdTokenValidator : ITenantOidcIdTokenValidator
 {
     private readonly ILogger<TenantOidcIdTokenValidator> _logger;
 
-    public TenantOidcIdTokenValidator(ILogger<TenantOidcIdTokenValidator> logger) => _logger = logger;
+    public TenantOidcIdTokenValidator(ILogger<TenantOidcIdTokenValidator> logger)
+    {
+        _logger = logger;
+    }
 
     public async Task<TenantOidcUserInfo?> ValidateAsync(
         string authority,
@@ -21,13 +24,13 @@ public sealed class TenantOidcIdTokenValidator : ITenantOidcIdTokenValidator
     {
         try
         {
-            string metadataAddress = $"{authority.TrimEnd('/')}/.well-known/openid-configuration";
+            var metadataAddress = $"{authority.TrimEnd('/')}/.well-known/openid-configuration";
             var configManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                 metadataAddress,
                 new OpenIdConnectConfigurationRetriever(),
                 new HttpDocumentRetriever());
 
-            OpenIdConnectConfiguration config = await configManager.GetConfigurationAsync(cancellationToken);
+            var config = await configManager.GetConfigurationAsync(cancellationToken);
             var handler = new JwtSecurityTokenHandler();
             TokenValidationParameters parameters = new()
             {
@@ -37,15 +40,15 @@ public sealed class TenantOidcIdTokenValidator : ITenantOidcIdTokenValidator
                 ValidAudience = clientId,
                 ValidateLifetime = true,
                 IssuerSigningKeys = config.SigningKeys,
-                ClockSkew = TimeSpan.FromMinutes(2),
+                ClockSkew = TimeSpan.FromMinutes(2)
             };
 
-            handler.ValidateToken(idToken, parameters, out SecurityToken validated);
+            handler.ValidateToken(idToken, parameters, out var validated);
             if (validated is not JwtSecurityToken jwt)
                 return null;
 
-            string? sub = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
-            string? email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            var sub = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
             if (string.IsNullOrWhiteSpace(sub) || string.IsNullOrWhiteSpace(email))
                 return null;
 

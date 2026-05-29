@@ -4,11 +4,7 @@ using Application.Contracts.Support;
 using Application.Contracts.Tenancy;
 using Domains.Support;
 using Domains.Tenancy;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shared.Common;
-using Shared.Errors;
-using Shared.Errors.General;
 
 namespace Application.Modules.Support;
 
@@ -21,9 +17,9 @@ public sealed record CreateSupportTicketCommand(
 
 public sealed class CreateSupportTicketCommandHandler : IRequestHandler<CreateSupportTicketCommand, Result<Guid, Error>>
 {
+    private readonly IEntitlementService _entitlements;
     private readonly ISupportTicketService _service;
     private readonly ITenantContext _tenantContext;
-    private readonly IEntitlementService _entitlements;
 
     public CreateSupportTicketCommandHandler(
         ISupportTicketService service,
@@ -35,17 +31,18 @@ public sealed class CreateSupportTicketCommandHandler : IRequestHandler<CreateSu
         _entitlements = entitlements;
     }
 
-    public async Task<Result<Guid, Error>> Handle(CreateSupportTicketCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid, Error>> Handle(CreateSupportTicketCommand request,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Description))
             return new Error("BadRequest", 400, "Subject and description are required.");
 
-        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
-        EntitlementCheckResult check = await _entitlements.CheckOpenSupportTicketAsync(tenantId, cancellationToken);
+        var tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
+        var check = await _entitlements.CheckOpenSupportTicketAsync(tenantId, cancellationToken);
         if (!check.Allowed)
             return new Error("Forbidden", 403, check.DenyReason ?? "Not allowed.");
 
-        Guid id = await _service.CreateAsync(
+        var id = await _service.CreateAsync(
             request.UserId,
             request.Subject.Trim(),
             request.Description.Trim(),
@@ -68,7 +65,8 @@ public sealed record SupportTicketAttachmentInput(
     string ContentType,
     long ByteSize);
 
-public sealed class AddSupportTicketMessageCommandHandler : IRequestHandler<AddSupportTicketMessageCommand, Result<bool, Error>>
+public sealed class
+    AddSupportTicketMessageCommandHandler : IRequestHandler<AddSupportTicketMessageCommand, Result<bool, Error>>
 {
     private readonly IApplicationReadDbContext _read;
     private readonly ISupportTicketService _service;
@@ -79,21 +77,22 @@ public sealed class AddSupportTicketMessageCommandHandler : IRequestHandler<AddS
         _service = service;
     }
 
-    public async Task<Result<bool, Error>> Handle(AddSupportTicketMessageCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool, Error>> Handle(AddSupportTicketMessageCommand request,
+        CancellationToken cancellationToken)
     {
-        bool owns = await _read.SupportTickets
+        var owns = await _read.SupportTickets
             .AnyAsync(t => t.Id == request.TicketId && t.CreatedByUserId == request.UserId, cancellationToken);
         if (!owns)
             return new NotFoundError("Ticket not found.");
 
-        IEnumerable<SupportTicketAttachmentDraft>? attachments = request.Attachments?
+        var attachments = request.Attachments?
             .Select(a => new SupportTicketAttachmentDraft(a.StorageKey, a.FileName, a.ContentType, a.ByteSize));
 
-        bool ok = await _service.AddMessageAsync(
+        var ok = await _service.AddMessageAsync(
             request.TicketId,
             request.UserId,
             request.Body.Trim(),
-            isInternalNote: false,
+            false,
             attachments,
             cancellationToken);
         return ok ? true : new NotFoundError("Ticket not found.");
@@ -101,24 +100,28 @@ public sealed class AddSupportTicketMessageCommandHandler : IRequestHandler<AddS
 }
 
 public sealed record CloseSupportTicketCommand(Guid UserId, Guid TicketId) : IRequest<Result<bool, Error>>;
+
 public sealed record ReopenSupportTicketCommand(Guid UserId, Guid TicketId) : IRequest<Result<bool, Error>>;
 
 public sealed class CloseSupportTicketCommandHandler : IRequestHandler<CloseSupportTicketCommand, Result<bool, Error>>
 {
     private readonly IApplicationReadDbContext _read;
     private readonly ISupportTicketService _service;
+
     public CloseSupportTicketCommandHandler(IApplicationReadDbContext read, ISupportTicketService service)
     {
         _read = read;
         _service = service;
     }
 
-    public async Task<Result<bool, Error>> Handle(CloseSupportTicketCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool, Error>> Handle(CloseSupportTicketCommand request,
+        CancellationToken cancellationToken)
     {
-        bool owns = await _read.SupportTickets.AnyAsync(t => t.Id == request.TicketId && t.CreatedByUserId == request.UserId, cancellationToken);
+        var owns = await _read.SupportTickets.AnyAsync(
+            t => t.Id == request.TicketId && t.CreatedByUserId == request.UserId, cancellationToken);
         if (!owns)
             return new NotFoundError("Ticket not found.");
-        bool ok = await _service.ChangeStatusAsync(request.TicketId, SupportTicketStatus.Closed, cancellationToken);
+        var ok = await _service.ChangeStatusAsync(request.TicketId, SupportTicketStatus.Closed, cancellationToken);
         return ok ? true : new NotFoundError("Ticket not found.");
     }
 }
@@ -127,18 +130,21 @@ public sealed class ReopenSupportTicketCommandHandler : IRequestHandler<ReopenSu
 {
     private readonly IApplicationReadDbContext _read;
     private readonly ISupportTicketService _service;
+
     public ReopenSupportTicketCommandHandler(IApplicationReadDbContext read, ISupportTicketService service)
     {
         _read = read;
         _service = service;
     }
 
-    public async Task<Result<bool, Error>> Handle(ReopenSupportTicketCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool, Error>> Handle(ReopenSupportTicketCommand request,
+        CancellationToken cancellationToken)
     {
-        bool owns = await _read.SupportTickets.AnyAsync(t => t.Id == request.TicketId && t.CreatedByUserId == request.UserId, cancellationToken);
+        var owns = await _read.SupportTickets.AnyAsync(
+            t => t.Id == request.TicketId && t.CreatedByUserId == request.UserId, cancellationToken);
         if (!owns)
             return new NotFoundError("Ticket not found.");
-        bool ok = await _service.ChangeStatusAsync(request.TicketId, SupportTicketStatus.Open, cancellationToken);
+        var ok = await _service.ChangeStatusAsync(request.TicketId, SupportTicketStatus.Open, cancellationToken);
         return ok ? true : new NotFoundError("Ticket not found.");
     }
 }
@@ -162,24 +168,25 @@ public sealed class ListMySupportTicketsQueryHandler
         _tenantContext = tenantContext;
     }
 
-    public async Task<Result<SupportTicketListDto, Error>> Handle(ListMySupportTicketsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<SupportTicketListDto, Error>> Handle(ListMySupportTicketsQuery request,
+        CancellationToken cancellationToken)
     {
         if (request.Page < 1 || request.PageSize is < 1 or > 200)
             return new Error("BadRequest", 400, "Page must be at least 1 and page size between 1 and 200.");
 
-        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
-        IQueryable<SupportTicket> q = _read.SupportTickets
+        var tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
+        var q = _read.SupportTickets
             .Where(t => t.TenantId == tenantId && t.CreatedByUserId == request.UserId);
         if (request.Status is not null)
             q = q.Where(t => t.Status == request.Status.Value);
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            string s = request.Search.Trim().ToUpperInvariant();
+            var s = request.Search.Trim().ToUpperInvariant();
             q = q.Where(t => t.NormalizedSubject.Contains(s) || t.TicketNumber.Contains(request.Search.Trim()));
         }
 
-        int total = await q.CountAsync(cancellationToken);
-        List<SupportTicketSummaryDto> items = await q
+        var total = await q.CountAsync(cancellationToken);
+        var items = await q
             .OrderByDescending(t => t.UpdatedAtUtc)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
@@ -199,7 +206,8 @@ public sealed class ListMySupportTicketsQueryHandler
     }
 }
 
-public sealed record GetMySupportTicketDetailQuery(Guid UserId, Guid TicketId) : IRequest<Result<SupportTicketDetailDto, Error>>;
+public sealed record GetMySupportTicketDetailQuery(Guid UserId, Guid TicketId)
+    : IRequest<Result<SupportTicketDetailDto, Error>>;
 
 public sealed class GetMySupportTicketDetailQueryHandler
     : IRequestHandler<GetMySupportTicketDetailQuery, Result<SupportTicketDetailDto, Error>>
@@ -213,10 +221,11 @@ public sealed class GetMySupportTicketDetailQueryHandler
         _tenantContext = tenantContext;
     }
 
-    public async Task<Result<SupportTicketDetailDto, Error>> Handle(GetMySupportTicketDetailQuery request, CancellationToken cancellationToken)
+    public async Task<Result<SupportTicketDetailDto, Error>> Handle(GetMySupportTicketDetailQuery request,
+        CancellationToken cancellationToken)
     {
-        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
-        SupportTicketDetailDto? ticket = await _read.SupportTickets
+        var tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
+        var ticket = await _read.SupportTickets
             .Where(t => t.Id == request.TicketId && t.TenantId == tenantId && t.CreatedByUserId == request.UserId)
             .Select(t => new SupportTicketDetailDto(
                 t.Id,
@@ -242,7 +251,9 @@ public sealed class GetMySupportTicketDetailQueryHandler
                         m.IsInternalNote,
                         m.CreatedAtUtc,
                         m.Attachments
-                            .Select(a => new SupportTicketAttachmentDto(a.Id, a.FileName, a.ContentType, a.ByteSize, a.StorageKey))
+                            .Select(a =>
+                                new SupportTicketAttachmentDto(a.Id, a.FileName, a.ContentType, a.ByteSize,
+                                    a.StorageKey))
                             .ToList()))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);

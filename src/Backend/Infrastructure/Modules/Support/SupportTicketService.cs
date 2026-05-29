@@ -13,8 +13,8 @@ namespace Infrastructure.Modules.Support;
 public sealed class SupportTicketService : ISupportTicketService
 {
     private readonly ApplicationDbContext _db;
-    private readonly IUserNotificationService _notifications;
     private readonly IEmailSender _emailSender;
+    private readonly IUserNotificationService _notifications;
     private readonly ITenantContext _tenantContext;
 
     public SupportTicketService(
@@ -37,15 +37,15 @@ public sealed class SupportTicketService : ISupportTicketService
         SupportTicketPriority priority,
         CancellationToken cancellationToken = default)
     {
-        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
-        int next = await _db.SupportTickets
+        var tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
+        var next = await _db.SupportTickets
             .IgnoreQueryFilters()
             .CountAsync(t => t.TenantId == tenantId, cancellationToken) + 1;
-        string ticketNumber = $"SUP-{DateTime.UtcNow:yyyyMMdd}-{next:D5}";
+        var ticketNumber = $"SUP-{DateTime.UtcNow:yyyyMMdd}-{next:D5}";
 
-        SupportTicket ticket = SupportTicket.Create(tenantId, userId, ticketNumber, subject, description, category, priority);
+        var ticket = SupportTicket.Create(tenantId, userId, ticketNumber, subject, description, category, priority);
         _db.SupportTickets.Add(ticket);
-        ticket.AddMessage(userId, description, isInternalNote: false);
+        ticket.AddMessage(userId, description, false);
         await _db.SaveChangesAsync(cancellationToken);
 
         await _notifications.CreateAndDispatchAsync(
@@ -55,16 +55,15 @@ public sealed class SupportTicketService : ISupportTicketService
             $"/app/support/{ticket.Id}",
             cancellationToken);
 
-        UserId userKey = UserId.Create(userId);
-        string? email = await _db.Users.Where(u => u.Id == userKey).Select(u => u.Email).FirstOrDefaultAsync(cancellationToken);
+        var userKey = UserId.Create(userId);
+        var email = await _db.Users.Where(u => u.Id == userKey).Select(u => u.Email)
+            .FirstOrDefaultAsync(cancellationToken);
         if (!string.IsNullOrWhiteSpace(email))
-        {
             await _emailSender.SendAsync(
                 email!,
                 $"[{ticket.TicketNumber}] Support ticket created",
                 $"<p>We received your request.</p><p><b>{subject}</b></p>",
                 cancellationToken);
-        }
 
         return ticket.Id;
     }
@@ -77,14 +76,14 @@ public sealed class SupportTicketService : ISupportTicketService
         IEnumerable<SupportTicketAttachmentDraft>? attachments = null,
         CancellationToken cancellationToken = default)
     {
-        SupportTicket? ticket = await _db.SupportTickets
+        var ticket = await _db.SupportTickets
             .Include(t => t.Messages)
             .ThenInclude(m => m.Attachments)
             .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
         if (ticket is null)
             return false;
 
-        SupportTicketMessage message = ticket.AddMessage(actorUserId, body, isInternalNote, attachments);
+        var message = ticket.AddMessage(actorUserId, body, isInternalNote, attachments);
         _db.SupportTicketMessages.Add(message);
         if (!isInternalNote && actorUserId != ticket.CreatedByUserId)
             ticket.ChangeStatus(SupportTicketStatus.PendingUser);
@@ -102,19 +101,17 @@ public sealed class SupportTicketService : ISupportTicketService
                 $"/app/support/{ticket.Id}",
                 cancellationToken);
 
-            UserId ownerKey = UserId.Create(ticket.CreatedByUserId);
-            string? email = await _db.Users
+            var ownerKey = UserId.Create(ticket.CreatedByUserId);
+            var email = await _db.Users
                 .Where(u => u.Id == ownerKey)
                 .Select(u => u.Email)
                 .FirstOrDefaultAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(email))
-            {
                 await _emailSender.SendAsync(
                     email!,
                     $"[{ticket.TicketNumber}] New support reply",
                     $"<p>{body}</p>",
                     cancellationToken);
-            }
         }
 
         return true;
@@ -122,7 +119,7 @@ public sealed class SupportTicketService : ISupportTicketService
 
     public async Task<bool> AssignAsync(Guid ticketId, Guid? adminUserId, CancellationToken cancellationToken = default)
     {
-        SupportTicket? ticket = await _db.SupportTickets.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
+        var ticket = await _db.SupportTickets.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
         if (ticket is null)
             return false;
 
@@ -131,9 +128,10 @@ public sealed class SupportTicketService : ISupportTicketService
         return true;
     }
 
-    public async Task<bool> ChangeStatusAsync(Guid ticketId, SupportTicketStatus status, CancellationToken cancellationToken = default)
+    public async Task<bool> ChangeStatusAsync(Guid ticketId, SupportTicketStatus status,
+        CancellationToken cancellationToken = default)
     {
-        SupportTicket? ticket = await _db.SupportTickets.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
+        var ticket = await _db.SupportTickets.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
         if (ticket is null)
             return false;
 
@@ -149,9 +147,10 @@ public sealed class SupportTicketService : ISupportTicketService
         return true;
     }
 
-    public async Task<bool> ChangePriorityAsync(Guid ticketId, SupportTicketPriority priority, CancellationToken cancellationToken = default)
+    public async Task<bool> ChangePriorityAsync(Guid ticketId, SupportTicketPriority priority,
+        CancellationToken cancellationToken = default)
     {
-        SupportTicket? ticket = await _db.SupportTickets.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
+        var ticket = await _db.SupportTickets.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
         if (ticket is null)
             return false;
 

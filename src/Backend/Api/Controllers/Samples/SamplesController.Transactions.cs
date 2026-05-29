@@ -1,9 +1,6 @@
-using Api.Models;
-using Application.Modules.Users.Administration.Commands;
 using Api.Models.Admin;
+using Application.Modules.Users.Administration.Commands;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.General;
 
 namespace Api.Controllers.Samples;
@@ -12,12 +9,13 @@ public sealed partial class SamplesController
 {
     /// <summary>Explicit transaction: begin, command (SaveChanges), commit or rollback.</summary>
     [HttpPost("transactions/manual-lock/{userId:guid}")]
-    public async Task<IActionResult> ManualLockUser(Guid userId, [FromBody] LockUserRequest body, CancellationToken cancellationToken)
+    public async Task<IActionResult> ManualLockUser(Guid userId, [FromBody] LockUserRequest body,
+        CancellationToken cancellationToken)
     {
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            Result<bool, Error> result = await Sender.Send(
+            var result = await Sender.Send(
                 new AdminLockUserCommand(userId, body.Reason, CurrentAdminId, body.RowVersion),
                 cancellationToken);
             if (result.IsFailure)

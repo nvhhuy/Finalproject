@@ -1,39 +1,42 @@
 namespace Application.Modules.Media.Common;
 
 /// <summary>
-/// Lightweight magic-byte detector used to verify that an uploaded blob's actual bytes match the
-/// content type the client declared at <c>InitiateMediaUpload</c>. Defends against the common
-/// social-platform abuse vector of declaring <c>image/jpeg</c> while uploading an executable,
-/// HTML, or polyglot payload that gets served back to other users with the trusted content-type.
+///     Lightweight magic-byte detector used to verify that an uploaded blob's actual bytes match the
+///     content type the client declared at <c>InitiateMediaUpload</c>. Defends against the common
+///     social-platform abuse vector of declaring <c>image/jpeg</c> while uploading an executable,
+///     HTML, or polyglot payload that gets served back to other users with the trusted content-type.
 /// </summary>
 /// <remarks>
-/// <para>This is intentionally <b>not exhaustive</b> — it covers the formats our media pipeline
-/// will actually decode (JPEG, PNG, WebP, GIF for images; MP4, MOV/QuickTime, WebM for video).
-/// Anything outside this list is rejected at the <c>CompleteMediaUpload</c> boundary so the
-/// worker never has to deal with unknown payloads.</para>
-///
-/// <para><b>What this is NOT:</b> a virus scanner. Magic bytes only protect against trivial
-/// MIME-type lies. For threat models that include weaponised media files (CVEs in image decoders,
-/// MP4 atom-injection attacks) layer ClamAV / EnGarde / similar between this verifier and the
-/// processing pipeline.</para>
+///     <para>
+///         This is intentionally <b>not exhaustive</b> — it covers the formats our media pipeline
+///         will actually decode (JPEG, PNG, WebP, GIF for images; MP4, MOV/QuickTime, WebM for video).
+///         Anything outside this list is rejected at the <c>CompleteMediaUpload</c> boundary so the
+///         worker never has to deal with unknown payloads.
+///     </para>
+///     <para>
+///         <b>What this is NOT:</b> a virus scanner. Magic bytes only protect against trivial
+///         MIME-type lies. For threat models that include weaponised media files (CVEs in image decoders,
+///         MP4 atom-injection attacks) layer ClamAV / EnGarde / similar between this verifier and the
+///         processing pipeline.
+///     </para>
 /// </remarks>
 public static class MediaContentTypeVerifier
 {
     /// <summary>
-    /// Minimum bytes a HEAD-then-range probe needs to fetch from storage to run all sniffers
-    /// below. Aligned to 32 to cover ISO-BMFF box headers (the longest signature we look at).
+    ///     Minimum bytes a HEAD-then-range probe needs to fetch from storage to run all sniffers
+    ///     below. Aligned to 32 to cover ISO-BMFF box headers (the longest signature we look at).
     /// </summary>
     public const int RequiredHeaderBytes = 32;
 
     /// <summary>
-    /// Returns the canonical media content type detected from <paramref name="header"/>, or
-    /// <c>null</c> if the bytes don't match any supported format. Caller compares the returned
-    /// value against the client-declared type.
+    ///     Returns the canonical media content type detected from <paramref name="header" />, or
+    ///     <c>null</c> if the bytes don't match any supported format. Caller compares the returned
+    ///     value against the client-declared type.
     /// </summary>
     /// <remarks>
-    /// Signatures sourced from Wikipedia "List of file signatures" + the WHATWG MIME Sniffing
-    /// Standard. ISO Base Media Format (MP4/MOV) is identified by the <c>ftyp</c> box at offset 4
-    /// with a known brand; this catches the major variants (mp4, isom, qt, M4V).
+    ///     Signatures sourced from Wikipedia "List of file signatures" + the WHATWG MIME Sniffing
+    ///     Standard. ISO Base Media Format (MP4/MOV) is identified by the <c>ftyp</c> box at offset 4
+    ///     with a known brand; this catches the major variants (mp4, isom, qt, M4V).
     /// </remarks>
     public static string? Detect(ReadOnlySpan<byte> header)
     {
@@ -82,9 +85,9 @@ public static class MediaContentTypeVerifier
     }
 
     /// <summary>
-    /// Returns <c>true</c> when <paramref name="detected"/> is an acceptable substitute for
-    /// <paramref name="declared"/>. Exact match always passes; image/jpeg ↔ image/jpg, and
-    /// MP4 ↔ QuickTime/M4V are treated as equivalent because the worker normalises them.
+    ///     Returns <c>true</c> when <paramref name="detected" /> is an acceptable substitute for
+    ///     <paramref name="declared" />. Exact match always passes; image/jpeg ↔ image/jpg, and
+    ///     MP4 ↔ QuickTime/M4V are treated as equivalent because the worker normalises them.
     /// </summary>
     public static bool IsCompatible(string declared, string detected)
     {
@@ -97,11 +100,11 @@ public static class MediaContentTypeVerifier
             return true;
 
         // QuickTime and MP4 share an ISO-BMFF container — the worker can handle either.
-        bool declaredIsMp4Family = declared.Equals("video/mp4", StringComparison.OrdinalIgnoreCase)
-            || declared.Equals("video/quicktime", StringComparison.OrdinalIgnoreCase)
-            || declared.Equals("video/x-m4v", StringComparison.OrdinalIgnoreCase);
-        bool detectedIsMp4Family = detected.Equals("video/mp4", StringComparison.OrdinalIgnoreCase)
-            || detected.Equals("video/quicktime", StringComparison.OrdinalIgnoreCase);
+        var declaredIsMp4Family = declared.Equals("video/mp4", StringComparison.OrdinalIgnoreCase)
+                                  || declared.Equals("video/quicktime", StringComparison.OrdinalIgnoreCase)
+                                  || declared.Equals("video/x-m4v", StringComparison.OrdinalIgnoreCase);
+        var detectedIsMp4Family = detected.Equals("video/mp4", StringComparison.OrdinalIgnoreCase)
+                                  || detected.Equals("video/quicktime", StringComparison.OrdinalIgnoreCase);
         return declaredIsMp4Family && detectedIsMp4Family;
     }
 }

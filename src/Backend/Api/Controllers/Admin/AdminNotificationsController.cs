@@ -8,8 +8,6 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Common;
-using Shared.Errors;
 
 namespace Api.Controllers.Admin;
 
@@ -20,13 +18,15 @@ namespace Api.Controllers.Admin;
 [Route("api/v{version:apiVersion}/admin/notifications")]
 public sealed class AdminNotificationsController : ApiControllerBase
 {
-    public AdminNotificationsController(ISender sender) : base(sender) { }
+    public AdminNotificationsController(ISender sender) : base(sender)
+    {
+    }
 
     private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
 
     /// <summary>
-    /// Sends an in-app announcement to every active member account (role User, not locked or deleted).
-    /// Live SignalR delivery is retried by the worker for any rows not pushed immediately.
+    ///     Sends an in-app announcement to every active member account (role User, not locked or deleted).
+    ///     Live SignalR delivery is retried by the worker for any rows not pushed immediately.
     /// </summary>
     [HttpPost("broadcast")]
     [RequiresIdempotencyKey(Scope = "admin.notifications.broadcast")]
@@ -36,7 +36,7 @@ public sealed class AdminNotificationsController : ApiControllerBase
         [FromBody] BroadcastMemberNotificationRequest body,
         CancellationToken cancellationToken = default)
     {
-        Result<BroadcastMemberNotificationResult, Error> result = await Sender.Send(
+        var result = await Sender.Send(
             new BroadcastMemberNotificationCommand(
                 CurrentAdminId,
                 body.Title,

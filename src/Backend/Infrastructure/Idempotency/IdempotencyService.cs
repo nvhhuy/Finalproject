@@ -8,8 +8,8 @@ namespace Infrastructure.Idempotency;
 
 public sealed class IdempotencyService : IIdempotencyService
 {
-    private readonly ApplicationDbContext _db;
     private readonly IDateTimeProvider _clock;
+    private readonly ApplicationDbContext _db;
     private readonly IdempotencyOptions _options;
 
     public IdempotencyService(
@@ -28,11 +28,11 @@ public sealed class IdempotencyService : IIdempotencyService
         string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
-        DateTime now = _clock.Now;
-        TimeSpan retention = TimeSpan.FromHours(Math.Max(1, _options.RetentionHours));
-        TimeSpan inProgressTimeout = TimeSpan.FromMinutes(Math.Max(1, _options.InProgressTimeoutMinutes));
+        var now = _clock.Now;
+        var retention = TimeSpan.FromHours(Math.Max(1, _options.RetentionHours));
+        var inProgressTimeout = TimeSpan.FromMinutes(Math.Max(1, _options.InProgressTimeoutMinutes));
 
-        IdempotencyRecord? existing = await _db.IdempotencyRecords
+        var existing = await _db.IdempotencyRecords
             .FirstOrDefaultAsync(
                 x => x.Scope == scope && x.OwnerPartition == ownerPartition && x.IdempotencyKey == idempotencyKey,
                 cancellationToken);
@@ -62,7 +62,7 @@ public sealed class IdempotencyService : IIdempotencyService
             }
         }
 
-        IdempotencyRecord record = IdempotencyRecord.CreateInProgress(scope, ownerPartition, idempotencyKey, now, retention);
+        var record = IdempotencyRecord.CreateInProgress(scope, ownerPartition, idempotencyKey, now, retention);
         _db.IdempotencyRecords.Add(record);
 
         try
@@ -72,19 +72,17 @@ public sealed class IdempotencyService : IIdempotencyService
         }
         catch (DbUpdateException)
         {
-            IdempotencyRecord? raced = await _db.IdempotencyRecords
+            var raced = await _db.IdempotencyRecords
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
                     x => x.Scope == scope && x.OwnerPartition == ownerPartition && x.IdempotencyKey == idempotencyKey,
                     cancellationToken);
 
             if (raced?.Status == IdempotencyRecordStatus.Completed)
-            {
                 return new IdempotencyAcquireResult(
                     IdempotencyAcquireStatus.Replay,
                     ResponseStatusCode: raced.ResponseStatusCode,
                     ResponseBody: raced.ResponseBody);
-            }
 
             return new IdempotencyAcquireResult(IdempotencyAcquireStatus.InProgress);
         }
@@ -96,7 +94,7 @@ public sealed class IdempotencyService : IIdempotencyService
         string responseBody,
         CancellationToken cancellationToken = default)
     {
-        IdempotencyRecord? record = await _db.IdempotencyRecords
+        var record = await _db.IdempotencyRecords
             .FirstOrDefaultAsync(x => x.Id == recordId, cancellationToken);
         if (record is null)
             return;
@@ -107,7 +105,7 @@ public sealed class IdempotencyService : IIdempotencyService
 
     public async Task ReleaseAsync(Guid recordId, CancellationToken cancellationToken = default)
     {
-        IdempotencyRecord? record = await _db.IdempotencyRecords
+        var record = await _db.IdempotencyRecords
             .FirstOrDefaultAsync(x => x.Id == recordId, cancellationToken);
         if (record is null)
             return;

@@ -48,9 +48,10 @@ public sealed class UserNotificationService : IUserNotificationService, IUserNot
         return notification.Id;
     }
 
-    public async Task<bool> MarkReadAsync(Guid userId, Guid notificationId, CancellationToken cancellationToken = default)
+    public async Task<bool> MarkReadAsync(Guid userId, Guid notificationId,
+        CancellationToken cancellationToken = default)
     {
-        UserNotification? row = await _db.UserNotifications
+        var row = await _db.UserNotifications
             .FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId, cancellationToken);
 
         if (row is null)

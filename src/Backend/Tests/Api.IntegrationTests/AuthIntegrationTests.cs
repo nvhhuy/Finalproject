@@ -11,15 +11,18 @@ public sealed class AuthIntegrationTests
 {
     private readonly IntegrationAppFixture _fixture;
 
-    public AuthIntegrationTests(IntegrationAppFixture fixture) => _fixture = fixture;
+    public AuthIntegrationTests(IntegrationAppFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [SkippableFact]
     public async Task Health_returns_ok()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        HttpResponseMessage response = await app.Client.GetAsync("/health");
+        var response = await app.Client.GetAsync("/health");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
@@ -27,10 +30,10 @@ public sealed class AuthIntegrationTests
     public async Task Register_does_not_issue_tokens_until_email_verified()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        string email = $"user-{Guid.NewGuid():N}@test.local";
-        using HttpRequestMessage register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
+        var email = $"user-{Guid.NewGuid():N}@test.local";
+        using var register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
         {
             Content = JsonContent.Create(new
             {
@@ -38,19 +41,19 @@ public sealed class AuthIntegrationTests
                 lastName = "User",
                 userName = $"u{Guid.NewGuid():N}"[..12],
                 email,
-                password = IntegrationTestApp.DefaultPassword,
-            }),
+                password = IntegrationTestApp.DefaultPassword
+            })
         }.WithIdempotencyKey();
 
-        HttpResponseMessage registerResponse = await app.Client.SendAsync(register);
+        var registerResponse = await app.Client.SendAsync(register);
         registerResponse.EnsureSuccessStatusCode();
-        ApiResponse<RegistrationResponseDto>? registerPayload =
+        var registerPayload =
             await registerResponse.Content.ReadFromJsonAsync<ApiResponse<RegistrationResponseDto>>();
         Assert.NotNull(registerPayload);
         Assert.True(registerPayload.Success);
         Assert.Contains("verify", registerPayload.Data!.Message, StringComparison.OrdinalIgnoreCase);
 
-        HttpResponseMessage loginResponse = await app.Client.PostAsJsonAsync(
+        var loginResponse = await app.Client.PostAsJsonAsync(
             "/api/v1/auth/login",
             new { email, password = IntegrationTestApp.DefaultPassword });
         Assert.Equal(HttpStatusCode.Forbidden, loginResponse.StatusCode);

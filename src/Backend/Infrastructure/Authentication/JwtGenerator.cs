@@ -1,10 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Application.Contracts.Services;
 using Domains.UserAggregate;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace Infrastructure.Authentication;
 
@@ -39,16 +39,16 @@ public sealed class JwtGenerator : IJwtGenerator
         if (impersonatorUserId is not null)
             claims.Add(new Claim("impersonator_sub", impersonatorUserId.Value.ToString()));
 
-        DateTime expires = _dateTimeProvider.Now.AddMinutes(_jwtSettings.ExpirationTimeInMinutes);
+        var expires = _dateTimeProvider.Now.AddMinutes(_jwtSettings.ExpirationTimeInMinutes);
         var securityToken = new JwtSecurityToken(
-            issuer: _jwtSettings.Issuer,
-            audience: _jwtSettings.Audience,
-            claims: claims,
+            _jwtSettings.Issuer,
+            _jwtSettings.Audience,
+            claims,
             signingCredentials: signingCredentials,
             notBefore: _dateTimeProvider.Now,
             expires: expires);
 
-        string token = new JwtSecurityTokenHandler().WriteToken(securityToken);
+        var token = new JwtSecurityTokenHandler().WriteToken(securityToken);
         return (token, expires);
     }
 }

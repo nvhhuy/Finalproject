@@ -11,16 +11,19 @@ public sealed class AuthFlowIntegrationTests
 {
     private readonly IntegrationAppFixture _fixture;
 
-    public AuthFlowIntegrationTests(IntegrationAppFixture fixture) => _fixture = fixture;
+    public AuthFlowIntegrationTests(IntegrationAppFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [SkippableFact]
     public async Task Register_blocks_login_until_email_verified()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        string email = $"user-{Guid.NewGuid():N}@test.local";
-        using HttpRequestMessage register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
+        var email = $"user-{Guid.NewGuid():N}@test.local";
+        using var register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
         {
             Content = JsonContent.Create(new
             {
@@ -28,14 +31,14 @@ public sealed class AuthFlowIntegrationTests
                 lastName = "User",
                 userName = $"u{Guid.NewGuid():N}"[..12],
                 email,
-                password = IntegrationTestApp.DefaultPassword,
-            }),
+                password = IntegrationTestApp.DefaultPassword
+            })
         }.WithIdempotencyKey();
 
-        HttpResponseMessage registerResponse = await app.Client.SendAsync(register);
+        var registerResponse = await app.Client.SendAsync(register);
         registerResponse.EnsureSuccessStatusCode();
 
-        HttpResponseMessage loginResponse = await app.Client.PostAsJsonAsync(
+        var loginResponse = await app.Client.PostAsJsonAsync(
             "/api/v1/auth/login",
             new { email, password = IntegrationTestApp.DefaultPassword });
         Assert.Equal(HttpStatusCode.Forbidden, loginResponse.StatusCode);
@@ -45,21 +48,21 @@ public sealed class AuthFlowIntegrationTests
     public async Task Register_verify_login_and_refresh_rotate_tokens()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        (AuthResponseDto initial, string email) = await app.RegisterVerifyAndLoginAsync();
+        var (initial, email) = await app.RegisterVerifyAndLoginAsync();
 
-        HttpResponseMessage refreshResponse = await app.Client.PostAsJsonAsync(
+        var refreshResponse = await app.Client.PostAsJsonAsync(
             "/api/v1/auth/refresh",
             new { refreshToken = initial.RefreshToken });
         refreshResponse.EnsureSuccessStatusCode();
-        ApiResponse<AuthResponseDto>? refreshed =
+        var refreshed =
             await refreshResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponseDto>>();
         Assert.NotNull(refreshed);
         Assert.True(refreshed.Success);
         Assert.NotEqual(initial.RefreshToken, refreshed.Data!.RefreshToken);
 
-        AuthResponseDto relogin = await app.LoginAsync(email, IntegrationTestApp.DefaultPassword);
+        var relogin = await app.LoginAsync(email, IntegrationTestApp.DefaultPassword);
         Assert.NotEqual(Guid.Empty, relogin.UserId);
     }
 
@@ -67,24 +70,24 @@ public sealed class AuthFlowIntegrationTests
     public async Task Forgot_and_reset_password_allows_login_with_new_password()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        (_, string email) = await app.RegisterVerifyAndLoginAsync();
+        var (_, email) = await app.RegisterVerifyAndLoginAsync();
         const string newPassword = "NewPassword456!";
 
-        HttpResponseMessage forgotResponse = await app.Client.PostAsJsonAsync(
+        var forgotResponse = await app.Client.PostAsJsonAsync(
             "/api/v1/auth/forgot-password",
             new { email });
         forgotResponse.EnsureSuccessStatusCode();
 
-        (string tokenId, string token) = await app.RequireEmailTokensAsync(email);
+        var (tokenId, token) = await app.RequireEmailTokensAsync(email);
 
-        HttpResponseMessage resetResponse = await app.Client.PostAsJsonAsync(
+        var resetResponse = await app.Client.PostAsJsonAsync(
             "/api/v1/auth/reset-password",
             new { tokenId, token, newPassword });
         resetResponse.EnsureSuccessStatusCode();
 
-        AuthResponseDto auth = await app.LoginAsync(email, newPassword);
+        var auth = await app.LoginAsync(email, newPassword);
         Assert.Equal(email, auth.Email);
     }
 
@@ -92,10 +95,10 @@ public sealed class AuthFlowIntegrationTests
     public async Task Resend_verification_sends_new_email_tokens()
     {
         Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
-        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+        var app = IntegrationTestApp.FromFixture(_fixture);
 
-        string email = $"user-{Guid.NewGuid():N}@test.local";
-        using HttpRequestMessage register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
+        var email = $"user-{Guid.NewGuid():N}@test.local";
+        using var register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
         {
             Content = JsonContent.Create(new
             {
@@ -103,19 +106,19 @@ public sealed class AuthFlowIntegrationTests
                 lastName = "User",
                 userName = $"u{Guid.NewGuid():N}"[..12],
                 email,
-                password = IntegrationTestApp.DefaultPassword,
-            }),
+                password = IntegrationTestApp.DefaultPassword
+            })
         }.WithIdempotencyKey();
         await app.Client.SendAsync(register);
 
         app.EmailSink.Clear();
-        HttpResponseMessage resendResponse = await app.Client.PostAsJsonAsync(
+        var resendResponse = await app.Client.PostAsJsonAsync(
             "/api/v1/auth/resend-verification",
             new { email });
         resendResponse.EnsureSuccessStatusCode();
 
-        (string tokenId, string token) = await app.RequireEmailTokensAsync(email);
-        HttpResponseMessage verifyResponse = await app.Client.PostAsJsonAsync(
+        var (tokenId, token) = await app.RequireEmailTokensAsync(email);
+        var verifyResponse = await app.Client.PostAsJsonAsync(
             "/api/v1/auth/verify-email",
             new { tokenId, token });
         verifyResponse.EnsureSuccessStatusCode();

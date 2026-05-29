@@ -10,8 +10,8 @@ namespace Infrastructure.Email;
 /// <summary>Sends mail via SMTP using MailKit (any mail server: Gmail relay, Office 365, Mailhog, etc.).</summary>
 public sealed class SmtpEmailSender : IEmailSender
 {
-    private readonly SmtpEmailOptions _options;
     private readonly ILogger<SmtpEmailSender> _logger;
+    private readonly SmtpEmailOptions _options;
 
     public SmtpEmailSender(IOptions<SmtpEmailOptions> options, ILogger<SmtpEmailSender> logger)
     {
@@ -19,7 +19,8 @@ public sealed class SmtpEmailSender : IEmailSender
         _logger = logger;
     }
 
-    public async Task SendAsync(string to, string subject, string htmlBody, CancellationToken cancellationToken = default)
+    public async Task SendAsync(string to, string subject, string htmlBody,
+        CancellationToken cancellationToken = default)
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_options.FromDisplayName, _options.FromAddress));
@@ -28,7 +29,8 @@ public sealed class SmtpEmailSender : IEmailSender
         message.Body = new TextPart("plain") { Text = htmlBody };
 
         using var client = new SmtpClient();
-        await client.ConnectAsync(_options.Host, _options.Port, _options.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto, cancellationToken);
+        await client.ConnectAsync(_options.Host, _options.Port,
+            _options.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(_options.UserName))
             await client.AuthenticateAsync(_options.UserName, _options.Password ?? string.Empty, cancellationToken);

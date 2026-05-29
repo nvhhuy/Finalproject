@@ -1,6 +1,5 @@
-﻿namespace Domains.Common.Interfaces
+﻿namespace Domains.Common.Interfaces;
+
+public interface IValueObject
 {
-    public interface IValueObject
-    {
-    }
 }

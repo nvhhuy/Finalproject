@@ -12,12 +12,12 @@ public static class CacheServiceExtensions
     {
         if (useCache)
         {
-            T? existing = await cache.GetAsync<T>(key, cancellationToken);
+            var existing = await cache.GetAsync<T>(key, cancellationToken);
             if (existing is not null)
                 return existing;
         }
 
-        T? created = await factory();
+        var created = await factory();
         if (useCache && created is not null)
             await cache.SetAsync(key, created, ttl, cancellationToken);
         return created;

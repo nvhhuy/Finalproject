@@ -3,13 +3,10 @@ using Application.Contracts.Caching;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Notifications;
 using Application.Contracts.Services;
-using Application.Modules.Users.Authentication.Common;
 using Application.Modules.Users.Authentication.Queries;
 using Domains.UserAggregate;
 using Microsoft.AspNetCore.Identity;
 using Moq;
-using Shared.Common;
-using Shared.Errors;
 using Shared.Errors.Authentication;
 
 namespace Application.Tests;
@@ -19,17 +16,17 @@ public sealed class LoginQueryHandlerTests
     [Fact]
     public async Task Login_rejects_unverified_email()
     {
-        User user = NewUser();
-        string hash = HashPassword(user, "Password123!");
+        var user = NewUser();
+        var hash = HashPassword(user, "Password123!");
         user.UpdatePasswordHash(hash);
 
-        LoginQueryHandler handler = BuildHandler(
+        var handler = BuildHandler(
             user,
             hash,
             "Password123!",
-            verifyResult: PasswordVerificationResult.Success);
+            PasswordVerificationResult.Success);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new LoginQuery(user.Email, "Password123!"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -39,27 +36,28 @@ public sealed class LoginQueryHandlerTests
     [Fact]
     public async Task Login_returns_temporary_lock_error_when_tracker_reports_active_lockout()
     {
-        User user = NewUser();
+        var user = NewUser();
 
         var tracker = new Mock<IFailedLoginTracker>();
         tracker.Setup(t => t.GetLockoutRemainingAsync(user.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync(TimeSpan.FromSeconds(120));
 
-        LoginQueryHandler handler = BuildHandler(user, "irrelevant-hash", "irrelevant", PasswordVerificationResult.Success, tracker.Object);
+        var handler = BuildHandler(user, "irrelevant-hash", "irrelevant", PasswordVerificationResult.Success,
+            tracker.Object);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new LoginQuery(user.Email, "any"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        AccountTemporarilyLockedError locked = Assert.IsType<AccountTemporarilyLockedError>(result.Error);
+        var locked = Assert.IsType<AccountTemporarilyLockedError>(result.Error);
         Assert.Equal(TimeSpan.FromSeconds(120), locked.RetryAfter);
     }
 
     [Fact]
     public async Task Login_registers_failure_when_password_is_wrong()
     {
-        User user = NewUserVerified();
-        string hash = HashPassword(user, "Correct!");
+        var user = NewUserVerified();
+        var hash = HashPassword(user, "Correct!");
         user.UpdatePasswordHash(hash);
 
         var tracker = new Mock<IFailedLoginTracker>();
@@ -68,9 +66,9 @@ public sealed class LoginQueryHandlerTests
         tracker.Setup(t => t.RegisterFailureAsync(user.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        LoginQueryHandler handler = BuildHandler(user, hash, "Wrong!", PasswordVerificationResult.Failed, tracker.Object);
+        var handler = BuildHandler(user, hash, "Wrong!", PasswordVerificationResult.Failed, tracker.Object);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new LoginQuery(user.Email, "Wrong!"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -81,8 +79,8 @@ public sealed class LoginQueryHandlerTests
     [Fact]
     public async Task Login_promotes_to_lock_error_when_failure_triggers_threshold()
     {
-        User user = NewUserVerified();
-        string hash = HashPassword(user, "Correct!");
+        var user = NewUserVerified();
+        var hash = HashPassword(user, "Correct!");
         user.UpdatePasswordHash(hash);
 
         var tracker = new Mock<IFailedLoginTracker>();
@@ -93,21 +91,21 @@ public sealed class LoginQueryHandlerTests
         tracker.Setup(t => t.RegisterFailureAsync(user.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        LoginQueryHandler handler = BuildHandler(user, hash, "Wrong!", PasswordVerificationResult.Failed, tracker.Object);
+        var handler = BuildHandler(user, hash, "Wrong!", PasswordVerificationResult.Failed, tracker.Object);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new LoginQuery(user.Email, "Wrong!"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        AccountTemporarilyLockedError locked = Assert.IsType<AccountTemporarilyLockedError>(result.Error);
+        var locked = Assert.IsType<AccountTemporarilyLockedError>(result.Error);
         Assert.Equal(lockoutAfterFailure, locked.RetryAfter);
     }
 
     [Fact]
     public async Task Login_resets_failure_counter_on_successful_password()
     {
-        User user = NewUserVerified();
-        string hash = HashPassword(user, "Correct!");
+        var user = NewUserVerified();
+        var hash = HashPassword(user, "Correct!");
         user.UpdatePasswordHash(hash);
 
         var tracker = new Mock<IFailedLoginTracker>();
@@ -117,14 +115,15 @@ public sealed class LoginQueryHandlerTests
         var issuer = new Mock<IAuthenticationTokenIssuer>();
         issuer.Setup(i => i.IssueAsync(user, It.IsAny<string?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
             .ReturnsAsync(new AuthenticationTokenPair(
-                AccessToken: "access",
-                AccessTokenExpiresUtc: DateTime.UtcNow.AddMinutes(15),
-                RefreshToken: "refresh",
-                RefreshTokenExpiresUtc: DateTime.UtcNow.AddDays(7)));
+                "access",
+                DateTime.UtcNow.AddMinutes(15),
+                "refresh",
+                DateTime.UtcNow.AddDays(7)));
 
-        LoginQueryHandler handler = BuildHandler(user, hash, "Correct!", PasswordVerificationResult.Success, tracker.Object, issuer.Object);
+        var handler = BuildHandler(user, hash, "Correct!", PasswordVerificationResult.Success, tracker.Object,
+            issuer.Object);
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new LoginQuery(user.Email, "Correct!"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -151,7 +150,7 @@ public sealed class LoginQueryHandlerTests
             tracker.Object,
             Mock.Of<IUserNotificationService>());
 
-        Result<AuthenticationResponse, Error> result =
+        var result =
             await handler.Handle(new LoginQuery("ghost@example.com", "x"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -159,11 +158,14 @@ public sealed class LoginQueryHandlerTests
         tracker.Verify(t => t.RegisterFailureAsync("ghost@example.com", It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private static User NewUser() => User.CreateForLocalLoginPendingHash("A", "B", "u1", "a@b.com");
+    private static User NewUser()
+    {
+        return User.CreateForLocalLoginPendingHash("A", "B", "u1", "a@b.com");
+    }
 
     private static User NewUserVerified()
     {
-        User u = NewUser();
+        var u = NewUser();
         u.MarkEmailVerified(DateTime.UtcNow);
         return u;
     }

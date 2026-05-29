@@ -1,8 +1,9 @@
+using System.Numerics;
+using System.Text;
 using Application.Contracts.Media;
 using Infrastructure.Media;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Metadata;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -10,8 +11,8 @@ using SixLabors.ImageSharp.Processing;
 namespace Infrastructure.Tests.Media;
 
 /// <summary>
-/// End-to-end exercises of the ImageSharp processing service. We feed it a small synthetic JPEG
-/// generated on the fly so the tests have no dependency on external sample files.
+///     End-to-end exercises of the ImageSharp processing service. We feed it a small synthetic JPEG
+///     generated on the fly so the tests have no dependency on external sample files.
 /// </summary>
 public sealed class ImageSharpProcessingServiceTests
 {
@@ -20,9 +21,9 @@ public sealed class ImageSharpProcessingServiceTests
     [Fact]
     public async Task CreateThumbnail_produces_square_jpeg_at_requested_size()
     {
-        await using Stream source = CreateSyntheticJpeg(width: 800, height: 600);
+        await using Stream source = CreateSyntheticJpeg(800, 600);
 
-        ProcessedImage thumb = await _service.CreateThumbnailAsync(source, sizePx: 256, ImageEncoding.Jpeg(80));
+        var thumb = await _service.CreateThumbnailAsync(source, 256, ImageEncoding.Jpeg(80));
 
         Assert.Equal("image/jpeg", thumb.ContentType);
         Assert.Equal(256, thumb.Width);
@@ -31,7 +32,7 @@ public sealed class ImageSharpProcessingServiceTests
         Assert.True(thumb.Content.CanRead);
 
         thumb.Content.Position = 0;
-        using Image decoded = await Image.LoadAsync(thumb.Content);
+        using var decoded = await Image.LoadAsync(thumb.Content);
         Assert.Equal(256, decoded.Width);
         Assert.Equal(256, decoded.Height);
     }
@@ -39,9 +40,9 @@ public sealed class ImageSharpProcessingServiceTests
     [Fact]
     public async Task CreateThumbnail_supports_webp_output()
     {
-        await using Stream source = CreateSyntheticJpeg(width: 800, height: 600);
+        await using Stream source = CreateSyntheticJpeg(800, 600);
 
-        ProcessedImage thumb = await _service.CreateThumbnailAsync(source, sizePx: 96, ImageEncoding.Webp(70));
+        var thumb = await _service.CreateThumbnailAsync(source, 96, ImageEncoding.Webp(70));
 
         Assert.Equal("image/webp", thumb.ContentType);
         Assert.Equal(96, thumb.Width);
@@ -49,24 +50,24 @@ public sealed class ImageSharpProcessingServiceTests
 
         // WebP magic bytes: "RIFF" .... "WEBP"
         thumb.Content.Position = 0;
-        byte[] header = new byte[12];
+        var header = new byte[12];
         Assert.Equal(12, await thumb.Content.ReadAsync(header.AsMemory(0, 12)));
-        Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(header, 0, 4));
-        Assert.Equal("WEBP", System.Text.Encoding.ASCII.GetString(header, 8, 4));
+        Assert.Equal("RIFF", Encoding.ASCII.GetString(header, 0, 4));
+        Assert.Equal("WEBP", Encoding.ASCII.GetString(header, 8, 4));
     }
 
     [Fact]
     public async Task Resize_caps_max_edge_and_preserves_aspect_ratio()
     {
-        await using Stream source = CreateSyntheticJpeg(width: 2000, height: 1000);
+        await using Stream source = CreateSyntheticJpeg(2000, 1000);
 
-        ProcessedImage resized = await _service.ResizeAsync(source, maxEdgePx: 1000, ImageEncoding.Jpeg(82));
+        var resized = await _service.ResizeAsync(source, 1000, ImageEncoding.Jpeg(82));
 
         Assert.Equal(1000, resized.Width);
         Assert.Equal(500, resized.Height);
 
         resized.Content.Position = 0;
-        using Image decoded = await Image.LoadAsync(resized.Content);
+        using var decoded = await Image.LoadAsync(resized.Content);
         Assert.Equal(1000, decoded.Width);
         Assert.Equal(500, decoded.Height);
     }
@@ -74,9 +75,9 @@ public sealed class ImageSharpProcessingServiceTests
     [Fact]
     public async Task Resize_does_not_upsample_smaller_images()
     {
-        await using Stream source = CreateSyntheticJpeg(width: 300, height: 200);
+        await using Stream source = CreateSyntheticJpeg(300, 200);
 
-        ProcessedImage resized = await _service.ResizeAsync(source, maxEdgePx: 1000, ImageEncoding.Jpeg(82));
+        var resized = await _service.ResizeAsync(source, 1000, ImageEncoding.Jpeg(82));
 
         Assert.Equal(300, resized.Width);
         Assert.Equal(200, resized.Height);
@@ -88,9 +89,9 @@ public sealed class ImageSharpProcessingServiceTests
         // EXIF orientation 6 = "rotate 90° clockwise on render". A naive resize without AutoOrient
         // would keep the bytes in the wrong orientation; we verify the output reports the rotated
         // dimensions (height/width swapped vs the raw source) which proves AutoOrient ran.
-        await using Stream source = CreateSyntheticJpegWithExifOrientation(width: 800, height: 400, orientation: 6);
+        await using Stream source = CreateSyntheticJpegWithExifOrientation(800, 400, 6);
 
-        ProcessedImage resized = await _service.ResizeAsync(source, maxEdgePx: 1000, ImageEncoding.Jpeg(82));
+        var resized = await _service.ResizeAsync(source, 1000, ImageEncoding.Jpeg(82));
 
         // After auto-orient, the 800×400 landscape source becomes a 400×800 portrait. Both edges are
         // under the 1000 cap, so dimensions are preserved exactly.
@@ -101,9 +102,9 @@ public sealed class ImageSharpProcessingServiceTests
     [Fact]
     public async Task Probe_returns_decoded_dimensions()
     {
-        await using Stream source = CreateSyntheticJpeg(width: 640, height: 480);
+        await using Stream source = CreateSyntheticJpeg(640, 480);
 
-        ImageProbeResult probe = await _service.ProbeAsync(source);
+        var probe = await _service.ProbeAsync(source);
 
         Assert.Equal(640, probe.Width);
         Assert.Equal(480, probe.Height);
@@ -111,8 +112,8 @@ public sealed class ImageSharpProcessingServiceTests
     }
 
     /// <summary>
-    /// Produces an in-memory JPEG of the given size. Uses a deterministic gradient so any compression
-    /// artefacts are stable across runs and reviewers can eyeball the variant if a test ever fails.
+    ///     Produces an in-memory JPEG of the given size. Uses a deterministic gradient so any compression
+    ///     artefacts are stable across runs and reviewers can eyeball the variant if a test ever fails.
     /// </summary>
     private static MemoryStream CreateSyntheticJpeg(int width, int height)
     {
@@ -121,8 +122,8 @@ public sealed class ImageSharpProcessingServiceTests
         {
             ctx.ProcessPixelRowsAsVector4(row =>
             {
-                for (int x = 0; x < row.Length; x++)
-                    row[x] = new System.Numerics.Vector4(x / (float)row.Length, 0.5f, 1f, 1f);
+                for (var x = 0; x < row.Length; x++)
+                    row[x] = new Vector4(x / (float)row.Length, 0.5f, 1f, 1f);
             });
         });
 

@@ -4,19 +4,9 @@ namespace Domains.Billing;
 
 public sealed class Plan : AggregateRoot<Guid>
 {
-    public string Code { get; private set; } = null!;
-    public string Name { get; private set; } = null!;
-    public string? Description { get; private set; }
-    public int PriceMonthlyCents { get; private set; }
-    public string Currency { get; private set; } = "USD";
-    public int TrialDays { get; private set; }
-    public string LimitsJson { get; private set; } = "{}";
-    public bool IsActive { get; private set; }
-    public int SortOrder { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime UpdatedAtUtc { get; private set; }
-
-    private Plan() { }
+    private Plan()
+    {
+    }
 
     private Plan(
         Guid id,
@@ -44,6 +34,18 @@ public sealed class Plan : AggregateRoot<Guid>
         UpdatedAtUtc = utcNow;
     }
 
+    public string Code { get; private set; } = null!;
+    public string Name { get; private set; } = null!;
+    public string? Description { get; private set; }
+    public int PriceMonthlyCents { get; private set; }
+    public string Currency { get; private set; } = "USD";
+    public int TrialDays { get; private set; }
+    public string LimitsJson { get; private set; } = "{}";
+    public bool IsActive { get; private set; }
+    public int SortOrder { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime UpdatedAtUtc { get; private set; }
+
     public static Plan Create(
         string code,
         string name,
@@ -55,7 +57,7 @@ public sealed class Plan : AggregateRoot<Guid>
         int sortOrder,
         DateTime utcNow)
     {
-        string normalizedCode = NormalizeCode(code);
+        var normalizedCode = NormalizeCode(code);
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Plan name is required.", nameof(name));
         if (priceMonthlyCents < 0)
@@ -72,7 +74,7 @@ public sealed class Plan : AggregateRoot<Guid>
             string.IsNullOrWhiteSpace(currency) ? "USD" : currency.Trim().ToUpperInvariant(),
             trialDays,
             string.IsNullOrWhiteSpace(limitsJson) ? "{}" : limitsJson,
-            isActive: true,
+            true,
             sortOrder,
             utcNow);
     }

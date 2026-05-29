@@ -12,12 +12,15 @@ public sealed class TenantMembershipService : ITenantMembershipService
 {
     private readonly ApplicationReadDbContext _db;
 
-    public TenantMembershipService(ApplicationReadDbContext db) => _db = db;
+    public TenantMembershipService(ApplicationReadDbContext db)
+    {
+        _db = db;
+    }
 
     public async Task<bool> IsMemberAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken = default)
     {
-        TenantId tenantKey = TenantId.Create(tenantId);
-        UserId userKey = UserId.Create(userId);
+        var tenantKey = TenantId.Create(tenantId);
+        var userKey = UserId.Create(userId);
         return await _db.Set<TenantMember>()
             .AsNoTracking()
             .AnyAsync(m => m.TenantId == tenantKey && m.UserId == userKey, cancellationToken);
@@ -25,9 +28,9 @@ public sealed class TenantMembershipService : ITenantMembershipService
 
     public async Task<bool> IsOwnerAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken = default)
     {
-        TenantId tenantKey = TenantId.Create(tenantId);
-        UserId userKey = UserId.Create(userId);
-        bool isOwnerMember = await _db.Set<TenantMember>()
+        var tenantKey = TenantId.Create(tenantId);
+        var userKey = UserId.Create(userId);
+        var isOwnerMember = await _db.Set<TenantMember>()
             .AsNoTracking()
             .AnyAsync(
                 m => m.TenantId == tenantKey && m.UserId == userKey && m.Role == TenantMemberRoles.Owner,
@@ -40,9 +43,10 @@ public sealed class TenantMembershipService : ITenantMembershipService
             .AnyAsync(t => t.Id == tenantKey && t.OwnerUserId == userKey, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Guid>> GetTenantIdsForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Guid>> GetTenantIdsForUserAsync(Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        UserId userKey = UserId.Create(userId);
+        var userKey = UserId.Create(userId);
         return await _db.Set<TenantMember>()
             .AsNoTracking()
             .Where(m => m.UserId == userKey)
@@ -52,8 +56,8 @@ public sealed class TenantMembershipService : ITenantMembershipService
 
     public async Task<bool> IsPlatformAdminAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        UserId userKey = UserId.Create(userId);
-        string? role = await _db.Users
+        var userKey = UserId.Create(userId);
+        var role = await _db.Users
             .AsNoTracking()
             .Where(u => u.Id == userKey)
             .Select(u => u.Role)

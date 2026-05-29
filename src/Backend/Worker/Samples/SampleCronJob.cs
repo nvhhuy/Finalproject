@@ -1,10 +1,9 @@
 using Application.Contracts.Scheduling;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Worker.Samples;
 
-/// <summary>Example cron job; register more <see cref="ICronJob"/> singletons to extend scheduling.</summary>
+/// <summary>Example cron job; register more <see cref="ICronJob" /> singletons to extend scheduling.</summary>
 public sealed class SampleCronJob : ICronJob
 {
     private readonly ILogger<SampleCronJob> _logger;

@@ -1,5 +1,5 @@
-using Application.Contracts.Tenancy;
 using Application.Contracts.Services;
+using Application.Contracts.Tenancy;
 using Domains.Tenancy;
 using Domains.Tenancy.ValueObjects;
 using Domains.UserAggregate.ValueObjects;
@@ -10,8 +10,8 @@ namespace Infrastructure.Tenancy;
 
 public sealed class TenantEnrollmentService : ITenantEnrollmentService
 {
-    private readonly ApplicationDbContext _db;
     private readonly IDateTimeProvider _clock;
+    private readonly ApplicationDbContext _db;
 
     public TenantEnrollmentService(ApplicationDbContext db, IDateTimeProvider clock)
     {
@@ -21,15 +21,15 @@ public sealed class TenantEnrollmentService : ITenantEnrollmentService
 
     public async Task EnrollInDefaultTenantAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        TenantId defaultTenantId = TenantId.Create(SystemTenants.DefaultTenantId);
-        UserId userKey = UserId.Create(userId);
+        var defaultTenantId = TenantId.Create(SystemTenants.DefaultTenantId);
+        var userKey = UserId.Create(userId);
 
-        bool tenantExists = await _db.Tenants.AsNoTracking()
+        var tenantExists = await _db.Tenants.AsNoTracking()
             .AnyAsync(t => t.Id == defaultTenantId, cancellationToken);
         if (!tenantExists)
             return;
 
-        bool alreadyMember = await _db.TenantMembers.AsNoTracking()
+        var alreadyMember = await _db.TenantMembers.AsNoTracking()
             .AnyAsync(m => m.TenantId == defaultTenantId && m.UserId == userKey, cancellationToken);
         if (alreadyMember)
             return;

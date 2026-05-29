@@ -8,15 +8,15 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Modules.Media.Persistence;
 
 /// <summary>
-/// MediaAsset repository that routes read-only queries to <see cref="IApplicationReadDbContext"/>
-/// (which can be backed by a replica) and write paths to <see cref="ApplicationDbContext"/>. The
-/// split exists so that a heavy admin/read load (e.g. listing user assets) doesn't contend with
-/// transactional writes on the primary instance.
+///     MediaAsset repository that routes read-only queries to <see cref="IApplicationReadDbContext" />
+///     (which can be backed by a replica) and write paths to <see cref="ApplicationDbContext" />. The
+///     split exists so that a heavy admin/read load (e.g. listing user assets) doesn't contend with
+///     transactional writes on the primary instance.
 /// </summary>
 public sealed class MediaAssetRepository : IMediaAssetRepository
 {
-    private readonly ApplicationDbContext _write;
     private readonly IApplicationReadDbContext _read;
+    private readonly ApplicationDbContext _write;
 
     public MediaAssetRepository(ApplicationDbContext write, IApplicationReadDbContext read)
     {
@@ -24,23 +24,33 @@ public sealed class MediaAssetRepository : IMediaAssetRepository
         _read = read;
     }
 
-    public Task<MediaAsset?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
+    public Task<MediaAsset?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
+    {
         // Must hit the write context: the caller mutates the aggregate and SaveChanges expects
         // the same change tracker to own it. Routing through _read here would silently produce
         // detached entities that the unit of work cannot persist.
-        _write.MediaAssets
+        return _write.MediaAssets
             .Include(a => a.Variants)
             .FirstOrDefaultAsync(a => a.Id == MediaAssetId.Create(id), cancellationToken);
+    }
 
-    public Task<MediaAsset?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default) =>
-        _read.MediaAssets
+    public Task<MediaAsset?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return _read.MediaAssets
             .AsNoTracking()
             .Include(a => a.Variants)
             .FirstOrDefaultAsync(a => a.Id == MediaAssetId.Create(id), cancellationToken);
+    }
 
-    public void Add(MediaAsset asset) => _write.MediaAssets.Add(asset);
+    public void Add(MediaAsset asset)
+    {
+        _write.MediaAssets.Add(asset);
+    }
 
-    public void Remove(MediaAsset asset) => _write.MediaAssets.Remove(asset);
+    public void Remove(MediaAsset asset)
+    {
+        _write.MediaAssets.Remove(asset);
+    }
 
     public async Task<IReadOnlyList<MediaAsset>> GetStalledProcessingAsync(
         DateTime processingStartedBefore,
@@ -62,6 +72,8 @@ public sealed class MediaAssetRepository : IMediaAssetRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default) =>
-        _read.MediaAssets.AsNoTracking().AnyAsync(a => a.Id == MediaAssetId.Create(id), cancellationToken);
+    public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return _read.MediaAssets.AsNoTracking().AnyAsync(a => a.Id == MediaAssetId.Create(id), cancellationToken);
+    }
 }
