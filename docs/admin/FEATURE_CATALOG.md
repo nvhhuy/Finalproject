@@ -18,6 +18,7 @@ Catalog of **existing** Admin Console features — routes, behavior, and corresp
 | `/support` | Support tickets operations | Admin |
 | `/notifications` | Broadcast in-app announcement to all members | Admin |
 | `/plans` | Subscription plan catalog (create, edit, delete) | Admin |
+| `/credit-packages` | Wallet top-up SKUs (price → credits) | Admin |
 | `/tenants` | Tenant list, create, assign/change subscription plan | Admin |
 | `/invoices` | Platform billing invoices (paginated) | Admin |
 
@@ -33,6 +34,15 @@ Nav sidebar: Dashboard, Users, Announcements, Plans, Tenants, Invoices, Audit lo
 | Delete plan | Only when no subscriptions reference the plan; otherwise deactivate |
 
 API: `GET/POST/PUT/DELETE /api/v1/platform/plans`.
+
+## Credit packages
+
+| Feature | Notes |
+|---------|-------|
+| List packages | Price, currency, credits amount, active flag |
+| Create / edit / delete | Same pattern as plans; codes immutable after create |
+
+API: `GET/POST/PUT/DELETE /api/v1/platform/credit-packages`. Public catalog: `GET /api/v1/public/credit-packages`.
 
 ## Tenants
 
@@ -116,9 +126,11 @@ Concurrency: see [`docs/backend/OPTIMISTIC_CONCURRENCY.md`](../backend/OPTIMISTI
 |---------|------------|-----|
 | Allow public registration | Checkbox | `GET/PUT` allow-public-register admin settings |
 | System settings backup (toggle + retention) | Checkbox + number input | `GET/PUT /api/v1/admin/settings/system-backup` |
-| System settings backup run/history/restore | Buttons + list | `POST /run`, `GET /history`, `POST /restore` under `/api/v1/admin/settings/system-backup` |
+| System settings backup run/history/restore/download | Buttons + list | `POST /run`, `GET /history`, `GET /download?key=`, `POST /restore` under `/api/v1/admin/settings/system-backup` |
+| System settings import-restore (legacy migration) | File upload + confirm `IMPORT_RESTORE_SETTINGS` | `POST /import-restore` (multipart) |
 | Database backup (toggle + retention) | Checkbox + number input | `GET/PUT /api/v1/admin/settings/database-backup` |
-| Database backup run/history/restore | Buttons + list | `POST /run`, `GET /history`, `POST /restore` under `/api/v1/admin/settings/database-backup` |
+| Database backup run/history/restore/download | Buttons + list | `POST /run`, `GET /history`, `GET /download?key=`, `POST /restore` under `/api/v1/admin/settings/database-backup` |
+| Database import-restore (legacy migration) | File upload + confirm `IMPORT_RESTORE_DATABASE` | `POST /import-restore` (multipart; `pg_dump -Fc`) |
 
 Admin **does not** expose end-user registration UI — only toggles whether the **public Frontend** may call `POST /auth/register`.
 

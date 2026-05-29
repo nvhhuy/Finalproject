@@ -152,6 +152,20 @@ export const authApi = {
     });
   },
 
+  async tenantSsoSignIn(tenantSlug: string, idToken: string) {
+    const { status, envelope } = await apiRaw<AuthResponseDto>(`/api/v1/auth/tenant-sso/${encodeURIComponent(tenantSlug)}`, {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+      auth: false,
+    });
+    if (status === 200 && envelope.success && envelope.data) {
+      const { user, tokens } = mapOk(envelope.data);
+      return { kind: "ok" as const, user, tokens };
+    }
+    if (envelope.error) return { kind: "error" as const, message: envelope.error.message ?? "SSO sign-in failed" };
+    return { kind: "error" as const, message: "SSO sign-in failed" };
+  },
+
   async googleSignIn(idToken: string) {
     const { status, envelope } = await apiRaw<AuthResponseDto>("/api/v1/auth/google", {
       method: "POST",

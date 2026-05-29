@@ -17,6 +17,17 @@ public interface IWalletService
         string? description = null,
         CancellationToken cancellationToken = default);
 
+    Task<WalletBalanceDto> PurchasePackageAsync(
+        Guid userId,
+        Guid packageId,
+        string packageCode,
+        long creditsAmount,
+        int priceCents,
+        string currency,
+        string idempotencyKey,
+        string provider,
+        CancellationToken cancellationToken = default);
+
     Task<WalletDebitResultDto> DebitForActionAsync(
         Guid userId,
         string actionCode,

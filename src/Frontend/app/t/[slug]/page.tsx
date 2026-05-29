@@ -8,6 +8,8 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
+import { CardSkeleton } from "@/components/ui/skeleton";
+import { TenantSsoSignInButton } from "@/components/auth/TenantSsoSignInButton";
 import { billingApi, type TenantPublicDto } from "@/lib/features/billing/billing-api";
 
 export default function TenantPublicPage() {
@@ -35,7 +37,7 @@ export default function TenantPublicPage() {
     <div className="mesh-bg min-h-screen min-h-[100dvh]">
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
         <PublicHeader />
-        {loading ? <p className="mt-10 text-sm text-[var(--color-muted)]">{t("common.loading")}</p> : null}
+        {loading ? <div className="mt-10"><CardSkeleton lines={4} /></div> : null}
         {error ? <Alert className="mt-6" variant="error">{error}</Alert> : null}
         {tenant ? (
           <Card className="mt-10">
@@ -59,6 +61,10 @@ export default function TenantPublicPage() {
                 <Link href="/pricing">
                   <Button variant="secondary">{t("nav.pricing")}</Button>
                 </Link>
+              </div>
+              <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+                <p className="mb-2 text-sm font-medium">{t("tenantPublic.ssoTitle")}</p>
+                <TenantSsoSignInButton tenantSlug={tenant.slug} />
               </div>
             </CardBody>
           </Card>

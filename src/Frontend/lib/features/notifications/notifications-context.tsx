@@ -1,6 +1,6 @@
 "use client";
 
-import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+import type { HubConnection } from "@microsoft/signalr";
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
 import { loadTokens } from "@/lib/auth/tokens";
 import { notificationsApi, type NotificationDto } from "./notifications-api";
+import { startNotificationsHub, type LiveNotificationPayload } from "./notifications-realtime";
 
 type NotificationsContextValue = {
   notifications: NotificationDto[];
@@ -17,26 +18,11 @@ type NotificationsContextValue = {
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
-type LiveNotificationPayload = {
-  id: string;
-  title: string;
-  body: string;
-  linkUrl?: string | null;
-  createdAtUtc: string;
-};
-
 type NotificationToast = {
   id: string;
   title: string;
   body: string;
 };
-
-function resolveHubUrl() {
-  const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  const base = configured && configured.length > 0 ? configured : window.location.origin;
-  const wsBase = base.replace(/^http/i, "ws").replace(/\/$/, "");
-  return `${wsBase}/hubs/notifications`;
-}
 
 function formatGroupDate(value: string, locale: string) {
   const date = new Date(value);
@@ -79,56 +65,73 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     setNotifications((prev) => prev.map((n) => ({ ...n, readAtUtc: n.readAtUtc ?? new Date().toISOString() })));
   }, [notifications]);
 
+  const handleLiveNotification = useCallback((payload: LiveNotificationPayload) => {
+    setNotifications((prev) => {
+      const item: NotificationDto = {
+        id: payload.id,
+        title: payload.title,
+        body: payload.body,
+        linkUrl: payload.linkUrl ?? null,
+        createdAtUtc: payload.createdAtUtc,
+        readAtUtc: null,
+      };
+      const next = [item, ...prev.filter((n) => n.id !== item.id)];
+      return next.slice(0, 50);
+    });
+    setToasts((prev) => [{ id: payload.id, title: payload.title, body: payload.body }, ...prev].slice(0, 3));
+  }, []);
+
   useEffect(() => {
+    if (!auth.hydrated || !auth.isAuthenticated) return;
+
     let cancelled = false;
+    let activeConn: HubConnection | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | undefined;
+
+    async function refreshList() {
+      const list = await notificationsApi.list(1, 20);
+      if (!cancelled && list.success && list.data) setNotifications(list.data);
+    }
 
     async function boot() {
       const tokens = loadTokens();
       if (!tokens?.accessToken) return;
 
-      const list = await notificationsApi.list(1, 20);
-      if (!cancelled && list.success && list.data) setNotifications(list.data);
+      await refreshList();
 
-      const conn = new HubConnectionBuilder()
-        .withUrl(resolveHubUrl(), {
-          accessTokenFactory: () => loadTokens()?.accessToken ?? "",
-        })
-        .withAutomaticReconnect()
-        .configureLogging(LogLevel.Warning)
-        .build();
-
-      conn.on("notification", (payload: LiveNotificationPayload) => {
-        setNotifications((prev) => {
-          const item: NotificationDto = {
-            id: payload.id,
-            title: payload.title,
-            body: payload.body,
-            linkUrl: payload.linkUrl ?? null,
-            createdAtUtc: payload.createdAtUtc,
-            readAtUtc: null,
-          };
-          const next = [item, ...prev.filter((n) => n.id !== item.id)];
-          return next.slice(0, 50);
-        });
-        setToasts((prev) => [{ id: payload.id, title: payload.title, body: payload.body }, ...prev].slice(0, 3));
+      // Defer past React Strict Mode's first effect cleanup (avoids aborted negotiate / console noise).
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
+      if (cancelled) return;
 
-      try {
-        await conn.start();
-        connectionRef.current = conn;
-      } catch {
-        // Non-blocking: REST list still works even when websocket can't connect.
+      const conn = await startNotificationsHub(tokens.accessToken, handleLiveNotification);
+      if (cancelled) {
+        if (conn) void conn.stop();
+        return;
       }
+      if (conn) {
+        activeConn = conn;
+        connectionRef.current = conn;
+        return;
+      }
+
+      // Realtime unavailable — poll REST so the bell still updates.
+      pollTimer = setInterval(() => {
+        void refreshList();
+      }, 60_000);
     }
 
     void boot();
     return () => {
       cancelled = true;
-      const conn = connectionRef.current;
+      if (pollTimer) clearInterval(pollTimer);
+      const conn = activeConn ?? connectionRef.current;
       connectionRef.current = null;
+      activeConn = null;
       if (conn) void conn.stop();
     };
-  }, []);
+  }, [auth.hydrated, auth.isAuthenticated, handleLiveNotification]);
 
   useEffect(() => {
     if (toasts.length === 0) return;
@@ -150,7 +153,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   return (
     <NotificationsContext.Provider value={value}>
       {children}
-      {auth.isAuthenticated ? (
+      {auth.hydrated && auth.isAuthenticated ? (
         <div className="fixed right-4 bottom-4 z-50">
           <div className="mb-2 flex max-w-80 flex-col gap-2">
             {toasts.map((toast) => (
@@ -172,7 +175,9 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           {open ? (
             <div className="mt-2 w-80 max-h-96 overflow-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-elevated)]">
               <div className="mb-2 flex items-center justify-between px-1">
-                <p className="text-sm font-semibold">{t("notifications.title")}</p>
+                <Link href="/app/notifications" className="text-sm font-semibold hover:text-[var(--color-primary)]">
+                  {t("notifications.title")}
+                </Link>
                 <button
                   type="button"
                   className="text-xs text-[var(--color-primary)] disabled:text-[var(--color-muted)]"

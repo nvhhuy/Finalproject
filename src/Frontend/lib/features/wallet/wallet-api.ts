@@ -28,6 +28,18 @@ export type WalletDebitResponse = {
   denyReason?: string | null;
 };
 
+export type CreditPackageDto = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  currency: string;
+  creditsAmount: number;
+  isActive: boolean;
+  sortOrder: number;
+};
+
 export type BillingInvoiceDto = {
   id: string;
   tenantId?: string | null;
@@ -43,6 +55,9 @@ export type BillingInvoiceDto = {
 };
 
 export const walletApi = {
+  listPackages() {
+    return apiRequest<CreditPackageDto[]>({ path: "/api/v1/public/credit-packages" });
+  },
   getBalance() {
     return apiRequest<WalletBalanceDto>({ path: "/api/v1/wallet/balance", auth: true });
   },
@@ -61,6 +76,15 @@ export const walletApi = {
       path: "/api/v1/wallet/top-up",
       method: "POST",
       body: { amountCredits },
+      auth: true,
+      idempotent: true,
+    });
+  },
+  purchasePackage(packageCode: string) {
+    return apiRequest<WalletBalanceDto>({
+      path: "/api/v1/wallet/purchase",
+      method: "POST",
+      body: { packageCode },
       auth: true,
       idempotent: true,
     });

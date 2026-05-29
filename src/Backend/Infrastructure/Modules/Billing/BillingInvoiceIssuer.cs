@@ -68,6 +68,8 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
     public async Task<BillingInvoiceDto> IssueWalletTopUpReceiptAsync(
         Guid userId,
         long amountCredits,
+        int amountCents,
+        string currency,
         string provider,
         CancellationToken cancellationToken = default)
     {
@@ -77,9 +79,9 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
             subscriptionId: null,
             userId,
             desc,
-            amountCents: 0,
+            amountCents,
             amountCredits,
-            currency: "CREDITS",
+            currency,
             provider,
             cancellationToken);
     }
@@ -107,7 +109,15 @@ public sealed class BillingInvoiceIssuer : IBillingInvoiceIssuer
                 currency,
                 provider,
                 now)
-            : BillingInvoice.ForWalletTopUp(userId!.Value, number, description, amountCredits!.Value, provider, now);
+            : BillingInvoice.ForWalletTopUp(
+                userId!.Value,
+                number,
+                description,
+                amountCents,
+                amountCredits!.Value,
+                currency,
+                provider,
+                now);
 
         _db.BillingInvoices.Add(invoice);
         await _uow.SaveChangesAsync(cancellationToken);

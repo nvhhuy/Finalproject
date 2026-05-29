@@ -136,6 +136,7 @@ if (applyPendingMigrations || seedBootstrapAdmin)
             await DbSeeder.SeedAdminIfMissingAsync(db, scope.ServiceProvider);
             await DbSeeder.SeedDefaultTenantIfMissingAsync(db, scope.ServiceProvider);
             await DbSeeder.SeedDefaultPlansIfMissingAsync(db, scope.ServiceProvider);
+            await DbSeeder.SeedDefaultCreditPackagesIfMissingAsync(db, scope.ServiceProvider);
         }
     }
     catch (Exception ex) when (ex.Message.Contains("Failed to connect", StringComparison.Ordinal))

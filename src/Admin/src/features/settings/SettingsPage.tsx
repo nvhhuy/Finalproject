@@ -1,9 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getAllowPublicRegister,
   getDatabaseBackupSettings,
   getSystemBackupSettings,
+  downloadDatabaseBackup,
+  downloadSystemBackup,
+  importRestoreDatabaseBackup,
+  importRestoreSystemBackup,
   listDatabaseBackupHistory,
   listSystemBackupHistory,
   restoreDatabaseBackup,
@@ -25,7 +30,56 @@ import { ApiClientError } from '@/shared/lib/errors'
 export function SettingsPage() {
   const settingsRestoreToken = 'RESTORE_SETTINGS'
   const databaseRestoreToken = 'RESTORE_DATABASE'
+  const settingsImportRestoreToken = 'IMPORT_RESTORE_SETTINGS'
+  const databaseImportRestoreToken = 'IMPORT_RESTORE_DATABASE'
+  const settingsImportInputRef = useRef<HTMLInputElement>(null)
+  const databaseImportInputRef = useRef<HTMLInputElement>(null)
+  const [settingsImportFile, setSettingsImportFile] = useState<File | null>(null)
+  const [databaseImportFile, setDatabaseImportFile] = useState<File | null>(null)
+  const [downloadingSettingsKey, setDownloadingSettingsKey] = useState<string | null>(null)
+  const [downloadingDatabaseKey, setDownloadingDatabaseKey] = useState<string | null>(null)
   const { t } = useTranslation()
+
+  function backupDownloadFileName(key: string, fallback: string) {
+    const segment = key.split('/').pop()?.trim()
+    return segment || fallback
+  }
+
+  async function handleDownloadSettingsBackup(key: string) {
+    setDownloadingSettingsKey(key)
+    try {
+      const blob = await downloadSystemBackup(key)
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = backupDownloadFileName(key, 'settings-backup.json')
+      anchor.click()
+      URL.revokeObjectURL(url)
+      toast.success(t('settings.backupDownloaded'))
+    } catch {
+      toast.error(t('settings.backupDownloadFailed'))
+    } finally {
+      setDownloadingSettingsKey(null)
+    }
+  }
+
+  async function handleDownloadDatabaseBackup(key: string) {
+    setDownloadingDatabaseKey(key)
+    try {
+      const blob = await downloadDatabaseBackup(key)
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = backupDownloadFileName(key, 'database-backup.dump')
+      anchor.click()
+      URL.revokeObjectURL(url)
+      toast.success(t('settings.databaseBackupDownloaded'))
+    } catch {
+      toast.error(t('settings.databaseBackupDownloadFailed'))
+    } finally {
+      setDownloadingDatabaseKey(null)
+    }
+  }
   const queryClient = useQueryClient()
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.settings.allowPublicRegister(),
@@ -107,6 +161,30 @@ export function SettingsPage() {
       toast.success(t('settings.databaseBackupRestored'))
     },
     onError: (err) => toastApiError(err, 'settings.databaseBackupRestoreFailed'),
+  })
+  const settingsImportRestoreMutation = useMutation({
+    mutationFn: ({ file, confirmation }: { file: File; confirmation: string }) =>
+      importRestoreSystemBackup(file, confirmation),
+    onSuccess: (result) => {
+      setSettingsImportFile(null)
+      if (settingsImportInputRef.current) settingsImportInputRef.current.value = ''
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.systemBackupHistory(20) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.systemBackup() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.allowPublicRegister() })
+      toast.success(t('settings.backupImportRestored', { count: result.settingsApplied }))
+    },
+    onError: (err) => toastApiError(err, 'settings.backupImportRestoreFailed'),
+  })
+  const databaseImportRestoreMutation = useMutation({
+    mutationFn: ({ file, confirmation }: { file: File; confirmation: string }) =>
+      importRestoreDatabaseBackup(file, confirmation),
+    onSuccess: () => {
+      setDatabaseImportFile(null)
+      if (databaseImportInputRef.current) databaseImportInputRef.current.value = ''
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.databaseBackupHistory(20) })
+      toast.success(t('settings.databaseBackupImportRestored'))
+    },
+    onError: (err) => toastApiError(err, 'settings.databaseBackupImportRestoreFailed'),
   })
 
   const enabled = data?.value ?? false
@@ -197,6 +275,53 @@ export function SettingsPage() {
               {backupRunMutation.isPending ? t('common.loading') : t('settings.runBackupNow')}
             </button>
 
+            <div className="space-y-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-3">
+              <div>
+                <p className="text-sm font-medium text-slate-100">{t('settings.importBackupTitle')}</p>
+                <p className="mt-1 text-xs text-slate-400">{t('settings.importBackupHelp')}</p>
+              </div>
+              <input
+                ref={settingsImportInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => setSettingsImportFile(e.target.files?.[0] ?? null)}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs text-slate-100 disabled:opacity-60"
+                  disabled={settingsImportRestoreMutation.isPending}
+                  onClick={() => settingsImportInputRef.current?.click()}
+                >
+                  {t('settings.chooseImportFile')}
+                </button>
+                {settingsImportFile ? (
+                  <span className="truncate text-xs text-slate-300">{settingsImportFile.name}</span>
+                ) : (
+                  <span className="text-xs text-slate-500">{t('settings.noImportFileSelected')}</span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="rounded-md border border-amber-500/60 px-4 py-2 text-sm font-medium text-amber-100 disabled:opacity-60"
+                disabled={!settingsImportFile || settingsImportRestoreMutation.isPending}
+                onClick={() => {
+                  if (!settingsImportFile) return
+                  const confirmation = window.prompt(
+                    t('settings.confirmImportRestorePrompt', { token: settingsImportRestoreToken }),
+                    '',
+                  )?.trim()
+                  if (!confirmation) return
+                  settingsImportRestoreMutation.mutate({ file: settingsImportFile, confirmation })
+                }}
+              >
+                {settingsImportRestoreMutation.isPending
+                  ? t('common.loading')
+                  : t('settings.importAndRestore')}
+              </button>
+            </div>
+
             <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
               <p className="text-sm font-medium text-slate-100">{t('settings.backupHistory')}</p>
               {backupHistoryQuery.data?.length ? (
@@ -212,21 +337,33 @@ export function SettingsPage() {
                           {new Date(item.createdAtUtc).toLocaleString()} · {item.byteSize} bytes
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className="rounded-md border border-[var(--color-border)] px-3 py-1 text-xs text-slate-100 disabled:opacity-60"
-                        disabled={backupRestoreMutation.isPending}
-                        onClick={() => {
-                          const confirmation = window.prompt(
-                            t('settings.confirmRestorePrompt', { token: settingsRestoreToken }),
-                            '',
-                          )?.trim()
-                          if (!confirmation) return
-                          backupRestoreMutation.mutate({ key: item.key, confirmation })
-                        }}
-                      >
-                        {t('settings.restore')}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-md border border-[var(--color-border)] px-3 py-1 text-xs text-slate-100 disabled:opacity-60"
+                          disabled={downloadingSettingsKey === item.key}
+                          onClick={() => void handleDownloadSettingsBackup(item.key)}
+                        >
+                          {downloadingSettingsKey === item.key
+                            ? t('common.loading')
+                            : t('settings.download')}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md border border-[var(--color-border)] px-3 py-1 text-xs text-slate-100 disabled:opacity-60"
+                          disabled={backupRestoreMutation.isPending}
+                          onClick={() => {
+                            const confirmation = window.prompt(
+                              t('settings.confirmRestorePrompt', { token: settingsRestoreToken }),
+                              '',
+                            )?.trim()
+                            if (!confirmation) return
+                            backupRestoreMutation.mutate({ key: item.key, confirmation })
+                          }}
+                        >
+                          {t('settings.restore')}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -285,6 +422,54 @@ export function SettingsPage() {
             >
               {databaseBackupRunMutation.isPending ? t('common.loading') : t('settings.runDatabaseBackupNow')}
             </button>
+
+            <div className="space-y-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-3">
+              <div>
+                <p className="text-sm font-medium text-slate-100">{t('settings.importDatabaseBackupTitle')}</p>
+                <p className="mt-1 text-xs text-slate-400">{t('settings.importDatabaseBackupHelp')}</p>
+              </div>
+              <input
+                ref={databaseImportInputRef}
+                type="file"
+                accept=".dump,.backup,application/octet-stream"
+                className="hidden"
+                onChange={(e) => setDatabaseImportFile(e.target.files?.[0] ?? null)}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs text-slate-100 disabled:opacity-60"
+                  disabled={databaseImportRestoreMutation.isPending}
+                  onClick={() => databaseImportInputRef.current?.click()}
+                >
+                  {t('settings.chooseImportFile')}
+                </button>
+                {databaseImportFile ? (
+                  <span className="truncate text-xs text-slate-300">{databaseImportFile.name}</span>
+                ) : (
+                  <span className="text-xs text-slate-500">{t('settings.noImportFileSelected')}</span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="rounded-md border border-amber-500/60 px-4 py-2 text-sm font-medium text-amber-100 disabled:opacity-60"
+                disabled={!databaseImportFile || databaseImportRestoreMutation.isPending}
+                onClick={() => {
+                  if (!databaseImportFile) return
+                  const confirmation = window.prompt(
+                    t('settings.confirmImportRestorePrompt', { token: databaseImportRestoreToken }),
+                    '',
+                  )?.trim()
+                  if (!confirmation) return
+                  databaseImportRestoreMutation.mutate({ file: databaseImportFile, confirmation })
+                }}
+              >
+                {databaseImportRestoreMutation.isPending
+                  ? t('common.loading')
+                  : t('settings.importAndRestore')}
+              </button>
+            </div>
+
             <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
               <p className="text-sm font-medium text-slate-100">{t('settings.databaseBackupHistory')}</p>
               {databaseBackupHistoryQuery.data?.length ? (
@@ -300,21 +485,33 @@ export function SettingsPage() {
                           {new Date(item.createdAtUtc).toLocaleString()} · {item.byteSize} bytes
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className="rounded-md border border-[var(--color-border)] px-3 py-1 text-xs text-slate-100 disabled:opacity-60"
-                        disabled={databaseBackupRestoreMutation.isPending}
-                        onClick={() => {
-                          const confirmation = window.prompt(
-                            t('settings.confirmRestorePrompt', { token: databaseRestoreToken }),
-                            '',
-                          )?.trim()
-                          if (!confirmation) return
-                          databaseBackupRestoreMutation.mutate({ key: item.key, confirmation })
-                        }}
-                      >
-                        {t('settings.restore')}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-md border border-[var(--color-border)] px-3 py-1 text-xs text-slate-100 disabled:opacity-60"
+                          disabled={downloadingDatabaseKey === item.key}
+                          onClick={() => void handleDownloadDatabaseBackup(item.key)}
+                        >
+                          {downloadingDatabaseKey === item.key
+                            ? t('common.loading')
+                            : t('settings.download')}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md border border-[var(--color-border)] px-3 py-1 text-xs text-slate-100 disabled:opacity-60"
+                          disabled={databaseBackupRestoreMutation.isPending}
+                          onClick={() => {
+                            const confirmation = window.prompt(
+                              t('settings.confirmRestorePrompt', { token: databaseRestoreToken }),
+                              '',
+                            )?.trim()
+                            if (!confirmation) return
+                            databaseBackupRestoreMutation.mutate({ key: item.key, confirmation })
+                          }}
+                        >
+                          {t('settings.restore')}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

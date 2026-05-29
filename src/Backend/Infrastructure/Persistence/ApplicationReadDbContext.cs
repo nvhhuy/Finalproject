@@ -50,6 +50,7 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
     public DbSet<TenantDomain> TenantDomains => Set<TenantDomain>();
     public DbSet<TenantSsoSettings> TenantSsoSettings => Set<TenantSsoSettings>();
     public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<CreditPackage> CreditPackages => Set<CreditPackage>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
     public DbSet<BillingInvoice> BillingInvoices => Set<BillingInvoice>();

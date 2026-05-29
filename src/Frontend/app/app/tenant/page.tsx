@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
+import { TenantSkeleton } from "@/components/ui/skeleton";
 import {
   billingApi,
   type BillingInvoiceDto,
@@ -18,7 +19,13 @@ import {
   type TenantDomainDto,
   type TenantSsoSettingsDto,
 } from "@/lib/features/tenancy/tenancy-api";
-import { getActiveTenantId, setActiveTenantId } from "@/lib/tenancy/tenant-context";
+import {
+  getActiveTenantId,
+  getActiveTenantSlug,
+  resolveActiveTenantId,
+  setActiveTenantId,
+  setActiveTenantSlug,
+} from "@/lib/tenancy/tenant-context";
 import { getTenantSubdomainBaseHost } from "@/lib/tenancy/host";
 import { Input } from "@/components/ui/input";
 import { formatDateTimeOrDash } from "@/lib/shared";
@@ -59,6 +66,10 @@ export default function TenantUsagePage() {
   const [ssoClientId, setSsoClientId] = useState("");
   const [ssoClientSecret, setSsoClientSecret] = useState("");
   const [ssoBusy, setSsoBusy] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -69,9 +80,13 @@ export default function TenantUsagePage() {
         return;
       }
       setTenants(mine.data);
-      const active = getActiveTenantId() ?? mine.data[0]?.id ?? null;
+      const active = resolveActiveTenantId(mine.data, getActiveTenantId(), getActiveTenantSlug());
       setTenantId(active);
-      if (active) setActiveTenantId(active);
+      if (active) {
+        setActiveTenantId(active);
+        const slug = mine.data.find((tenant) => tenant.id === active)?.slug;
+        if (slug) setActiveTenantSlug(slug);
+      }
       const planRes = await billingApi.listPublicPlans();
       if (planRes.success && planRes.data) setPlans(planRes.data.filter((p) => p.isActive));
       setLoading(false);
@@ -199,6 +214,23 @@ export default function TenantUsagePage() {
     setSsoClientSecret("");
   }
 
+  async function handleInviteMember() {
+    if (!tenantId || !inviteEmail.trim()) return;
+    setInviteBusy(true);
+    setError(null);
+    setInviteMsg(null);
+    const res = await tenancyApi.inviteMember(tenantId, inviteEmail.trim(), inviteRole);
+    setInviteBusy(false);
+    if (!res.success) {
+      setError(res.error?.message ?? t("errors.requestFailed"));
+      return;
+    }
+    setInviteMsg(t("tenantUsage.inviteSent"));
+    setInviteEmail("");
+    const ent = await billingApi.getTenantEntitlements(tenantId);
+    if (ent.success && ent.data) setEntitlements(ent.data);
+  }
+
   async function handleCancel() {
     if (!tenantId || !window.confirm(t("tenantUsage.cancelConfirm"))) return;
     setPortalBusy(true);
@@ -217,9 +249,9 @@ export default function TenantUsagePage() {
     <PageContent>
       <PageHeader title={t("tenantUsage.title")} description={t("tenantUsage.subtitle")} />
       {error ? <Alert variant="error">{error}</Alert> : null}
-      {loading ? <p className="text-sm text-[var(--color-muted)]">{t("common.loading")}</p> : null}
+      {loading ? <TenantSkeleton /> : null}
 
-      {tenants.length > 0 ? (
+      {!loading && tenants.length > 0 ? (
         <div className="mb-4">
           <label className="text-sm font-medium">{t("tenantUsage.selectTenant")}</label>
           <select
@@ -239,7 +271,43 @@ export default function TenantUsagePage() {
         </div>
       ) : null}
 
-      {entitlements ? (
+      {!loading && tenantId ? (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>{t("tenantUsage.inviteMember")}</CardTitle>
+          </CardHeader>
+          <CardBody className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[200px] flex-1">
+              <label className="text-xs font-medium text-[var(--color-muted)]">{t("common.email")}</label>
+              <Input
+                className="mt-1"
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                disabled={inviteBusy}
+              />
+            </div>
+            <div className="min-w-[140px]">
+              <label className="text-xs font-medium text-[var(--color-muted)]">{t("tenantUsage.inviteRole")}</label>
+              <select
+                className="mt-1 h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                disabled={inviteBusy}
+              >
+                <option value="member">{t("tenantUsage.roleMember")}</option>
+                <option value="admin">{t("tenantUsage.roleAdmin")}</option>
+              </select>
+            </div>
+            <Button loading={inviteBusy} onClick={() => void handleInviteMember()}>
+              {t("tenantUsage.inviteSubmit")}
+            </Button>
+            {inviteMsg ? <p className="w-full text-sm text-[var(--color-muted)]">{inviteMsg}</p> : null}
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {!loading && entitlements ? (
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>

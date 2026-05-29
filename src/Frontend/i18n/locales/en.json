@@ -34,6 +34,7 @@
     "wallet": "Wallet",
     "subscribe": "Subscribe",
     "tenant": "Organization",
+    "notifications": "Notifications",
     "pricing": "Pricing",
     "about": "About",
     "contact": "Contact"
@@ -118,7 +119,13 @@
     "tip": "Use the nav to test Profile, 2FA, and Media Lab.",
     "quickProfile": "Edit profile",
     "quick2fa": "Security / 2FA",
-    "quickMedia": "Media lab"
+    "quickMedia": "Media lab",
+    "viewWallet": "View wallet",
+    "viewTenant": "Organization settings",
+    "orgSummary": "Organization",
+    "activePlan": "Plan: {{plan}}",
+    "noTenant": "No organization yet — subscribe to create one.",
+    "openTickets": "Open support tickets: {{count}}"
   },
   "profile": {
     "title": "Profile",
@@ -131,7 +138,8 @@
     "avatarHint": "Profile API has no avatar field yet. Upload demonstrates the media flow for future avatar support.",
     "preview": "Preview",
     "resendVerification": "Resend email verification",
-    "resendSent": "Verification email sent if applicable."
+    "resendSent": "Verification email sent if applicable.",
+    "changePassword": "Change password"
   },
   "twoFa": {
     "title": "Two-factor authentication",
@@ -170,7 +178,9 @@
     "markRead": "Mark read",
     "markAllRead": "Mark all read",
     "today": "Today",
-    "open": "Open"
+    "open": "Open",
+    "pageTitle": "All notifications",
+    "pageDescription": "In-app messages from support, billing, and system events."
   },
   "support": {
     "title": "Support center",
@@ -185,7 +195,12 @@
     "allStatuses": "All statuses",
     "selectTicket": "Select a ticket to view details.",
     "replyPlaceholder": "Write a follow-up reply...",
-    "reply": "Send reply"
+    "reply": "Send reply",
+    "close": "Close ticket",
+    "reopen": "Reopen ticket",
+    "closedHint": "This ticket is closed. Reopen it to send another reply.",
+    "attachments": "Attachments",
+    "attachmentsMessage": "Additional attachments"
   },
   "pricing": {
     "title": "Plans & pricing",
@@ -253,7 +268,13 @@
     "ssoSave": "Save SSO settings",
     "ssoNotConfigured": "SSO is not configured yet. Save to create settings.",
     "ssoPublicEndpoint": "Public config",
-    "ssoSignInHint": "Sign-in: POST /api/v1/auth/tenant-sso/{slug} with { \"idToken\": \"...\" }"
+    "ssoSignInHint": "Members sign in with your OIDC provider (configured above).",
+    "inviteMember": "Invite member",
+    "inviteRole": "Role",
+    "inviteSubmit": "Send invite",
+    "inviteSent": "Invitation sent (user must already have an account).",
+    "roleMember": "Member",
+    "roleAdmin": "Admin"
   },
   "tenantPublic": {
     "workspace": "Organization",
@@ -261,13 +282,24 @@
     "notFound": "Organization not found.",
     "appEntry": "Workspace app",
     "appEntryHint": "We set your active tenant context. Continue to the main app for profile, support, and media.",
-    "continueToMainApp": "Continue to app"
+    "continueToMainApp": "Continue to app",
+    "ssoTitle": "Sign in with your organization",
+    "ssoHint": "Use the identity provider configured by your organization admin.",
+    "ssoLoading": "Loading sign-in options…",
+    "ssoDisabled": "SSO is not enabled for this organization.",
+    "ssoFailed": "Organization sign-in failed"
   },
   "wallet": {
     "title": "Personal wallet",
     "subtitle": "Credits are per user — not tied to your tenant subscription.",
     "balance": "Balance",
-    "creditsHint": "Credits (demo MVP top-up)",
+    "creditsHint": "Credits for metered features on the main app",
+    "packages": "Buy credits",
+    "noPackages": "No packages available.",
+    "packageCredits": "{{count}} credits",
+    "purchase": "Buy {{price}}",
+    "demoTopUp": "Demo top-up",
+    "demoTopUpHint": "Manual credit amount without payment (development only).",
     "topUp": "Top up",
     "meteredActions": "Metered actions",
     "debit": "Use ({{cost}} credits)",

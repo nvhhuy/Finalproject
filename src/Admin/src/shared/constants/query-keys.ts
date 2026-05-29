@@ -29,6 +29,10 @@ export const queryKeys = {
     all: () => ['admin', 'plans'] as const,
     list: () => ['admin', 'plans', 'list'] as const,
   },
+  creditPackages: {
+    all: () => ['admin', 'credit-packages'] as const,
+    list: () => ['admin', 'credit-packages', 'list'] as const,
+  },
   invoices: {
     all: () => ['admin', 'invoices'] as const,
     list: (page: number) => ['admin', 'invoices', 'list', page] as const,

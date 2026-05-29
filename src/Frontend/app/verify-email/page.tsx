@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardBody } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/loading";
 import { authApi } from "@/lib/features/auth/auth-api";
 
 function VerifyBody() {
@@ -47,7 +48,7 @@ export default function VerifyEmailPage() {
     <AuthLayout title={t("verifyEmail.title")}>
       <Card>
         <CardBody className="grid gap-4">
-          <Suspense fallback={<p className="text-sm text-[var(--color-muted)]">{t("common.loading")}</p>}>
+          <Suspense fallback={<LoadingState compact label={t("verifyEmail.verifying")} />}>
             <VerifyBody />
           </Suspense>
           <Link className="link text-sm" href="/login">

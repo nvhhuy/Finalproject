@@ -75,7 +75,9 @@ public sealed class BillingInvoice : AggregateRoot<Guid>
         Guid userId,
         string invoiceNumber,
         string description,
+        int amountCents,
         long amountCredits,
+        string currency,
         string provider,
         DateTime issuedAtUtc) =>
         new(
@@ -85,9 +87,9 @@ public sealed class BillingInvoice : AggregateRoot<Guid>
             subscriptionId: null,
             invoiceNumber,
             description,
-            amountCents: 0,
+            amountCents,
             amountCredits,
-            currency: "CREDITS",
+            currency,
             provider,
             externalReference: null,
             issuedAtUtc);

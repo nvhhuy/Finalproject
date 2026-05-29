@@ -12,6 +12,7 @@ public sealed class TenantMemberConfiguration : IEntityTypeConfiguration<TenantM
     {
         builder.ToTable("TenantMembers");
         builder.HasKey(m => m.Id);
+        builder.Property(m => m.Id).ValueGeneratedNever();
 
         builder.Property(m => m.TenantId)
             .HasConversion(id => id.Value, value => TenantId.Create(value))

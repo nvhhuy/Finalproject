@@ -11,6 +11,7 @@ public sealed class PersonalWalletConfiguration : IEntityTypeConfiguration<Perso
     {
         builder.ToTable("PersonalWallets");
         builder.HasKey(w => w.Id);
+        builder.Property(w => w.Id).ValueGeneratedNever();
         builder.Property(w => w.UserId)
             .HasConversion(id => id.Value, value => UserId.Create(value))
             .IsRequired();
@@ -18,6 +19,12 @@ public sealed class PersonalWalletConfiguration : IEntityTypeConfiguration<Perso
         builder.Property(w => w.BalanceCredits).IsRequired();
         builder.Property(w => w.CreatedAtUtc).IsRequired();
         builder.Property(w => w.UpdatedAtUtc).IsRequired();
+        // xmin column exists in PostgreSQL but is not used for optimistic concurrency on hot wallet rows.
+        builder.Property(w => w.RowVersion)
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken(false);
 
         builder.HasMany(w => w.Entries)
             .WithOne()
@@ -33,6 +40,12 @@ public sealed class WalletLedgerEntryConfiguration : IEntityTypeConfiguration<Wa
     {
         builder.ToTable("WalletLedgerEntries");
         builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.RowVersion)
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken(false);
         builder.Property(e => e.EntryType).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(e => e.AmountCredits).IsRequired();
         builder.Property(e => e.BalanceAfterCredits).IsRequired();

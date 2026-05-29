@@ -117,24 +117,26 @@ public sealed class ListTenantsQueryHandler : IRequestHandler<ListTenantsQuery, 
         int pageSize = Math.Clamp(request.PageSize, 1, 100);
         int skip = (page - 1) * pageSize;
 
-        var rows = await (
-            from t in _db.Tenants.AsNoTracking()
-            join s in _db.Subscriptions.AsNoTracking() on t.Id equals s.TenantId into subs
-            from s in subs.DefaultIfEmpty()
-            join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id into plans
-            from p in plans.DefaultIfEmpty()
-            orderby t.CreatedAtUtc descending
-            select new TenantSummaryDto(
+        var rows = await _db.Tenants
+            .AsNoTracking()
+            .OrderByDescending(t => t.CreatedAtUtc)
+            .Skip(skip)
+            .Take(pageSize)
+            .Select(t => new TenantSummaryDto(
                 t.Id.Value,
                 t.Slug,
                 t.DisplayName,
                 t.Status.ToString(),
                 t.OwnerUserId.Value,
                 t.CreatedAtUtc,
-                p != null ? p.Code : null,
-                s != null ? s.Status.ToString() : null))
-            .Skip(skip)
-            .Take(pageSize)
+                _db.Subscriptions
+                    .Where(s => s.TenantId == t.Id)
+                    .Join(_db.Plans, s => s.PlanId, p => p.Id, (s, p) => p.Code)
+                    .FirstOrDefault(),
+                _db.Subscriptions
+                    .Where(s => s.TenantId == t.Id)
+                    .Select(s => s.Status.ToString())
+                    .FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
         return rows;
@@ -198,23 +200,25 @@ public sealed class GetMyTenantsQueryHandler : IRequestHandler<GetMyTenantsQuery
             .Select(m => m.TenantId)
             .ToListAsync(cancellationToken);
 
-        var rows = await (
-            from t in _db.Tenants.AsNoTracking()
-            where memberTenantIds.Contains(t.Id)
-            join s in _db.Subscriptions.AsNoTracking() on t.Id equals s.TenantId into subs
-            from s in subs.DefaultIfEmpty()
-            join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id into plans
-            from p in plans.DefaultIfEmpty()
-            orderby t.DisplayName
-            select new TenantSummaryDto(
+        var rows = await _db.Tenants
+            .AsNoTracking()
+            .Where(t => memberTenantIds.Contains(t.Id))
+            .OrderBy(t => t.DisplayName)
+            .Select(t => new TenantSummaryDto(
                 t.Id.Value,
                 t.Slug,
                 t.DisplayName,
                 t.Status.ToString(),
                 t.OwnerUserId.Value,
                 t.CreatedAtUtc,
-                p != null ? p.Code : null,
-                s != null ? s.Status.ToString() : null))
+                _db.Subscriptions
+                    .Where(s => s.TenantId == t.Id)
+                    .Join(_db.Plans, s => s.PlanId, p => p.Id, (s, p) => p.Code)
+                    .FirstOrDefault(),
+                _db.Subscriptions
+                    .Where(s => s.TenantId == t.Id)
+                    .Select(s => s.Status.ToString())
+                    .FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
         return rows;

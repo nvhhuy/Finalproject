@@ -1,5 +1,5 @@
 import { API_V1 } from '@/config/env'
-import { apiRequest } from '@/shared/api/client'
+import { apiFormRequest, apiRequest } from '@/shared/api/client'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import type {
   AdminAuditLogListDto,
@@ -12,6 +12,8 @@ import type {
   DeadLetterMessage,
   DatabaseBackupItemDto,
   DatabaseBackupSettingsDto,
+  ImportDatabaseBackupRestoreResponse,
+  ImportSystemBackupRestoreResponse,
   RunDatabaseBackupResponse,
   RunSystemBackupResponse,
   SupportTicketDetailDto,
@@ -20,6 +22,7 @@ import type {
   SupportTicketStatus,
   SystemBackupItemDto,
   SystemBackupSettingsDto,
+  CreditPackageDto,
   PlanDto,
   BillingInvoiceDto,
   TenantSummaryDto,
@@ -203,6 +206,29 @@ export function restoreSystemBackup(key: string, confirmation: string) {
   })
 }
 
+export async function downloadSystemBackup(key: string): Promise<Blob> {
+  const token = useAuthStore.getState().accessToken
+  const response = await fetch(
+    `${API_V1}/admin/settings/system-backup/download?key=${encodeURIComponent(key)}`,
+    {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    },
+  )
+  if (!response.ok) throw new Error('Download failed')
+  return response.blob()
+}
+
+export function importRestoreSystemBackup(file: File, confirmation: string) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('confirmation', confirmation)
+  return apiFormRequest<ImportSystemBackupRestoreResponse>(
+    '/admin/settings/system-backup/import-restore',
+    formData,
+    { idempotent: true },
+  )
+}
+
 export function getDatabaseBackupSettings() {
   return apiRequest<DatabaseBackupSettingsDto>('/admin/settings/database-backup')
 }
@@ -231,6 +257,29 @@ export function restoreDatabaseBackup(key: string, confirmation: string) {
     body: { key, confirmation },
     idempotent: true,
   })
+}
+
+export async function downloadDatabaseBackup(key: string): Promise<Blob> {
+  const token = useAuthStore.getState().accessToken
+  const response = await fetch(
+    `${API_V1}/admin/settings/database-backup/download?key=${encodeURIComponent(key)}`,
+    {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    },
+  )
+  if (!response.ok) throw new Error('Download failed')
+  return response.blob()
+}
+
+export function importRestoreDatabaseBackup(file: File, confirmation: string) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('confirmation', confirmation)
+  return apiFormRequest<ImportDatabaseBackupRestoreResponse>(
+    '/admin/settings/database-backup/import-restore',
+    formData,
+    { idempotent: true },
+  )
 }
 
 export function listAuditLogs(params: {
@@ -369,6 +418,48 @@ export function updatePlan(
 
 export function deletePlan(planId: string) {
   return apiRequest<boolean>(`/platform/plans/${planId}`, { method: 'DELETE', idempotent: true })
+}
+
+export function listCreditPackages() {
+  return apiRequest<CreditPackageDto[]>('/platform/credit-packages')
+}
+
+export function createCreditPackage(body: {
+  code: string
+  name: string
+  description?: string | null
+  priceCents: number
+  currency: string
+  creditsAmount: number
+  sortOrder: number
+}) {
+  return apiRequest<CreditPackageDto>('/platform/credit-packages', { method: 'POST', body, idempotent: true })
+}
+
+export function updateCreditPackage(
+  packageId: string,
+  body: {
+    name: string
+    description?: string | null
+    priceCents: number
+    currency: string
+    creditsAmount: number
+    isActive: boolean
+    sortOrder: number
+  },
+) {
+  return apiRequest<CreditPackageDto>(`/platform/credit-packages/${packageId}`, {
+    method: 'PUT',
+    body,
+    idempotent: true,
+  })
+}
+
+export function deleteCreditPackage(packageId: string) {
+  return apiRequest<boolean>(`/platform/credit-packages/${packageId}`, {
+    method: 'DELETE',
+    idempotent: true,
+  })
 }
 
 export function listPlatformInvoices(page = 1, pageSize = 50) {

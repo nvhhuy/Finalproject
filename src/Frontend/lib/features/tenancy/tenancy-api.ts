@@ -27,6 +27,15 @@ export const tenancyApi = {
       query: { host },
     });
   },
+  inviteMember(tenantId: string, email: string, role: string) {
+    return apiRequest<{ id: string; tenantId: string; userId: string; role: string; joinedAtUtc: string }>({
+      path: `/api/v1/tenants/${tenantId}/members`,
+      method: "POST",
+      body: { email, role },
+      auth: true,
+      idempotent: true,
+    });
+  },
   listDomains(tenantId: string) {
     return apiRequest<TenantDomainDto[]>({
       path: `/api/v1/tenants/${tenantId}/domains`,

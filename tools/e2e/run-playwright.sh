@@ -40,6 +40,8 @@ else
   export E2E_PREPARE_PORTS="${E2E_PREPARE_PORTS:-0}"
 fi
 
+export E2E_REUSE_SERVERS="${E2E_REUSE_SERVERS:-false}"
+
 if [[ "${E2E_PREPARE_PORTS}" == "1" ]]; then
   bash "$ROOT/tools/e2e/prepare-ports.sh"
 fi

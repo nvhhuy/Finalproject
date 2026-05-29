@@ -27,6 +27,20 @@ export function clearActiveTenantId() {
   localStorage.removeItem(TENANT_SLUG_KEY);
 }
 
+/** Prefer stored id when still a member; otherwise match slug; else first tenant. */
+export function resolveActiveTenantId(
+  tenants: ReadonlyArray<{ id: string; slug: string }>,
+  preferredId: string | null,
+  preferredSlug: string | null,
+): string | null {
+  if (preferredId && tenants.some((tenant) => tenant.id === preferredId)) return preferredId;
+  if (preferredSlug) {
+    const bySlug = tenants.find((tenant) => tenant.slug === preferredSlug);
+    if (bySlug) return bySlug.id;
+  }
+  return tenants[0]?.id ?? null;
+}
+
 export function tenantHeaders(): Record<string, string> {
   const tenantId = getActiveTenantId();
   return tenantId ? { "X-Tenant-Id": tenantId } : {};

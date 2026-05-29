@@ -25,7 +25,7 @@ function isLocalDevHost(host: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Must run before any internal fetch — otherwise resolve-host re-enters middleware and loops.
-  if (pathname.startsWith("/api") || pathname.startsWith("/_next")) {
+  if (pathname.startsWith("/api") || pathname.startsWith("/hubs") || pathname.startsWith("/_next")) {
     return NextResponse.next();
   }
 

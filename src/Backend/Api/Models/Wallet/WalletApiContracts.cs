@@ -15,6 +15,8 @@ public sealed record WalletLedgerEntryResponse(
 
 public sealed record TopUpWalletRequest(long AmountCredits);
 
+public sealed record PurchaseCreditPackageRequest(string PackageCode);
+
 public sealed record DebitWalletActionRequest(string ActionCode);
 
 public sealed record WalletDebitResponse(

@@ -406,6 +406,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantHostResolver, TenantHostResolver>();
         services.AddHttpClient<ITenantDomainDnsVerifier, GoogleDnsTenantDomainVerifier>();
         services.AddScoped<IPlanStore, PlanStore>();
+        services.AddScoped<ICreditPackageStore, CreditPackageStore>();
         services.AddScoped<IPaymentWebhookStore, PaymentWebhookStore>();
         services.AddScoped<ISubscriptionStore, SubscriptionStore>();
         services.AddScoped<IBillingDunningNotifier, BillingDunningNotifier>();

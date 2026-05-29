@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +11,7 @@ import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
+import { ProfileSkeleton } from "@/components/ui/skeleton";
 import { authApi } from "@/lib/features/auth/auth-api";
 import { userApi } from "@/lib/features/users/user-api";
 import { mediaApi } from "@/lib/features/media/media-api";
@@ -74,6 +76,15 @@ export default function ProfilePage() {
   const updateError = updateMutation.error;
   const concurrency = updateError && isConcurrencyError(updateError);
 
+  if (profileQuery.isLoading) {
+    return (
+      <PageContent>
+        <PageHeader title={t("profile.title")} />
+        <ProfileSkeleton />
+      </PageContent>
+    );
+  }
+
   return (
     <PageContent>
       <PageHeader title={t("profile.title")} />
@@ -89,9 +100,7 @@ export default function ProfilePage() {
           ) : null}
         </CardHeader>
         <CardBody className="grid gap-5">
-          {profileQuery.isLoading ? (
-            <p className="text-sm text-[var(--color-muted)]">{t("common.loading")}</p>
-          ) : profileQuery.isError ? (
+          {profileQuery.isError ? (
             <Alert variant="error">{(profileQuery.error as Error).message}</Alert>
           ) : profile ? (
             <>
@@ -114,12 +123,15 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+                <Button onClick={() => updateMutation.mutate()} loading={updateMutation.isPending}>
                   {t("profile.save")}
                 </Button>
                 <Button variant="secondary" onClick={resendVerification}>
                   {t("profile.resendVerification")}
                 </Button>
+                <Link href="/forgot-password">
+                  <Button variant="ghost">{t("profile.changePassword")}</Button>
+                </Link>
                 {updateMutation.isSuccess ? <Badge variant="success">{t("common.saved")}</Badge> : null}
                 {resendMsg ? <span className="text-sm text-[var(--color-muted)]">{resendMsg}</span> : null}
               </div>

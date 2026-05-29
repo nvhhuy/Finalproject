@@ -26,6 +26,10 @@ public sealed class AdminSettingsController : ApiControllerBase
     private const int DefaultBackupRetentionDays = 7;
     private const string SettingsRestoreConfirmation = "RESTORE_SETTINGS";
     private const string DatabaseRestoreConfirmation = "RESTORE_DATABASE";
+    private const string SettingsImportRestoreConfirmation = "IMPORT_RESTORE_SETTINGS";
+    private const string DatabaseImportRestoreConfirmation = "IMPORT_RESTORE_DATABASE";
+    private const long MaxSettingsImportBytes = 10 * 1024 * 1024;
+    private const long MaxDatabaseImportBytes = 512L * 1024 * 1024;
     private readonly ISystemSettingsBackupService _systemSettingsBackupService;
     private readonly ISystemDatabaseBackupService _systemDatabaseBackupService;
 
@@ -117,6 +121,20 @@ public sealed class AdminSettingsController : ApiControllerBase
         return OkApi(dtos);
     }
 
+    [HttpGet("system-backup/download")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> DownloadSystemBackup([FromQuery] string key, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return MatchApi((Result<bool, Error>)new ValidationError("key", "Backup key is required."), _ => Ok());
+
+        SystemBackupDownloadResult? file = await _systemSettingsBackupService.DownloadBackupAsync(key, cancellationToken);
+        if (file is null)
+            return MatchApi((Result<bool, Error>)new ValidationError("key", "Backup key is invalid or unreadable."), _ => Ok());
+
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+
     [HttpPost("system-backup/restore")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RestoreSystemBackup([FromBody] RestoreSystemBackupRequest body, CancellationToken cancellationToken)
@@ -129,6 +147,53 @@ public sealed class AdminSettingsController : ApiControllerBase
             return MatchApi((Result<bool, Error>)new ValidationError("key", "Backup key is invalid or unreadable."), _ => Ok());
 
         return OkApi(true);
+    }
+
+    [HttpPost("system-backup/import-restore")]
+    [RequestSizeLimit(MaxSettingsImportBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxSettingsImportBytes)]
+    [ProducesResponseType(typeof(ApiResponse<ImportSystemBackupRestoreResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ImportRestoreSystemBackup(
+        IFormFile? file,
+        [FromForm] string confirmation,
+        CancellationToken cancellationToken)
+    {
+        if (!string.Equals(confirmation, SettingsImportRestoreConfirmation, StringComparison.Ordinal))
+        {
+            return MatchApi(
+                (Result<bool, Error>)new ValidationError(
+                    "confirmation",
+                    $"Confirmation must equal '{SettingsImportRestoreConfirmation}'."),
+                _ => Ok());
+        }
+
+        if (file is null || file.Length == 0)
+            return MatchApi((Result<bool, Error>)new ValidationError("file", "Backup file is required."), _ => Ok());
+
+        if (file.Length > MaxSettingsImportBytes)
+        {
+            return MatchApi(
+                (Result<bool, Error>)new ValidationError("file", $"Backup file must be at most {MaxSettingsImportBytes} bytes."),
+                _ => Ok());
+        }
+
+        await using Stream stream = file.OpenReadStream();
+        ImportSystemSettingsBackupResult? imported =
+            await _systemSettingsBackupService.ImportAndRestoreBackupAsync(stream, cancellationToken);
+        if (imported is null)
+        {
+            return MatchApi(
+                (Result<bool, Error>)new ValidationError(
+                    "file",
+                    "Settings backup file is invalid. Use platform JSON export or a JSON array of { key, value } entries."),
+                _ => Ok());
+        }
+
+        return OkApi(new ImportSystemBackupRestoreResponse(
+            imported.Key,
+            imported.CreatedAtUtc,
+            imported.ByteSize,
+            imported.SettingsApplied));
     }
 
     [HttpGet("database-backup")]
@@ -190,6 +255,20 @@ public sealed class AdminSettingsController : ApiControllerBase
         return OkApi(dtos);
     }
 
+    [HttpGet("database-backup/download")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> DownloadDatabaseBackup([FromQuery] string key, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return MatchApi((Result<bool, Error>)new ValidationError("key", "Database backup key is required."), _ => Ok());
+
+        SystemDatabaseBackupDownloadResult? file = await _systemDatabaseBackupService.DownloadBackupAsync(key, cancellationToken);
+        if (file is null)
+            return MatchApi((Result<bool, Error>)new ValidationError("key", "Database backup key is invalid or unreadable."), _ => Ok());
+
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+
     [HttpPost("database-backup/restore")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RestoreDatabaseBackup([FromBody] RestoreDatabaseBackupRequest body, CancellationToken cancellationToken)
@@ -202,5 +281,48 @@ public sealed class AdminSettingsController : ApiControllerBase
             return MatchApi((Result<bool, Error>)new ValidationError("key", "Database backup key is invalid or restore failed."), _ => Ok());
 
         return OkApi(true);
+    }
+
+    [HttpPost("database-backup/import-restore")]
+    [RequestSizeLimit(MaxDatabaseImportBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxDatabaseImportBytes)]
+    [ProducesResponseType(typeof(ApiResponse<ImportDatabaseBackupRestoreResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ImportRestoreDatabaseBackup(
+        IFormFile? file,
+        [FromForm] string confirmation,
+        CancellationToken cancellationToken)
+    {
+        if (!string.Equals(confirmation, DatabaseImportRestoreConfirmation, StringComparison.Ordinal))
+        {
+            return MatchApi(
+                (Result<bool, Error>)new ValidationError(
+                    "confirmation",
+                    $"Confirmation must equal '{DatabaseImportRestoreConfirmation}'."),
+                _ => Ok());
+        }
+
+        if (file is null || file.Length == 0)
+            return MatchApi((Result<bool, Error>)new ValidationError("file", "Database dump file is required."), _ => Ok());
+
+        if (file.Length > MaxDatabaseImportBytes)
+        {
+            return MatchApi(
+                (Result<bool, Error>)new ValidationError("file", $"Database dump must be at most {MaxDatabaseImportBytes} bytes."),
+                _ => Ok());
+        }
+
+        await using Stream stream = file.OpenReadStream();
+        ImportSystemDatabaseBackupResult? imported =
+            await _systemDatabaseBackupService.ImportAndRestoreBackupAsync(stream, cancellationToken);
+        if (imported is null)
+        {
+            return MatchApi(
+                (Result<bool, Error>)new ValidationError(
+                    "file",
+                    "Database dump is invalid or restore failed. Use PostgreSQL custom format (pg_dump -Fc) from the legacy system."),
+                _ => Ok());
+        }
+
+        return OkApi(new ImportDatabaseBackupRestoreResponse(imported.Key, imported.CreatedAtUtc, imported.ByteSize));
     }
 }

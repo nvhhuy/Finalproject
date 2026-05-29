@@ -69,6 +69,8 @@ public static class DependencyInjection
         services.Configure<TenantRateLimitOptions>(configuration.GetSection(TenantRateLimitOptions.SectionName));
         services.AddScoped<ITenantRateLimitProvider, TenantRateLimitProvider>();
 
+        bool disableRateLimiting = configuration.GetValue<bool>("IntegrationTesting:DisableRateLimiting");
+
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -82,7 +84,7 @@ public static class DependencyInjection
 
             options.AddPolicy("tenant-api", httpContext =>
             {
-                if (IsTenantRateLimitExempt(httpContext))
+                if (disableRateLimiting || IsTenantRateLimitExempt(httpContext))
                     return RateLimitPartition.GetNoLimiter("exempt");
 
                 ITenantRateLimitProvider provider =
@@ -108,15 +110,20 @@ public static class DependencyInjection
             });
 
             options.AddPolicy("auth", context =>
-                RateLimitPartition.GetFixedWindowLimiter(
+            {
+                if (disableRateLimiting)
+                    return RateLimitPartition.GetNoLimiter("exempt");
+
+                return RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? context.Request.Headers.Host.ToString(),
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 30,
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 5
-                    }));
+                        QueueLimit = 5,
+                    });
+            });
 
             // Per-user limit for media uploads. Keyed by the authenticated user id (falling back
             // to IP for any unauthenticated path that slips through). Tight enough to stop a
@@ -124,6 +131,9 @@ public static class DependencyInjection
             // friction for normal social-media usage.
             options.AddPolicy("media-upload", context =>
             {
+                if (disableRateLimiting)
+                    return RateLimitPartition.GetNoLimiter("exempt");
+
                 string partitionKey = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                     ?? context.Connection.RemoteIpAddress?.ToString()
                     ?? "anonymous";

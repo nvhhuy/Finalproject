@@ -84,12 +84,16 @@ All write operations are audited via `IAdminAuditLogWriter` (same transaction as
 | Update system settings backup config | `PUT /api/v1/admin/settings/system-backup` |
 | Run system settings backup now | `POST /api/v1/admin/settings/system-backup/run` |
 | List system settings backups | `GET /api/v1/admin/settings/system-backup/history` |
+| Download system settings backup | `GET /api/v1/admin/settings/system-backup/download?key=` |
 | Restore system settings backup | `POST /api/v1/admin/settings/system-backup/restore` |
+| Import + restore system settings (legacy migration) | `POST /api/v1/admin/settings/system-backup/import-restore` (multipart: `file`, `confirmation` = `IMPORT_RESTORE_SETTINGS`) |
 | Read database backup config | `GET /api/v1/admin/settings/database-backup` |
 | Update database backup config | `PUT /api/v1/admin/settings/database-backup` |
 | Run database backup now | `POST /api/v1/admin/settings/database-backup/run` |
 | List database backups | `GET /api/v1/admin/settings/database-backup/history` |
+| Download database backup | `GET /api/v1/admin/settings/database-backup/download?key=` |
 | Restore database backup | `POST /api/v1/admin/settings/database-backup/restore` |
+| Import + restore database (legacy migration) | `POST /api/v1/admin/settings/database-backup/import-restore` (multipart: `file`, `confirmation` = `IMPORT_RESTORE_DATABASE`; `pg_dump -Fc`) |
 | View audit log (paginated) | `GET /api/v1/admin/audit-logs` |
 | Dashboard metrics (user counts, …) | `GET /api/v1/admin/metrics/dashboard` |
 | Broadcast in-app announcement to all active members | `POST /api/v1/admin/notifications/broadcast` |
@@ -248,6 +252,9 @@ Not for production use.
 | Platform plan CRUD | Admin JWT | `GET/POST/PUT/DELETE /api/v1/platform/plans` |
 | Personal wallet balance | Ready | `GET /api/v1/wallet/balance` |
 | Wallet ledger | Ready | `GET /api/v1/wallet/ledger` |
+| Credit packages (public catalog) | Ready | `GET /api/v1/public/credit-packages` |
+| Credit packages (admin CRUD) | Ready | `GET/POST/PUT/DELETE /api/v1/platform/credit-packages` |
+| Wallet purchase package (MVP instant) | Ready | `POST /api/v1/wallet/purchase` |
 | Wallet top-up (manual MVP) | Ready | `POST /api/v1/wallet/top-up` |
 | Wallet metered debit | Ready | `POST /api/v1/wallet/debit` |
 | Stripe webhook inbox | Ready | `POST /api/v1/webhooks/stripe` |

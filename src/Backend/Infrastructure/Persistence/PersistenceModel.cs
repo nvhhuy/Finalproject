@@ -1,5 +1,6 @@
 using Domains.Common;
 using Domains.Common.Interfaces;
+using Domains.Wallet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 namespace Infrastructure.Persistence;
@@ -7,6 +8,12 @@ namespace Infrastructure.Persistence;
 /// <summary>Shared EF model between write and read PostgreSQL contexts (CQRS split).</summary>
 internal static class PersistenceModel
 {
+    private static readonly HashSet<Type> RowVersionExcludedTypes =
+    [
+        typeof(PersonalWallet),
+        typeof(WalletLedgerEntry),
+    ];
+
     public static void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.Ignore<List<IDomainEvent>>()
@@ -18,14 +25,14 @@ internal static class PersistenceModel
     }
 
     /// <summary>
-    /// Maps <see cref="Entity{TId}.RowVersion"/> as a concurrency token for every domain entity.
-    /// New aggregates only need to inherit <see cref="AggregateRoot{TId}"/> and add a migration.
+    /// Maps <see cref="Entity{TId}.RowVersion"/> as a concurrency token for domain entities.
+    /// Wallet aggregates are excluded: they use ledger idempotency keys + <c>SELECT … FOR UPDATE</c> instead.
     /// </summary>
     private static void ConfigureRowVersion(ModelBuilder modelBuilder)
     {
         foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (!IsDomainEntity(entityType.ClrType))
+            if (!IsDomainEntity(entityType.ClrType) || RowVersionExcludedTypes.Contains(entityType.ClrType))
                 continue;
 
             IMutableProperty? rowVersion = entityType.FindProperty(nameof(IHasRowVersion.RowVersion));

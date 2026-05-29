@@ -142,4 +142,91 @@ public static class DbSeeder
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded default billing plans (starter, pro).");
     }
+
+    /// <summary>Backfills plan limit JSON when new fields are added (idempotent).</summary>
+    public static async Task EnsureDefaultPlanLimitsAsync(ApplicationDbContext db, IServiceProvider services)
+    {
+        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        Plan? pro = await db.Plans.FirstOrDefaultAsync(p => p.Code == "pro");
+        if (pro is null)
+            return;
+
+        PlanLimits limits = PlanLimits.Parse(pro.LimitsJson);
+        if (limits.MonthlyCreditGrant >= 500)
+            return;
+
+        limits = new PlanLimits
+        {
+            MaxUsers = limits.MaxUsers > 0 ? limits.MaxUsers : 25,
+            MaxStorageBytes = limits.MaxStorageBytes > 0 ? limits.MaxStorageBytes : 10_737_418_240,
+            Modules = limits.Modules.Count > 0
+                ? limits.Modules
+                : [BillingModules.Support, BillingModules.Media, BillingModules.Notifications],
+            MaxOpenSupportTickets = limits.MaxOpenSupportTickets > 0 ? limits.MaxOpenSupportTickets : 100,
+            AdminSeats = limits.AdminSeats > 0 ? limits.AdminSeats : 1,
+            Impersonation = limits.Impersonation,
+            BackupRestore = limits.BackupRestore,
+            ApiRequestsPerMinute = limits.ApiRequestsPerMinute > 0 ? limits.ApiRequestsPerMinute : 600,
+            MonthlyCreditGrant = 500,
+        };
+        pro.Update(
+            pro.Name,
+            pro.Description,
+            pro.PriceMonthlyCents,
+            pro.Currency,
+            pro.TrialDays,
+            limits.ToJson(),
+            pro.IsActive,
+            pro.SortOrder,
+            DateTime.UtcNow);
+        await db.SaveChangesAsync();
+        logger.LogInformation("Updated pro plan limits (monthly credit grant backfill).");
+    }
+
+    public static async Task SeedDefaultCreditPackagesIfMissingAsync(ApplicationDbContext db, IServiceProvider services)
+    {
+        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        if (await db.CreditPackages.AnyAsync())
+            return;
+
+        DateTime now = DateTime.UtcNow;
+        db.CreditPackages.Add(CreditPackage.Create(
+            "starter-500",
+            "Starter pack",
+            "500 credits for light usage.",
+            priceCents: 499,
+            "USD",
+            creditsAmount: 500,
+            sortOrder: 10,
+            now));
+        db.CreditPackages.Add(CreditPackage.Create(
+            "value-1500",
+            "Value pack",
+            "1,500 credits — best value for regular users.",
+            priceCents: 1299,
+            "USD",
+            creditsAmount: 1500,
+            sortOrder: 20,
+            now));
+        db.CreditPackages.Add(CreditPackage.Create(
+            "pack-1k-vnd",
+            "1,000 credits (VND)",
+            "1,000 credits — priced in Vietnamese đồng.",
+            priceCents: 100_000,
+            "VND",
+            creditsAmount: 1000,
+            sortOrder: 30,
+            now));
+        db.CreditPackages.Add(CreditPackage.Create(
+            "pack-5k-vnd",
+            "5,500 credits (VND)",
+            "5,500 credits with bonus — priced in Vietnamese đồng.",
+            priceCents: 450_000,
+            "VND",
+            creditsAmount: 5500,
+            sortOrder: 40,
+            now));
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded default credit packages.");
+    }
 }

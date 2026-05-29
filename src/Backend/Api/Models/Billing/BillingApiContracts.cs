@@ -85,6 +85,35 @@ public sealed record SubscriptionResponse(
     DateTime CurrentPeriodEndUtc,
     bool AllowsWriteAccess);
 
+public sealed record CreateCreditPackageRequest(
+    string Code,
+    string Name,
+    string? Description,
+    int PriceCents,
+    string Currency,
+    long CreditsAmount,
+    int SortOrder);
+
+public sealed record UpdateCreditPackageRequest(
+    string Name,
+    string? Description,
+    int PriceCents,
+    string Currency,
+    long CreditsAmount,
+    bool IsActive,
+    int SortOrder);
+
+public sealed record CreditPackageResponse(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    int PriceCents,
+    string Currency,
+    long CreditsAmount,
+    bool IsActive,
+    int SortOrder);
+
 public sealed record PaymentWebhookReceiptResponse(Guid EventId, bool Duplicate, string Status);
 
 public sealed record TenantUsageResponse(int MemberCount, long StorageBytes, int OpenSupportTicketCount);
@@ -159,6 +188,18 @@ public static class BillingApiMapping
                 dto.Limits.MonthlyCreditGrant),
             new TenantUsageResponse(dto.Usage.MemberCount, dto.Usage.StorageBytes, dto.Usage.OpenSupportTicketCount),
             dto.AllowsWriteAccess);
+
+    public static CreditPackageResponse ToResponse(Application.Modules.Billing.CreditPackageDto dto) =>
+        new(
+            dto.Id,
+            dto.Code,
+            dto.Name,
+            dto.Description,
+            dto.PriceCents,
+            dto.Currency,
+            dto.CreditsAmount,
+            dto.IsActive,
+            dto.SortOrder);
 
     public static BillingInvoiceResponse ToResponse(Application.Modules.Billing.BillingInvoiceListItemDto dto) =>
         new(

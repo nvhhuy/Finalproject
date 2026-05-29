@@ -17,7 +17,7 @@ Catalog of **existing** Frontend base features — routes, behavior, and backend
 | `/pricing` | Plans from API, CTA → subscribe | Public |
 | `/about` | About page | Public |
 | `/contact` | Contact page | Public |
-| `/t/[slug]` | Tenant public landing (branding) | Public |
+| `/t/[slug]` | Tenant public landing + org SSO sign-in | Public |
 | `/t/[slug]/app` | Set `X-Tenant-Id` context → main app | Auth |
 
 ---
@@ -26,18 +26,19 @@ Catalog of **existing** Frontend base features — routes, behavior, and backend
 
 | Path | Page | Nav |
 |------|------|-----|
-| `/app` | Dashboard (user summary) | ✓ |
+| `/app` | Dashboard (wallet, org, tickets summary) | ✓ |
 | `/app/profile` | View/edit profile, avatar demo, resend verification | ✓ |
 | `/app/security/2fa` | Begin/confirm 2FA + QR | ✓ |
 | `/app/media` | Media lab (upload flow) | ✓ |
-| `/app/support` | Support tickets | ✓ |
-| `/app/wallet` | Personal credits (top-up, metered debit) | ✓ |
+| `/app/support` | Support tickets (create, reply, close, reopen, attachments) | ✓ |
+| `/app/notifications` | Full notification list | ✓ |
+| `/app/wallet` | Personal credits (packages, demo top-up, metered debit) | ✓ |
 | `/app/subscribe` | MVP tenant + subscription checkout | ✓ |
-| `/app/tenant` | Org usage vs plan limits | ✓ |
+| `/app/tenant` | Org usage, billing portal, domains, SSO, invite members | ✓ |
 
 Guard: `RequireAuth` in `app/app/layout.tsx`.
 
-**Tenant header:** authenticated API calls send `X-Tenant-Id` from `localStorage` (`lib/tenancy/tenant-context.ts`) when set (e.g. after subscribe or `/t/[slug]/app`).
+**Tenant header:** authenticated API calls send `X-Tenant-Id` from `localStorage` (`lib/tenancy/tenant-context.ts`) when set.
 
 ---
 
@@ -53,10 +54,9 @@ Guard: `RequireAuth` in `app/app/layout.tsx`.
 | Reset password | `/reset-password` | `POST /auth/reset-password` |
 | Verify email | `/verify-email` | `POST /auth/verify-email` |
 | Resend verification | Register + Profile | `POST /auth/resend-verification` |
-| Google Sign-In | `/login` | `POST /auth/google` (needs `NEXT_PUBLIC_GOOGLE_CLIENT_ID`) |
+| Google Sign-In | `/login` | `POST /auth/google` |
+| Tenant OIDC SSO | `/t/[slug]` | `GET /public/tenants/{slug}/sso` + `POST /auth/tenant-sso/{slug}` |
 | Logout | App header | Clear `localStorage` (client-only) |
-
-Client: `lib/features/auth/auth-api.ts`.
 
 ---
 
@@ -67,78 +67,52 @@ Client: `lib/features/auth/auth-api.ts`.
 | Load profile | Hydrate on app load + profile page | `GET /users/profile` |
 | Update name | `rowVersion` optimistic concurrency | `PUT /users/profile` |
 | Resend verification | Button on profile | `POST /auth/resend-verification` |
-| Avatar demo | Upload via Media flow (no profile field yet) | Media APIs |
-
-Client: `lib/features/users/user-api.ts`.
+| Change password | Link → forgot-password flow | `POST /auth/forgot-password` |
+| Avatar demo | Upload via Media flow | Media APIs |
 
 ---
 
-## Two-factor authentication
+## Support
 
 | Capability | API |
 |------------|-----|
-| Begin setup (shared key + otpauth URI) | `POST /auth/2fa/begin` |
-| Confirm TOTP code | `POST /auth/2fa/confirm` |
-| Status display | From profile `twoFactorEnabled` |
-
-UI: QR via `components/auth/QrCode.tsx`.
-
-**Not in base:** user self-service **disable** 2FA (Admin can reset via admin API).
+| Create / list / detail | `POST/GET /support/tickets` |
+| Reply + attachments | `POST .../messages` (media upload → storageKey) |
+| Close / reopen | `POST .../close`, `POST .../reopen` |
 
 ---
 
-## Media lab
+## Tenancy & billing
 
-| Step | API |
-|------|-----|
-| Initiate upload (presigned URL) | `POST /media/uploads` |
-| PUT bytes to storage | Presigned URL (direct) |
-| Complete + enqueue processing | `POST /media/{id}/complete` (idempotent) |
-| Poll asset status | `GET /media/{id}` |
-| Delete | `DELETE /media/{id}?rowVersion=` |
-
-Client: `lib/features/media/media-api.ts`.
-
-**Not in base:** list all user media assets (no backend list endpoint).
+| Capability | UI | API |
+|------------|-----|-----|
+| Invite member | `/app/tenant` | `POST /tenants/{id}/members` |
+| Custom domains + SSO config | `/app/tenant` | `tenancy-api` |
+| Entitlements, cancel, change plan | `/app/tenant` | `billing-api` |
+| Subscribe new tenant | `/app/subscribe` | `POST /billing/subscribe` |
 
 ---
 
-## i18n
+## Notifications
 
-| Locale | File |
-|--------|------|
-| English | `i18n/locales/en.json` |
-| Vietnamese | `i18n/locales/vi.json` |
-| Chinese (Simplified) | `i18n/locales/zh.json` |
-
-Switcher: `components/layout/LanguageSwitcher.tsx`.
+| Capability | UI | API |
+|------------|-----|-----|
+| In-app list + mark read | Bell widget + `/app/notifications` | `GET/POST /notifications` |
+| Realtime push | SignalR (dev: `/hubs` proxy + long polling) | `/hubs/notifications` |
 
 ---
 
-## Billing & wallet (SaaS MVP)
-
-| Capability | UI | API client |
-|------------|-----|------------|
-| Public pricing | `/pricing` | `lib/features/billing/billing-api.ts` → `GET /public/plans` |
-| Subscribe (new tenant) | `/app/subscribe` | `POST /billing/subscribe` |
-| Personal wallet | `/app/wallet` | `lib/features/wallet/wallet-api.ts` |
-| Billing portal (cancel / change plan) | `/app/tenant` | `cancelSubscription`, `changeSubscriptionPlan` |
-| Public tenant page | `/t/[slug]` | `GET /public/tenants/{slug}` |
-
----
-
-## Intentionally out of scope (use other apps / future work)
+## Intentionally out of scope (use other apps)
 
 | Feature | Notes |
 |---------|--------|
-| Admin users / audit / DLQ | `src/Admin` |
-| SignalR `/hubs/notifications` | Backend `Realtime:Enabled` — no client yet |
-| Change password while logged in | Use forgot/reset flow; no dedicated user endpoint |
-| Profile `avatarUrl` field | Needs backend DTO + migration |
-| Product-specific checkout, CMS, etc. | Add under `app/` + `lib/features/` per project |
+| Admin users / audit / DLQ / platform plans CRUD | `src/Admin` |
+| Profile `avatarUrl` field on API | Needs backend DTO + migration |
+| User self-service disable 2FA | Admin reset only |
+| Media asset gallery | No backend list endpoint |
 
 ---
 
 ## When you add a feature
 
-Update this file with route, API, and i18n key groups — keeps PM and AI aligned.
+Update this file with route, API, and i18n key groups.

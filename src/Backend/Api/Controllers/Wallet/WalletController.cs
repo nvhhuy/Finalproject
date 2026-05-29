@@ -1,5 +1,6 @@
 using Api.Authorization;
 using Api.Controllers.Base;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Billing;
 using Api.Models.Wallet;
@@ -50,12 +51,11 @@ public sealed class WalletController : ApiControllerBase
 
     /// <summary>MVP manual top-up (no payment provider). Production should use Stripe/PayPal webhooks.</summary>
     [HttpPost("top-up")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<WalletBalanceResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> TopUp([FromBody] TopUpWalletRequest request, CancellationToken cancellationToken)
     {
-        string idempotencyKey = Request.Headers.TryGetValue("X-Idempotency-Key", out var values) && !string.IsNullOrWhiteSpace(values)
-            ? values.ToString()
-            : Guid.NewGuid().ToString("N");
+        string idempotencyKey = ResolveIdempotencyKey();
 
         Result<Application.Contracts.Wallet.WalletBalanceDto, Error> result = await Sender.Send(
             new TopUpWalletCommand(CurrentUserId, request.AmountCredits, idempotencyKey),
@@ -63,18 +63,41 @@ public sealed class WalletController : ApiControllerBase
         return MatchApi(result, dto => OkApi(WalletApiMapping.ToResponse(dto)));
     }
 
+    /// <summary>Purchase a catalog credit package (MVP: immediate fulfillment; production should require payment webhook).</summary>
+    [HttpPost("purchase")]
+    [Transactional]
+    [ProducesResponseType(typeof(ApiResponse<WalletBalanceResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Purchase([FromBody] PurchaseCreditPackageRequest request, CancellationToken cancellationToken)
+    {
+        Result<Application.Contracts.Wallet.WalletBalanceDto, Error> result = await Sender.Send(
+            new Application.Modules.Billing.PurchaseCreditPackageCommand(
+                CurrentUserId,
+                request.PackageCode,
+                ResolveIdempotencyKey()),
+            cancellationToken);
+        return MatchApi(result, dto => OkApi(WalletApiMapping.ToResponse(dto)));
+    }
+
     [HttpPost("debit")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<WalletDebitResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Debit([FromBody] DebitWalletActionRequest request, CancellationToken cancellationToken)
     {
-        string idempotencyKey = Request.Headers.TryGetValue("X-Idempotency-Key", out var values) && !string.IsNullOrWhiteSpace(values)
-            ? values.ToString()
-            : Guid.NewGuid().ToString("N");
-
         Result<Application.Contracts.Wallet.WalletDebitResultDto, Error> result = await Sender.Send(
-            new DebitWalletActionCommand(CurrentUserId, request.ActionCode, idempotencyKey),
+            new DebitWalletActionCommand(CurrentUserId, request.ActionCode, ResolveIdempotencyKey()),
             cancellationToken);
         return MatchApi(result, dto => OkApi(WalletApiMapping.ToResponse(dto)));
+    }
+
+    private string ResolveIdempotencyKey()
+    {
+        if (Request.Headers.TryGetValue("Idempotency-Key", out var standard) && !string.IsNullOrWhiteSpace(standard))
+            return standard.ToString();
+
+        if (Request.Headers.TryGetValue("X-Idempotency-Key", out var legacy) && !string.IsNullOrWhiteSpace(legacy))
+            return legacy.ToString();
+
+        return Guid.NewGuid().ToString("N");
     }
 
     [HttpGet("invoices")]

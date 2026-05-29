@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
+import { WalletSkeleton } from "@/components/ui/skeleton";
 import { formatDateTimeOrDash } from "@/lib/shared";
+import { formatPackagePrice } from "@/lib/features/wallet/format-package-price";
 import {
   walletApi,
   type BillingInvoiceDto,
+  type CreditPackageDto,
   type MeteredActionDto,
   type WalletLedgerEntryDto,
 } from "@/lib/features/wallet/wallet-api";
@@ -20,6 +23,7 @@ export default function WalletPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [ledger, setLedger] = useState<WalletLedgerEntryDto[]>([]);
   const [actions, setActions] = useState<MeteredActionDto[]>([]);
+  const [packages, setPackages] = useState<CreditPackageDto[]>([]);
   const [topUpAmount, setTopUpAmount] = useState("100");
   const [error, setError] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<BillingInvoiceDto[]>([]);
@@ -28,13 +32,14 @@ export default function WalletPage() {
   async function reload() {
     setLoading(true);
     setError(null);
-    const [balRes, ledgerRes, actionsRes, invoicesRes] = await Promise.all([
+    const [balRes, ledgerRes, actionsRes, invoicesRes, packagesRes] = await Promise.all([
       walletApi.getBalance(),
       walletApi.getLedger(1, 20),
       walletApi.listActions(),
       walletApi.listInvoices(1, 20),
+      walletApi.listPackages(),
     ]);
-    if (!balRes.success || balRes.data === undefined) {
+    if (!balRes.success || !balRes.data) {
       setError(balRes.error?.message ?? t("errors.requestFailed"));
     } else {
       setBalance(balRes.data.balanceCredits);
@@ -42,7 +47,18 @@ export default function WalletPage() {
     if (ledgerRes.success && ledgerRes.data) setLedger(ledgerRes.data);
     if (actionsRes.success && actionsRes.data) setActions(actionsRes.data);
     if (invoicesRes.success && invoicesRes.data) setInvoices(invoicesRes.data);
+    if (packagesRes.success && packagesRes.data) setPackages(packagesRes.data);
     setLoading(false);
+  }
+
+  async function handlePurchase(packageCode: string) {
+    const res = await walletApi.purchasePackage(packageCode);
+    if (!res.success || !res.data) {
+      setError(res.error?.message ?? t("errors.requestFailed"));
+      return;
+    }
+    setBalance(res.data.balanceCredits);
+    await reload();
   }
 
   useEffect(() => {
@@ -76,6 +92,15 @@ export default function WalletPage() {
     await reload();
   }
 
+  if (loading) {
+    return (
+      <PageContent>
+        <PageHeader title={t("wallet.title")} description={t("wallet.subtitle")} />
+        <WalletSkeleton />
+      </PageContent>
+    );
+  }
+
   return (
     <PageContent>
       <PageHeader title={t("wallet.title")} description={t("wallet.subtitle")} />
@@ -86,11 +111,47 @@ export default function WalletPage() {
           <CardTitle>{t("wallet.balance")}</CardTitle>
         </CardHeader>
         <CardBody>
-          <p className="text-3xl font-semibold">{loading ? t("common.loading") : (balance ?? 0)}</p>
+          <p className="text-3xl font-semibold">{balance ?? 0}</p>
           <p className="text-sm text-[var(--color-muted)]">{t("wallet.creditsHint")}</p>
+        </CardBody>
+      </Card>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>{t("wallet.packages")}</CardTitle>
+        </CardHeader>
+        <CardBody className="space-y-2">
+          {packages.length === 0 ? <p className="text-sm text-[var(--color-muted)]">{t("wallet.noPackages")}</p> : null}
+          {packages.map((pkg) => (
+            <div
+              key={pkg.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+            >
+              <div>
+                <p className="font-medium">{pkg.name}</p>
+                <p className="text-[var(--color-muted)]">
+                  {pkg.description ?? pkg.code} · {t("wallet.packageCredits", { count: pkg.creditsAmount })}
+                </p>
+              </div>
+              <Button size="sm" onClick={() => void handlePurchase(pkg.code)}>
+                {t("wallet.purchase", { price: formatPackagePrice(pkg.priceCents, pkg.currency) })}
+              </Button>
+            </div>
+          ))}
+        </CardBody>
+      </Card>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>{t("wallet.demoTopUp")}</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <p className="text-sm text-[var(--color-muted)]">{t("wallet.demoTopUpHint")}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Input className="max-w-[140px]" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
-            <Button onClick={() => void handleTopUp()}>{t("wallet.topUp")}</Button>
+            <Button variant="secondary" onClick={() => void handleTopUp()}>
+              {t("wallet.topUp")}
+            </Button>
           </div>
         </CardBody>
       </Card>

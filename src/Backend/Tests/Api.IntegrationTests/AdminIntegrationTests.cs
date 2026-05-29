@@ -264,4 +264,57 @@ public sealed class AdminIntegrationTests
         Assert.True(databaseBackupAfter.Data.Enabled);
         Assert.Equal(5, databaseBackupAfter.Data.RetentionDays);
     }
+
+    [SkippableFact]
+    public async Task Admin_can_import_restore_system_settings_backup()
+    {
+        Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
+        IntegrationTestApp app = IntegrationTestApp.FromFixture(_fixture);
+
+        AuthResponseDto admin = await app.LoginAdminAsync();
+        using HttpClient adminClient = app.Client.WithBearer(admin.AccessToken);
+
+        const string json = """
+            {
+              "version": 1,
+              "triggerSource": "legacy.migration",
+              "createdAtUtc": "2026-01-01T00:00:00Z",
+              "items": [
+                { "key": "feature.admin.system_backup.enabled", "value": "true" },
+                { "key": "feature.admin.system_backup.retention_days", "value": "11" }
+              ]
+            }
+            """;
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent("IMPORT_RESTORE_SETTINGS"), "confirmation");
+        form.Add(new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(json))
+        {
+            Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json") },
+        }, "file", "legacy-settings.json");
+
+        HttpResponseMessage response = await adminClient.PostAsync(
+            "/api/v1/admin/settings/system-backup/import-restore",
+            form);
+        response.EnsureSuccessStatusCode();
+        ApiResponse<ImportSystemBackupRestoreResponse>? imported =
+            await response.ReadApiAsync<ImportSystemBackupRestoreResponse>();
+        Assert.NotNull(imported?.Data);
+        Assert.Equal(2, imported.Data.SettingsApplied);
+        Assert.Contains("imported/", imported.Data.Key, StringComparison.Ordinal);
+
+        HttpResponseMessage getSystemBackup = await adminClient.GetAsync("/api/v1/admin/settings/system-backup");
+        getSystemBackup.EnsureSuccessStatusCode();
+        ApiResponse<SystemBackupSettingsDto>? settings = await getSystemBackup.ReadApiAsync<SystemBackupSettingsDto>();
+        Assert.NotNull(settings?.Data);
+        Assert.True(settings.Data.Enabled);
+        Assert.Equal(11, settings.Data.RetentionDays);
+
+        HttpResponseMessage download = await adminClient.GetAsync(
+            $"/api/v1/admin/settings/system-backup/download?key={Uri.EscapeDataString(imported.Data.Key)}");
+        download.EnsureSuccessStatusCode();
+        byte[] bytes = await download.Content.ReadAsByteArrayAsync();
+        Assert.NotEmpty(bytes);
+        Assert.Contains("application/json", download.Content.Headers.ContentType?.MediaType ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
 }

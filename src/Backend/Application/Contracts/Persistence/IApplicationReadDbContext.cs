@@ -31,6 +31,7 @@ public interface IApplicationReadDbContext
     DbSet<TenantDomain> TenantDomains { get; }
     DbSet<TenantSsoSettings> TenantSsoSettings { get; }
     DbSet<Plan> Plans { get; }
+    DbSet<CreditPackage> CreditPackages { get; }
     DbSet<Subscription> Subscriptions { get; }
     DbSet<PaymentWebhookEvent> PaymentWebhookEvents { get; }
     DbSet<BillingInvoice> BillingInvoices { get; }

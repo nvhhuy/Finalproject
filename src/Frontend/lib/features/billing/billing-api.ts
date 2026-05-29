@@ -113,6 +113,12 @@ export const billingApi = {
   getPublicTenant(slug: string) {
     return apiRequest<TenantPublicDto>({ path: `/api/v1/public/tenants/${encodeURIComponent(slug)}` });
   },
+  getTenantSubscription(tenantId: string) {
+    return apiRequest<SubscriptionDto>({
+      path: `/api/v1/billing/tenants/${tenantId}/subscription`,
+      auth: true,
+    });
+  },
   getTenantEntitlements(tenantId: string) {
     return apiRequest<TenantEntitlementsDto>({
       path: `/api/v1/billing/tenants/${tenantId}/entitlements`,

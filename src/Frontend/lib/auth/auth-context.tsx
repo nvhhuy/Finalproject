@@ -54,11 +54,11 @@ function userFromProfile(p: {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>(() => ({
+  const [state, setState] = useState<AuthState>({
     user: null,
-    tokens: loadTokens(),
+    tokens: null,
     hydrated: false,
-  }));
+  });
 
   const setSession = useCallback((user: AuthUser, tokens: AuthTokens) => {
     saveTokens(tokens);
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextValue = useMemo(
     () => ({
       ...state,
-      isAuthenticated: Boolean(state.tokens?.accessToken),
+      isAuthenticated: state.hydrated && Boolean(state.tokens?.accessToken),
       login,
       completeTwoFactor,
       refresh,

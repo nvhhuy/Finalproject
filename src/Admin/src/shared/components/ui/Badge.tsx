@@ -1,9 +1,10 @@
 import { cn } from '@/shared/lib/cn'
 
-type Tone = 'default' | 'success' | 'warning' | 'danger'
+type Tone = 'default' | 'info' | 'success' | 'warning' | 'danger'
 
 const tones: Record<Tone, string> = {
   default: 'bg-slate-700 text-slate-200',
+  info: 'bg-sky-900/50 text-sky-300',
   success: 'bg-emerald-900/60 text-emerald-300',
   warning: 'bg-amber-900/50 text-amber-300',
   danger: 'bg-red-900/50 text-red-300',

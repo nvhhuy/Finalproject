@@ -3,6 +3,7 @@ using Application.Contracts.Settings;
 using Application.Contracts.Storage;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Settings;
 
@@ -14,15 +15,18 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
     private readonly ApplicationReadDbContext _read;
     private readonly IObjectStorage _storage;
     private readonly IAppSettingsService _appSettingsService;
+    private readonly long _maxImportBytes;
 
     public SystemSettingsBackupService(
         ApplicationReadDbContext read,
         IObjectStorage storage,
-        IAppSettingsService appSettingsService)
+        IAppSettingsService appSettingsService,
+        IOptions<DatabaseBackupOptions> options)
     {
         _read = read;
         _storage = storage;
         _appSettingsService = appSettingsService;
+        _maxImportBytes = Math.Max(1, options.Value.MaxSettingsImportBytes);
     }
 
     public async Task<CreateSystemSettingsBackupResult> CreateBackupAsync(string triggerSource, CancellationToken cancellationToken = default)
@@ -68,20 +72,58 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
             return false;
 
         await using Stream stream = await _storage.GetAsync(key, cancellationToken);
-        SystemSettingsBackupPayload? payload = await JsonSerializer.DeserializeAsync<SystemSettingsBackupPayload>(stream, JsonOptions, cancellationToken);
-        if (payload is null || payload.Items.Count == 0)
+        if (!TryParseSettingsBackup(stream, out Dictionary<string, string>? settings) || settings is null)
             return false;
 
-        Dictionary<string, string> incoming = payload.Items
-            .Where(x => !string.IsNullOrWhiteSpace(x.Key))
-            .GroupBy(x => x.Key, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.Last().Value, StringComparer.Ordinal);
-
-        foreach ((string itemKey, string itemValue) in incoming)
-        {
-            await _appSettingsService.SetValueAsync(itemKey, itemValue, cancellationToken);
-        }
+        await ApplySettingsAsync(settings, cancellationToken);
         return true;
+    }
+
+    public async Task<SystemBackupDownloadResult?> DownloadBackupAsync(string key, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(key) || !key.StartsWith(BackupPrefix, StringComparison.Ordinal))
+            return null;
+
+        try
+        {
+            await using Stream stream = await _storage.GetAsync(key, cancellationToken);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            if (buffer.Length == 0)
+                return null;
+
+            string fileName = ResolveDownloadFileName(key, "settings-backup.json");
+            return new SystemBackupDownloadResult(buffer.ToArray(), "application/json", fileName);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public async Task<ImportSystemSettingsBackupResult?> ImportAndRestoreBackupAsync(
+        Stream content,
+        CancellationToken cancellationToken = default)
+    {
+        if (content is not { CanRead: true })
+            return null;
+
+        await using var buffer = new MemoryStream();
+        await content.CopyToAsync(buffer, cancellationToken);
+        if (buffer.Length == 0 || buffer.Length > _maxImportBytes)
+            return null;
+
+        buffer.Position = 0;
+        if (!TryParseSettingsBackup(buffer, out Dictionary<string, string>? settings) || settings is null || settings.Count == 0)
+            return null;
+
+        await ApplySettingsAsync(settings, cancellationToken);
+
+        DateTime now = DateTime.UtcNow;
+        string backupKey = $"{BackupPrefix}imported/{now:yyyyMMddHHmmssfff}-settings.json";
+        buffer.Position = 0;
+        await _storage.PutAsync(backupKey, buffer, "application/json", cancellationToken);
+        return new ImportSystemSettingsBackupResult(backupKey, now, buffer.Length, settings.Count);
     }
 
     public async Task<int> CleanupExpiredBackupsAsync(int retentionDays, CancellationToken cancellationToken = default)
@@ -99,6 +141,105 @@ public sealed class SystemSettingsBackupService : ISystemSettingsBackupService
         }
 
         return deleted;
+    }
+
+    private async Task ApplySettingsAsync(Dictionary<string, string> settings, CancellationToken cancellationToken)
+    {
+        foreach ((string itemKey, string itemValue) in settings)
+        {
+            await _appSettingsService.SetValueAsync(itemKey, itemValue, cancellationToken);
+        }
+    }
+
+    internal static bool TryParseSettingsBackup(Stream stream, out Dictionary<string, string>? settings)
+    {
+        settings = null;
+        try
+        {
+            using JsonDocument doc = JsonDocument.Parse(stream);
+            JsonElement root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("items", out JsonElement itemsElement)
+                && itemsElement.ValueKind == JsonValueKind.Array)
+            {
+                settings = ParseItemArray(itemsElement);
+                return settings.Count > 0;
+            }
+
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                settings = ParseItemArray(root);
+                return settings.Count > 0;
+            }
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                settings = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (JsonProperty property in root.EnumerateObject())
+                {
+                    if (property.NameEquals("version")
+                        || property.NameEquals("triggerSource")
+                        || property.NameEquals("createdAtUtc")
+                        || property.NameEquals("items"))
+                        continue;
+
+                    settings[property.Name] = property.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => property.Value.GetString() ?? string.Empty,
+                        JsonValueKind.True => bool.TrueString,
+                        JsonValueKind.False => bool.FalseString,
+                        JsonValueKind.Number => property.Value.GetRawText(),
+                        _ => property.Value.GetRawText(),
+                    };
+                }
+
+                return settings.Count > 0;
+            }
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        return false;
+    }
+
+    private static string ResolveDownloadFileName(string key, string fallback)
+    {
+        string segment = key.TrimEnd('/').Split('/').LastOrDefault() ?? string.Empty;
+        return string.IsNullOrWhiteSpace(segment) ? fallback : segment;
+    }
+
+    private static Dictionary<string, string> ParseItemArray(JsonElement array)
+    {
+        var settings = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (JsonElement element in array.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                continue;
+
+            if (!element.TryGetProperty("key", out JsonElement keyElement))
+                continue;
+
+            string? key = keyElement.GetString();
+            if (string.IsNullOrWhiteSpace(key))
+                continue;
+
+            string value = element.TryGetProperty("value", out JsonElement valueElement)
+                ? valueElement.ValueKind switch
+                {
+                    JsonValueKind.String => valueElement.GetString() ?? string.Empty,
+                    JsonValueKind.True => bool.TrueString,
+                    JsonValueKind.False => bool.FalseString,
+                    JsonValueKind.Number => valueElement.GetRawText(),
+                    _ => valueElement.GetRawText(),
+                }
+                : string.Empty;
+
+            settings[key] = value;
+        }
+
+        return settings;
     }
 
     private sealed record AppSettingSnapshotItem(string Key, string Value);

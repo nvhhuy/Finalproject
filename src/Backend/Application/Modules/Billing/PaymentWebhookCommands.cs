@@ -11,6 +11,7 @@ using Shared.Common;
 using Shared.Errors;
 using Shared.Errors.General;
 using Application.Contracts.Tenancy;
+using Application.Contracts.Wallet;
 
 namespace Application.Modules.Billing;
 
@@ -42,6 +43,8 @@ public sealed class ReceivePaymentWebhookCommandHandler
     private readonly IBillingInvoiceIssuer _invoices;
     private readonly ISubscriptionStore _subscriptions;
     private readonly IBillingDunningNotifier _dunning;
+    private readonly ICreditPackageStore _creditPackages;
+    private readonly IWalletService _wallet;
     private readonly IApplicationReadDbContext _db;
     private readonly IUnitOfWork _uow;
     private readonly IDateTimeProvider _clock;
@@ -52,6 +55,8 @@ public sealed class ReceivePaymentWebhookCommandHandler
         IBillingInvoiceIssuer invoices,
         ISubscriptionStore subscriptions,
         IBillingDunningNotifier dunning,
+        ICreditPackageStore creditPackages,
+        IWalletService wallet,
         IApplicationReadDbContext db,
         IUnitOfWork uow,
         IDateTimeProvider clock)
@@ -61,6 +66,8 @@ public sealed class ReceivePaymentWebhookCommandHandler
         _invoices = invoices;
         _subscriptions = subscriptions;
         _dunning = dunning;
+        _creditPackages = creditPackages;
+        _wallet = wallet;
         _db = db;
         _uow = uow;
         _clock = clock;
@@ -91,6 +98,14 @@ public sealed class ReceivePaymentWebhookCommandHandler
 
         if (provider == "stripe" && eventType == "checkout.session.completed")
         {
+            WalletPurchaseWebhookMetadata? walletPurchase =
+                WalletPurchaseWebhookMetadata.TryParse(request.PayloadJson);
+            if (walletPurchase is not null)
+            {
+                await FulfillWalletPurchaseAsync(webhook, walletPurchase, provider, externalId, cancellationToken);
+            }
+            else
+            {
             StripeCheckoutMetadata? checkout = StripeCheckoutMetadata.TryParseFromStripePayload(request.PayloadJson);
             if (checkout is null)
             {
@@ -129,6 +144,7 @@ public sealed class ReceivePaymentWebhookCommandHandler
                     webhook.MarkProcessed(_clock.Now);
                 }
             }
+            }
         }
         else if (provider == "stripe" && eventType == "invoice.payment_failed")
         {
@@ -137,6 +153,15 @@ public sealed class ReceivePaymentWebhookCommandHandler
         else if (provider == "stripe" && eventType == "invoice.paid")
         {
             webhook.MarkIgnored("invoice.paid — subscription renewals not implemented in MVP.", _clock.Now);
+        }
+        else if (IsWalletPaymentSuccess(eventType))
+        {
+            WalletPurchaseWebhookMetadata? walletPurchase =
+                WalletPurchaseWebhookMetadata.TryParse(request.PayloadJson);
+            if (walletPurchase is null)
+                webhook.MarkIgnored("payment.success without wallet_topup metadata.", _clock.Now);
+            else
+                await FulfillWalletPurchaseAsync(webhook, walletPurchase, provider, externalId, cancellationToken);
         }
         else
         {
@@ -147,6 +172,38 @@ public sealed class ReceivePaymentWebhookCommandHandler
         await _uow.SaveChangesAsync(cancellationToken);
 
         return new PaymentWebhookReceiptDto(webhook.Id, Duplicate: false, webhook.Status.ToString());
+    }
+
+    private static bool IsWalletPaymentSuccess(string eventType) =>
+        eventType.Equals("payment.success", StringComparison.OrdinalIgnoreCase)
+        || eventType.Equals("payment.succeeded", StringComparison.OrdinalIgnoreCase);
+
+    private async Task FulfillWalletPurchaseAsync(
+        PaymentWebhookEvent webhook,
+        WalletPurchaseWebhookMetadata metadata,
+        string provider,
+        string externalEventId,
+        CancellationToken cancellationToken)
+    {
+        CreditPackage? package = await _creditPackages.GetByCodeAsync(metadata.PackageCode, activeOnly: true, cancellationToken);
+        if (package is null)
+        {
+            webhook.MarkFailed($"Unknown credit package '{metadata.PackageCode}'.", _clock.Now);
+            return;
+        }
+
+        string idempotencyKey = $"webhook:{provider}:{externalEventId}";
+        await _wallet.PurchasePackageAsync(
+            metadata.UserId,
+            package.Id,
+            package.Code,
+            package.CreditsAmount,
+            package.PriceCents,
+            package.Currency,
+            idempotencyKey,
+            provider,
+            cancellationToken);
+        webhook.MarkProcessed(_clock.Now);
     }
 
     private async Task HandlePaymentFailedAsync(

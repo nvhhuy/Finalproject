@@ -3,14 +3,12 @@
 import { useAuth } from "./auth-context";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import { AppShellSkeleton } from "@/components/ui/skeleton";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { t } = useTranslation();
-
   useEffect(() => {
     if (!auth.hydrated) return;
     if (!auth.isAuthenticated) {
@@ -19,7 +17,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   }, [auth.hydrated, auth.isAuthenticated, pathname, router]);
 
   if (!auth.hydrated) {
-    return <div className="p-8 text-sm text-zinc-600">{t("common.loading")}</div>;
+    return <AppShellSkeleton />;
   }
   if (!auth.isAuthenticated) return null;
   return children;

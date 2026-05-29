@@ -71,6 +71,18 @@ export interface PlanLimitsDto {
   backupRestore: boolean
 }
 
+export interface CreditPackageDto {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  priceCents: number
+  currency: string
+  creditsAmount: number
+  isActive: boolean
+  sortOrder: number
+}
+
 export interface PlanDto {
   id: string
   code: string
@@ -177,6 +189,13 @@ export interface RunSystemBackupResponse {
   byteSize: number
 }
 
+export interface ImportSystemBackupRestoreResponse {
+  key: string
+  createdAtUtc: string
+  byteSize: number
+  settingsApplied: number
+}
+
 export interface DatabaseBackupSettingsDto {
   enabled: boolean
   retentionDays: number
@@ -189,6 +208,12 @@ export interface DatabaseBackupItemDto {
 }
 
 export interface RunDatabaseBackupResponse {
+  key: string
+  createdAtUtc: string
+  byteSize: number
+}
+
+export interface ImportDatabaseBackupRestoreResponse {
   key: string
   createdAtUtc: string
   byteSize: number

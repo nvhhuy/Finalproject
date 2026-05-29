@@ -32,6 +32,10 @@ const SupportTicketsPage = lazyNamedRoute(
   'SupportTicketsPage',
 )
 const PlansPage = lazyNamedRoute(() => import('@/features/plans/PlansPage'), 'PlansPage')
+const CreditPackagesPage = lazyNamedRoute(
+  () => import('@/features/credit-packages/CreditPackagesPage'),
+  'CreditPackagesPage',
+)
 const InvoicesPage = lazyNamedRoute(
   () => import('@/features/billing/InvoicesPage'),
   'InvoicesPage',
@@ -71,6 +75,7 @@ export const router = createBrowserRouter([
       { path: 'support', element: suspense(<SupportTicketsPage />) },
       { path: 'notifications', element: suspense(<BroadcastNotificationsPage />) },
       { path: 'plans', element: suspense(<PlansPage />) },
+      { path: 'credit-packages', element: suspense(<CreditPackagesPage />) },
       { path: 'tenants', element: suspense(<TenantsPage />) },
       { path: 'invoices', element: suspense(<InvoicesPage />) },
     ],

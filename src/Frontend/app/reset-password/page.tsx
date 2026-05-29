@@ -8,6 +8,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/loading";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authApi } from "@/lib/features/auth/auth-api";
@@ -78,7 +79,7 @@ export default function ResetPasswordPage() {
     <AuthLayout title={t("resetPassword.title")} subtitle={t("resetPassword.subtitle")}>
       <Card>
         <CardBody className="grid gap-4">
-          <Suspense fallback={<p className="text-sm text-[var(--color-muted)]">{t("common.loading")}</p>}>
+          <Suspense fallback={<LoadingState compact />}>
             <ResetForm />
           </Suspense>
           <Link className="link text-sm" href="/login">

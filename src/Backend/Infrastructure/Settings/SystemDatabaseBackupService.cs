@@ -11,6 +11,7 @@ namespace Infrastructure.Settings;
 public sealed class SystemDatabaseBackupService : ISystemDatabaseBackupService
 {
     private const string BackupPrefix = "system-backups/database/";
+    private static readonly byte[] PgCustomDumpMagic = "PGDMP"u8.ToArray();
 
     private readonly IObjectStorage _storage;
     private readonly ILogger<SystemDatabaseBackupService> _logger;
@@ -72,6 +73,31 @@ public sealed class SystemDatabaseBackupService : ISystemDatabaseBackupService
             .ToList();
     }
 
+    public async Task<SystemDatabaseBackupDownloadResult?> DownloadBackupAsync(string key, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(key) || !key.StartsWith(BackupPrefix, StringComparison.Ordinal))
+            return null;
+
+        try
+        {
+            await using Stream stream = await _storage.GetAsync(key, cancellationToken);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            if (buffer.Length == 0)
+                return null;
+
+            string fileName = ResolveDownloadFileName(key, "database-backup.dump");
+            return new SystemDatabaseBackupDownloadResult(
+                buffer.ToArray(),
+                "application/octet-stream",
+                fileName);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     public async Task<bool> RestoreBackupAsync(string key, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(key) || !key.StartsWith(BackupPrefix, StringComparison.Ordinal))
@@ -86,15 +112,10 @@ public sealed class SystemDatabaseBackupService : ISystemDatabaseBackupService
                 await source.CopyToAsync(target, cancellationToken);
             }
 
-            NpgsqlConnectionStringBuilder builder = new(_connectionString);
-            string host = string.IsNullOrWhiteSpace(builder.Host) ? "localhost" : builder.Host;
-            string username = string.IsNullOrWhiteSpace(builder.Username) ? "postgres" : builder.Username;
-            string database = string.IsNullOrWhiteSpace(builder.Database) ? "postgres" : builder.Database;
-            string password = builder.Password ?? string.Empty;
-            string args =
-                $"--clean --if-exists --no-owner --no-privileges --single-transaction --host={EscapeArg(host)} --port={builder.Port} --username={EscapeArg(username)} --dbname={EscapeArg(database)} {EscapeArg(tempPath)}";
+            if (!IsPgCustomDump(tempPath))
+                return false;
 
-            await RunProcessAsync(_options.PgRestorePath, args, password, cancellationToken);
+            await RestoreFromDumpFileAsync(tempPath, cancellationToken);
             _logger.LogWarning("Database restore completed from backup {Key}", key);
             return true;
         }
@@ -102,6 +123,48 @@ public sealed class SystemDatabaseBackupService : ISystemDatabaseBackupService
         {
             _logger.LogError(ex, "Database restore failed for backup {Key}", key);
             return false;
+        }
+        finally
+        {
+            TryDelete(tempPath);
+        }
+    }
+
+    public async Task<ImportSystemDatabaseBackupResult?> ImportAndRestoreBackupAsync(
+        Stream content,
+        CancellationToken cancellationToken = default)
+    {
+        if (content is not { CanRead: true })
+            return null;
+
+        string tempPath = Path.Combine(Path.GetTempPath(), $"baseproject-import-{Guid.NewGuid():N}.dump");
+        try
+        {
+            await using (FileStream target = File.Create(tempPath))
+            {
+                await content.CopyToAsync(target, cancellationToken);
+            }
+
+            long size = new FileInfo(tempPath).Length;
+            if (size == 0 || size > _options.MaxDatabaseImportBytes)
+                return null;
+
+            if (!IsPgCustomDump(tempPath))
+                return null;
+
+            await RestoreFromDumpFileAsync(tempPath, cancellationToken);
+
+            DateTime now = DateTime.UtcNow;
+            string key = $"{BackupPrefix}imported/{now:yyyyMMddHHmmssfff}-database.dump";
+            await using FileStream archive = File.OpenRead(tempPath);
+            await _storage.PutAsync(key, archive, "application/octet-stream", cancellationToken);
+            _logger.LogWarning("Database import-restore completed; archived as {Key}", key);
+            return new ImportSystemDatabaseBackupResult(key, now, size);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Database import-restore failed");
+            return null;
         }
         finally
         {
@@ -124,6 +187,36 @@ public sealed class SystemDatabaseBackupService : ISystemDatabaseBackupService
         }
 
         return deleted;
+    }
+
+    private async Task RestoreFromDumpFileAsync(string tempPath, CancellationToken cancellationToken)
+    {
+        NpgsqlConnectionStringBuilder builder = new(_connectionString);
+        string host = string.IsNullOrWhiteSpace(builder.Host) ? "localhost" : builder.Host;
+        string username = string.IsNullOrWhiteSpace(builder.Username) ? "postgres" : builder.Username;
+        string database = string.IsNullOrWhiteSpace(builder.Database) ? "postgres" : builder.Database;
+        string password = builder.Password ?? string.Empty;
+        string args =
+            $"--clean --if-exists --no-owner --no-privileges --single-transaction --host={EscapeArg(host)} --port={builder.Port} --username={EscapeArg(username)} --dbname={EscapeArg(database)} {EscapeArg(tempPath)}";
+
+        await RunProcessAsync(_options.PgRestorePath, args, password, cancellationToken);
+    }
+
+    private static string ResolveDownloadFileName(string key, string fallback)
+    {
+        string segment = key.TrimEnd('/').Split('/').LastOrDefault() ?? string.Empty;
+        return string.IsNullOrWhiteSpace(segment) ? fallback : segment;
+    }
+
+    private static bool IsPgCustomDump(string path)
+    {
+        Span<byte> header = stackalloc byte[PgCustomDumpMagic.Length];
+        using FileStream stream = File.OpenRead(path);
+        if (stream.Length < PgCustomDumpMagic.Length)
+            return false;
+
+        int read = stream.Read(header);
+        return read == PgCustomDumpMagic.Length && header.SequenceEqual(PgCustomDumpMagic);
     }
 
     private async Task RunProcessAsync(string fileName, string arguments, string password, CancellationToken cancellationToken)

@@ -84,7 +84,7 @@ function LoginForm() {
                 <Label htmlFor="twofa-code">{t("login.twoFaTitle")}</Label>
                 <Input id="twofa-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" />
               </div>
-              <Button onClick={onComplete2fa} disabled={loading || code.length < 6} className="w-full">
+              <Button onClick={onComplete2fa} loading={loading} disabled={code.length < 6} className="w-full">
                 {t("login.verify")}
               </Button>
               <Button variant="ghost" onClick={() => setPendingLoginId(null)} disabled={loading}>
@@ -107,7 +107,7 @@ function LoginForm() {
                   autoComplete="current-password"
                 />
               </div>
-              <Button onClick={onLogin} disabled={loading} className="w-full">
+              <Button onClick={onLogin} loading={loading} className="w-full">
                 {t("login.signIn")}
               </Button>
               <div className="relative py-2">

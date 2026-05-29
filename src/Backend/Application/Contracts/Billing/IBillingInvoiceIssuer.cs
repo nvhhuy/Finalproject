@@ -32,6 +32,8 @@ public interface IBillingInvoiceIssuer
     Task<BillingInvoiceDto> IssueWalletTopUpReceiptAsync(
         Guid userId,
         long amountCredits,
+        int amountCents,
+        string currency,
         string provider,
         CancellationToken cancellationToken = default);
 }

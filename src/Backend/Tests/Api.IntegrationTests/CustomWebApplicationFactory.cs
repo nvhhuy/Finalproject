@@ -1,7 +1,9 @@
 using Api.IntegrationTests.Support;
 using Application.Contracts.Email;
 using Application.Contracts.Persistence;
+using Application.Contracts.Storage;
 using Infrastructure.Persistence;
+using Infrastructure.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +30,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("DataProtection:KeysDirectory", _dataProtectionKeysDirectory);
+        builder.UseSetting("IntegrationTesting:DisableRateLimiting", "true");
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -43,6 +46,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["DataProtection:KeysDirectory"] = _dataProtectionKeysDirectory,
                 ["Tenancy:SubdomainBaseHost"] = "app.local",
                 ["Tenancy:PlatformCnameTarget"] = "app.local",
+                ["IntegrationTesting:DisableRateLimiting"] = "true",
             });
         });
         builder.ConfigureServices(services =>
@@ -51,8 +55,10 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<ApplicationReadDbContext>();
             services.RemoveAll<IApplicationReadDbContext>();
             services.RemoveAll<IEmailSender>();
+            services.RemoveAll<IObjectStorage>();
 
             services.AddSingleton<IEmailSender>(EmailSink);
+            services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
 
             services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(_connectionString));
             services.AddDbContext<ApplicationReadDbContext>(o => o.UseNpgsql(_connectionString));
@@ -75,5 +81,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
         await DbSeeder.SeedAdminIfMissingAsync(db, scope.ServiceProvider);
         await DbSeeder.SeedDefaultTenantIfMissingAsync(db, scope.ServiceProvider);
         await DbSeeder.SeedDefaultPlansIfMissingAsync(db, scope.ServiceProvider);
+        await DbSeeder.EnsureDefaultPlanLimitsAsync(db, scope.ServiceProvider);
+        await DbSeeder.SeedDefaultCreditPackagesIfMissingAsync(db, scope.ServiceProvider);
     }
 }

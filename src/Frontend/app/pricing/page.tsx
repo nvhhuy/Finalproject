@@ -7,6 +7,7 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { PricingCardsSkeleton } from "@/components/ui/skeleton";
 import { billingApi, type PlanDto } from "@/lib/features/billing/billing-api";
 
 function formatPrice(cents: number, currency: string) {
@@ -41,8 +42,9 @@ export default function PricingPage() {
         </div>
 
         {error ? <Alert className="mt-6" variant="error">{error}</Alert> : null}
-        {loading ? <p className="mt-8 text-center text-sm text-[var(--color-muted)]">{t("common.loading")}</p> : null}
+        {loading ? <PricingCardsSkeleton /> : null}
 
+        {!loading ? (
         <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => (
             <Card key={plan.id} className="flex flex-col">
@@ -66,6 +68,7 @@ export default function PricingPage() {
             </Card>
           ))}
         </div>
+        ) : null}
       </div>
     </div>
   );

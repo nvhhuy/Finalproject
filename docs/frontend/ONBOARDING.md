@@ -119,6 +119,7 @@ npm run typecheck
 | Symptom | Fix |
 |---------|-----|
 | CORS / `Failed to fetch` | Backend not running; or remove `NEXT_PUBLIC_API_BASE_URL` from `.env.local` to use proxy |
+| SignalR negotiation failed | Ensure API `Realtime:Enabled`; `API_PROXY_TARGET` matches backend; dev uses `/hubs/*` proxy + long polling (not WebSocket) |
 | `Internal Server Error` on `/api` | Restart Frontend after pull; check `API_PROXY_TARGET` |
 | Hydration `lang` mismatch | Switch language once (writes cookie); see `LocaleSync` |
 | Login 401 | Wrong password; Postgres not seeded; try login via Swagger |

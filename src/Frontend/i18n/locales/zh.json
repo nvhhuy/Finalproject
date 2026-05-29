@@ -36,7 +36,8 @@
     "pricing": "定价",
     "about": "关于",
     "contact": "联系",
-    "tenant": "组织"
+    "tenant": "组织",
+    "notifications": "通知"
   },
   "authLayout": {
     "tagline": "面向终端用户的认证、资料、双因素与媒体流程，已对接 .NET 后端。"
@@ -118,7 +119,13 @@
     "tip": "使用导航测试资料、2FA 和媒体实验室。",
     "quickProfile": "编辑资料",
     "quick2fa": "安全 / 2FA",
-    "quickMedia": "媒体实验室"
+    "quickMedia": "媒体实验室",
+    "viewWallet": "查看钱包",
+    "viewTenant": "组织设置",
+    "orgSummary": "组织",
+    "activePlan": "套餐：{{plan}}",
+    "noTenant": "尚无组织 — 请先订阅创建。",
+    "openTickets": "进行中的支持工单：{{count}}"
   },
   "profile": {
     "title": "个人资料",
@@ -131,7 +138,8 @@
     "avatarHint": "资料 API 尚无头像字段。此上传演示后续头像所需的媒体流程。",
     "preview": "预览",
     "resendVerification": "重新发送验证邮件",
-    "resendSent": "已发送验证邮件（如适用）。"
+    "resendSent": "已发送验证邮件（如适用）。",
+    "changePassword": "修改密码"
   },
   "twoFa": {
     "title": "双因素认证 (2FA)",
@@ -170,7 +178,9 @@
     "markRead": "标记已读",
     "markAllRead": "全部标记已读",
     "today": "今天",
-    "open": "打开"
+    "open": "打开",
+    "pageTitle": "全部通知",
+    "pageDescription": "来自支持、账单和系统事件的应用内消息。"
   },
   "support": {
     "title": "支持中心",
@@ -185,7 +195,12 @@
     "allStatuses": "全部状态",
     "selectTicket": "选择工单查看详情。",
     "replyPlaceholder": "补充回复...",
-    "reply": "发送回复"
+    "reply": "发送回复",
+    "close": "关闭工单",
+    "reopen": "重新打开",
+    "closedHint": "工单已关闭。重新打开后可继续回复。",
+    "attachments": "附件",
+    "attachmentsMessage": "补充附件"
   },
   "pricing": {
     "title": "套餐与定价",
@@ -253,7 +268,13 @@
     "ssoSave": "保存 SSO 设置",
     "ssoNotConfigured": "尚未配置 SSO。保存后将创建设置。",
     "ssoPublicEndpoint": "公开配置",
-    "ssoSignInHint": "登录：POST /api/v1/auth/tenant-sso/{slug}，body { \"idToken\": \"...\" }"
+    "ssoSignInHint": "成员使用您配置的 OIDC 身份提供商登录。",
+    "inviteMember": "邀请成员",
+    "inviteRole": "角色",
+    "inviteSubmit": "发送邀请",
+    "inviteSent": "邀请已发送（用户须已有账号）。",
+    "roleMember": "成员",
+    "roleAdmin": "管理员"
   },
   "tenantPublic": {
     "workspace": "组织",
@@ -261,13 +282,24 @@
     "notFound": "未找到该组织。",
     "appEntry": "工作区应用",
     "appEntryHint": "已设置当前租户。继续进入主应用使用资料、支持与媒体。",
-    "continueToMainApp": "进入主应用"
+    "continueToMainApp": "进入主应用",
+    "ssoTitle": "使用组织账号登录",
+    "ssoHint": "使用组织管理员配置的身份提供商。",
+    "ssoLoading": "正在加载登录选项…",
+    "ssoDisabled": "此组织未启用 SSO。",
+    "ssoFailed": "组织登录失败"
   },
   "wallet": {
     "title": "个人钱包",
     "subtitle": "积分按用户计，与租户订阅无关。",
     "balance": "余额",
-    "creditsHint": "积分（MVP 手动充值）",
+    "creditsHint": "积分用于主应用按量计费功能",
+    "packages": "购买积分",
+    "noPackages": "暂无充值套餐。",
+    "packageCredits": "{{count}} 积分",
+    "purchase": "购买 {{price}}",
+    "demoTopUp": "演示充值",
+    "demoTopUpHint": "手动输入积分数量，无需支付（仅开发环境）。",
     "topUp": "充值",
     "meteredActions": "按量计费操作",
     "debit": "使用（{{cost}} 积分）",

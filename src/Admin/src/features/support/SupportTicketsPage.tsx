@@ -26,6 +26,21 @@ import type { SupportTicketPriority, SupportTicketStatus } from '@/shared/types/
 const STATUS_OPTIONS: SupportTicketStatus[] = ['Open', 'PendingSupport', 'PendingUser', 'Resolved', 'Closed']
 const PRIORITY_OPTIONS: SupportTicketPriority[] = ['Low', 'Normal', 'High', 'Urgent']
 
+function supportTicketPriorityTone(
+  priority: SupportTicketPriority,
+): 'default' | 'info' | 'warning' | 'danger' {
+  switch (priority) {
+    case 'Low':
+      return 'default'
+    case 'Normal':
+      return 'info'
+    case 'High':
+      return 'warning'
+    case 'Urgent':
+      return 'danger'
+  }
+}
+
 export function SupportTicketsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -139,7 +154,9 @@ export function SupportTicketsPage() {
                         <p className="text-xs text-slate-400">{it.subject}</p>
                       </td>
                       <td className="px-3 py-2"><Badge>{it.status}</Badge></td>
-                      <td className="px-3 py-2"><Badge tone={it.priority === 'Urgent' ? 'danger' : 'default'}>{it.priority}</Badge></td>
+                      <td className="px-3 py-2">
+                        <Badge tone={supportTicketPriorityTone(it.priority)}>{it.priority}</Badge>
+                      </td>
                       <td className="px-3 py-2 text-slate-400">{formatDateOrDash(it.updatedAtUtc)}</td>
                     </tr>
                   ))}
@@ -156,6 +173,12 @@ export function SupportTicketsPage() {
               <>
                 <p className="text-sm font-semibold text-slate-100">{detailQuery.data.ticketNumber}</p>
                 <p className="text-sm text-slate-300">{detailQuery.data.subject}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge>{detailQuery.data.status}</Badge>
+                  <Badge tone={supportTicketPriorityTone(detailQuery.data.priority)}>
+                    {detailQuery.data.priority}
+                  </Badge>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     className={formSelectClass}

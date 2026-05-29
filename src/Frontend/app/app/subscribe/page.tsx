@@ -9,7 +9,7 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
 import { billingApi } from "@/lib/features/billing/billing-api";
-import { setActiveTenantId } from "@/lib/tenancy/tenant-context";
+import { setActiveTenantId, setActiveTenantSlug } from "@/lib/tenancy/tenant-context";
 
 export default function SubscribePage() {
   const { t } = useTranslation();
@@ -45,6 +45,7 @@ export default function SubscribePage() {
       return;
     }
     setActiveTenantId(res.data.tenantId);
+    setActiveTenantSlug(res.data.tenantSlug);
     router.push("/app");
   }
 
@@ -68,8 +69,8 @@ export default function SubscribePage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-            <Button type="submit" disabled={loading}>
-              {loading ? t("common.loading") : t("subscribe.submit")}
+            <Button type="submit" loading={loading}>
+              {t("subscribe.submit")}
             </Button>
           </form>
         </CardBody>

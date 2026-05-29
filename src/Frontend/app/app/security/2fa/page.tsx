@@ -11,6 +11,7 @@ import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/compon
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { authApi } from "@/lib/features/auth/auth-api";
 import { userApi } from "@/lib/features/users/user-api";
 
@@ -69,7 +70,7 @@ export default function TwoFactorPage() {
         </CardHeader>
         <CardBody>
           {profileQuery.isLoading ? (
-            <p className="text-sm text-[var(--color-muted)]">{t("common.loading")}</p>
+            <Skeleton className="h-6 w-24 rounded-full" />
           ) : (
             <Badge variant={enabled ? "success" : "warning"}>
               {enabled ? t("common.enabled") : t("common.disabled")}

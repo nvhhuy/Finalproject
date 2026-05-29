@@ -87,13 +87,40 @@ export const supportApi = {
     });
   },
 
-  async addMessage(ticketId: string, body: string) {
+  async addMessage(
+    ticketId: string,
+    body: string,
+    attachments?: Array<{
+      storageKey: string;
+      fileName: string;
+      contentType: string;
+      byteSize: number;
+    }>,
+  ) {
     return await apiRequest<boolean>({
       method: "POST",
       path: `/api/v1/support/tickets/${ticketId}/messages`,
       auth: true,
       idempotent: true,
-      body: { body },
+      body: { body, attachments: attachments?.length ? attachments : undefined },
+    });
+  },
+
+  async close(ticketId: string) {
+    return await apiRequest<boolean>({
+      method: "POST",
+      path: `/api/v1/support/tickets/${ticketId}/close`,
+      auth: true,
+      idempotent: true,
+    });
+  },
+
+  async reopen(ticketId: string) {
+    return await apiRequest<boolean>({
+      method: "POST",
+      path: `/api/v1/support/tickets/${ticketId}/reopen`,
+      auth: true,
+      idempotent: true,
     });
   },
 };

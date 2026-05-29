@@ -8,7 +8,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 
 | Layer | Project / folder | Approx. specs | Requires |
 |-------|------------------|---------------|----------|
-| API integration | `Api.IntegrationTests` | ~34 (+ 1 optional media skip) | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
+| API integration | `Api.IntegrationTests` | ~38 (+ 1 optional media skip) | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
 | Playwright — Frontend | `e2e/tests/frontend/` | 12 (+ 1 setup) | Postgres + migrated DB; Playwright `webServer` |
 | Playwright — Admin | `e2e/tests/admin/` | 7 | Same as Frontend |
 
@@ -32,6 +32,8 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | `PaymentWebhookIntegrationTests` | Stripe idempotent + checkout provision; VNPay/PayOS idempotent |
 | `TenantHostIntegrationTests` | Subdomain resolve-host; custom domain register |
 | `MediaIntegrationTests` | Media initiate/complete/get (**skipped** unless `INTEGRATION_MEDIA_ENABLED=true`) |
+| `NotificationsIntegrationTests` | Admin broadcast; user list + mark read; mark-read 404 |
+| `TenancySsoIntegrationTests` | Tenant owner upsert SSO + public slug metadata; non-owner forbidden |
 
 **Helpers:** `Support/IntegrationTestApp.cs`, `CapturingEmailSender`, `IntegrationHttpExtensions`, `EmailBodyParser`.
 
@@ -75,6 +77,16 @@ Inventory of automated tests as of the current baseline. Update this file when a
 
 ---
 
+## Backend unit tests (selected gaps filled)
+
+| Project | New / notable coverage |
+|---------|-------------------------|
+| `Application.Tests` | `MarkNotificationReadCommandHandlerTests` |
+| `Infrastructure.Tests` | `InMemoryObjectStorageTests`, `SystemDatabaseBackupImportTests` (invalid dump / key prefix) |
+| `Infrastructure.Tests` | `SystemSettingsBackupParseTests` (settings JSON formats) |
+
+---
+
 ## Shared Playwright helpers
 
 | File | Purpose |
@@ -92,7 +104,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | Auth (register, verify, login, refresh, password) | Yes | Partial (login, register/forgot UI) |
 | User profile | Yes | Profile navigation |
 | 2FA | Via API flows | Setup page smoke |
-| Notifications (in-app + realtime hook) | Yes (`NotificationsController`, query/mark-read) | Implicit by authenticated app requests in frontend suite |
+| Notifications (in-app + realtime hook) | Yes (`NotificationsIntegrationTests`) | Implicit by authenticated app requests in frontend suite |
 | Support tickets | Yes (`/support/tickets`, `/admin/support/tickets`) | Yes (frontend create/search/reply + admin support page controls) |
 | Admin users / settings / audit | Yes | Users, settings (including backup controls), dashboard, audit navigation, **audit CSV export** |
 | Billing / subscription (Follow 1) | Yes (`BillingIntegrationTests`) | Pricing, subscribe, `/app/tenant` smoke |
@@ -100,7 +112,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | Tenant public `/t/[slug]` | Yes (API) | `/t/default` smoke |
 | Media pipeline | Optional (MinIO) | Media lab page smoke |
 | Messaging / DLQ | Admin test (Rabbit off) | — |
-| Tenant SSO OIDC | API only | — |
+| Tenant SSO OIDC | Yes (`TenancySsoIntegrationTests`) | — |
 | Per-tenant rate limits | — | — |
 
 Gaps are intentional smoke-level coverage; extend per [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md).

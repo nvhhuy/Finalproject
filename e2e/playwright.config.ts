@@ -70,6 +70,7 @@ export default defineConfig({
             DataProtection__KeysDirectory: dataProtectionKeys,
             ConnectionStrings__DatabaseConnectionString: e2eDatabaseUrl,
             ConnectionStrings__DatabaseReadConnectionString: e2eDatabaseUrl,
+            IntegrationTesting__DisableRateLimiting: 'true',
           },
         },
         {

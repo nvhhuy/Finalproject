@@ -18,6 +18,13 @@ export interface RequestOptions {
   signal?: AbortSignal
 }
 
+export interface FormRequestOptions {
+  /** Send Idempotency-Key header (mutations). */
+  idempotent?: boolean
+  idempotencyKey?: string
+  signal?: AbortSignal
+}
+
 let refreshPromise: Promise<string | null> | null = null
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -150,6 +157,74 @@ export async function apiRequest<T>(
     Object.defineProperty(envelope.data as object, '__idempotentReplay', {
       value: true,
       enumerable: false,
+    })
+  }
+
+  return envelope.data
+}
+
+export async function apiFormRequest<T>(
+  path: string,
+  formData: FormData,
+  options: FormRequestOptions = {},
+): Promise<T> {
+  const { idempotent = false, idempotencyKey, signal } = options
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  }
+
+  if (idempotent || idempotencyKey) {
+    headers['Idempotency-Key'] = idempotencyKey ?? newIdempotencyKey()
+  }
+
+  const token = await ensureAccessToken()
+  if (!token) {
+    throw new ApiClientError(
+      { code: 'Unauthorized', message: 'Session expired. Please sign in again.', httpStatus: 401 },
+    )
+  }
+
+  const url = path.startsWith('http') ? path : `${API_V1}${path.startsWith('/') ? path : `/${path}`}`
+
+  const execute = async (authToken: string) =>
+    fetch(url, {
+      method: 'POST',
+      headers: { ...headers, Authorization: `Bearer ${authToken}` },
+      body: formData,
+      credentials: 'same-origin',
+      signal,
+    })
+
+  let response = await execute(token)
+
+  if (response.status === 401) {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      response = await execute(newToken)
+    } else {
+      useAuthStore.getState().clearSession()
+    }
+  }
+
+  const envelope = (await response.json()) as ApiResponse<T>
+
+  if (!response.ok || !envelope.success) {
+    if (envelope.error) {
+      throw new ApiClientError(envelope.error)
+    }
+    throw new ApiClientError({
+      code: 'HttpError',
+      message: `HTTP ${response.status}`,
+      httpStatus: response.status,
+    })
+  }
+
+  if (envelope.data === null || envelope.data === undefined) {
+    throw new ApiClientError({
+      code: 'EmptyResponse',
+      message: 'Expected response data was missing.',
+      httpStatus: response.status,
     })
   }
 

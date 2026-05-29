@@ -36,7 +36,8 @@
     "pricing": "Bảng giá",
     "about": "Giới thiệu",
     "contact": "Liên hệ",
-    "tenant": "Tổ chức"
+    "tenant": "Tổ chức",
+    "notifications": "Thông báo"
   },
   "authLayout": {
     "tagline": "Auth, hồ sơ, 2FA và media sẵn sàng kết nối backend .NET của bạn."
@@ -118,7 +119,13 @@
     "tip": "Dùng menu để thử Hồ sơ, 2FA và Media Lab.",
     "quickProfile": "Sửa hồ sơ",
     "quick2fa": "Bảo mật / 2FA",
-    "quickMedia": "Media lab"
+    "quickMedia": "Media lab",
+    "viewWallet": "Xem ví",
+    "viewTenant": "Cài đặt tổ chức",
+    "orgSummary": "Tổ chức",
+    "activePlan": "Gói: {{plan}}",
+    "noTenant": "Chưa có tổ chức — đăng ký gói để tạo.",
+    "openTickets": "Ticket hỗ trợ đang mở: {{count}}"
   },
   "profile": {
     "title": "Hồ sơ",
@@ -131,7 +138,8 @@
     "avatarHint": "API hồ sơ chưa có trường avatar. Upload minh họa luồng media cho avatar sau này.",
     "preview": "Xem trước",
     "resendVerification": "Gửi lại email xác minh",
-    "resendSent": "Đã gửi email xác minh (nếu áp dụng)."
+    "resendSent": "Đã gửi email xác minh (nếu áp dụng).",
+    "changePassword": "Đổi mật khẩu"
   },
   "twoFa": {
     "title": "Xác thực hai yếu tố (2FA)",
@@ -170,7 +178,9 @@
     "markRead": "Đánh dấu đã đọc",
     "markAllRead": "Đánh dấu đọc tất cả",
     "today": "Hôm nay",
-    "open": "Mở"
+    "open": "Mở",
+    "pageTitle": "Tất cả thông báo",
+    "pageDescription": "Tin nhắn trong app từ hỗ trợ, thanh toán và hệ thống."
   },
   "support": {
     "title": "Trung tâm hỗ trợ",
@@ -185,7 +195,12 @@
     "allStatuses": "Tất cả trạng thái",
     "selectTicket": "Chọn ticket để xem chi tiết.",
     "replyPlaceholder": "Viết phản hồi thêm...",
-    "reply": "Gửi phản hồi"
+    "reply": "Gửi phản hồi",
+    "close": "Đóng ticket",
+    "reopen": "Mở lại ticket",
+    "closedHint": "Ticket đã đóng. Mở lại để gửi phản hồi mới.",
+    "attachments": "Tệp đính kèm",
+    "attachmentsMessage": "Tệp đính kèm bổ sung"
   },
   "pricing": {
     "title": "Bảng giá & gói",
@@ -253,7 +268,13 @@
     "ssoSave": "Lưu cài đặt SSO",
     "ssoNotConfigured": "Chưa cấu hình SSO. Lưu để tạo cài đặt.",
     "ssoPublicEndpoint": "Cấu hình công khai",
-    "ssoSignInHint": "Đăng nhập: POST /api/v1/auth/tenant-sso/{slug} với { \"idToken\": \"...\" }"
+    "ssoSignInHint": "Thành viên đăng nhập bằng nhà cung cấp OIDC (đã cấu hình ở trên).",
+    "inviteMember": "Mời thành viên",
+    "inviteRole": "Vai trò",
+    "inviteSubmit": "Gửi lời mời",
+    "inviteSent": "Đã gửi lời mời (người dùng phải đã có tài khoản).",
+    "roleMember": "Thành viên",
+    "roleAdmin": "Quản trị"
   },
   "tenantPublic": {
     "workspace": "Tổ chức",
@@ -261,13 +282,24 @@
     "notFound": "Không tìm thấy tổ chức.",
     "appEntry": "Ứng dụng workspace",
     "appEntryHint": "Đã đặt tenant hiện tại. Tiếp tục vào app chính để dùng hồ sơ, hỗ trợ và media.",
-    "continueToMainApp": "Vào app chính"
+    "continueToMainApp": "Vào app chính",
+    "ssoTitle": "Đăng nhập bằng tổ chức",
+    "ssoHint": "Dùng nhà cung cấp danh tính do quản trị tổ chức cấu hình.",
+    "ssoLoading": "Đang tải tùy chọn đăng nhập…",
+    "ssoDisabled": "SSO chưa bật cho tổ chức này.",
+    "ssoFailed": "Đăng nhập tổ chức thất bại"
   },
   "wallet": {
     "title": "Ví cá nhân",
     "subtitle": "Credit theo user — không gắn gói tenant.",
     "balance": "Số dư",
-    "creditsHint": "Credit (MVP nạp thủ công)",
+    "creditsHint": "Credit dùng cho tính năng trừ phí trên app chính",
+    "packages": "Mua credit",
+    "noPackages": "Chưa có gói nạp.",
+    "packageCredits": "{{count}} credit",
+    "purchase": "Mua {{price}}",
+    "demoTopUp": "Nạp demo",
+    "demoTopUpHint": "Nhập số credit thủ công, không qua thanh toán (chỉ môi trường dev).",
     "topUp": "Nạp credit",
     "meteredActions": "Tác vụ trừ credit",
     "debit": "Dùng ({{cost}} credit)",

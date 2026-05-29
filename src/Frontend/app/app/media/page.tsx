@@ -73,8 +73,8 @@ export default function MediaLabPage() {
             <input type="file" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={run} disabled={!file || uploading}>
-              {uploading ? t("media.uploading") : t("media.runUpload")}
+            <Button onClick={run} disabled={!file} loading={uploading}>
+              {t("media.runUpload")}
             </Button>
             {asset ? (
               <Button

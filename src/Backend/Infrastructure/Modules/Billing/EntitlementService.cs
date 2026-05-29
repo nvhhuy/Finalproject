@@ -16,6 +16,9 @@ public sealed class EntitlementService : IEntitlementService
 
     public async Task<bool> CanUseModuleAsync(Guid tenantId, string moduleCode, CancellationToken cancellationToken = default)
     {
+        if (tenantId == Domains.Tenancy.SystemTenants.DefaultTenantId)
+            return true;
+
         PlanLimits? limits = await GetLimitsAsync(tenantId, cancellationToken);
         if (limits is null)
             return false;
