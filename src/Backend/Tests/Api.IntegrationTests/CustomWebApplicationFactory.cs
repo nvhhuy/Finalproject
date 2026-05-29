@@ -7,6 +7,7 @@ using Infrastructure.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -60,6 +61,13 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IApplicationReadDbContext>();
             services.RemoveAll<IEmailSender>();
             services.RemoveAll<IObjectStorage>();
+
+            // Swap out Redis distributed cache for an in-memory one so tests
+            // are self-contained and do not require a live Redis instance.
+            // ConfigureAppConfiguration overrides are too late (AddCaching already
+            // ran in Program.cs), so we replace the registration here instead.
+            services.RemoveAll<IDistributedCache>();
+            services.AddDistributedMemoryCache();
 
             services.AddSingleton<IEmailSender>(EmailSink);
             services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
