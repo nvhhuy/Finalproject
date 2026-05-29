@@ -41,6 +41,8 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["Seed:Admin:LastName"] = "User",
                 ["Messaging:RabbitMq:Enabled"] = "false",
                 ["DataProtection:KeysDirectory"] = _dataProtectionKeysDirectory,
+                ["Tenancy:SubdomainBaseHost"] = "app.local",
+                ["Tenancy:PlatformCnameTarget"] = "app.local",
             });
         });
         builder.ConfigureServices(services =>
@@ -71,5 +73,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             IntegrationTestApp.AdminEmail);
 
         await DbSeeder.SeedAdminIfMissingAsync(db, scope.ServiceProvider);
+        await DbSeeder.SeedDefaultTenantIfMissingAsync(db, scope.ServiceProvider);
+        await DbSeeder.SeedDefaultPlansIfMissingAsync(db, scope.ServiceProvider);
     }
 }

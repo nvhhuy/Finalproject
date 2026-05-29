@@ -1,6 +1,8 @@
 using Application;
+using Application.Contracts.Notifications;
 using Application.Contracts.Scheduling;
 using Infrastructure;
+using Infrastructure.Modules.Notifications;
 using Infrastructure.Messaging.Outbox;
 using Infrastructure.Scheduling;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +11,7 @@ using Observability;
 using Serilog;
 using Worker;
 using Worker.Media;
+using Worker.Billing;
 using Worker.Settings;
 
 #if DEBUG
@@ -24,6 +27,7 @@ PlatformSerilog.RegisterForHostApplicationBuilder(builder, "worker");
 builder.Services.Configure<WorkerSchedulingOptions>(builder.Configuration.GetSection(WorkerSchedulingOptions.SectionName));
 builder.Services.AddApplication();
 builder.Services.AddInfrastructureCore(builder.Configuration);
+builder.Services.AddSingleton<INotificationDispatcher, NullNotificationDispatcher>();
 builder.Services.AddPlatformOpenTelemetry(builder.Configuration, serviceNameFallback: "baseproject.worker");
 builder.Services.AddOutboxPublisher(builder.Configuration);
 
@@ -35,6 +39,9 @@ builder.Services.AddSingleton<ICronJob, Worker.Media.MediaStorageCleanupJob>();
 builder.Services.AddSingleton<ICronJob, Worker.Outbox.OutboxCleanupJob>();
 builder.Services.AddSingleton<ICronJob, SystemSettingsBackupJob>();
 builder.Services.AddSingleton<ICronJob, DatabaseBackupJob>();
+builder.Services.AddSingleton<ICronJob, SubscriptionDunningJob>();
+builder.Services.AddSingleton<ICronJob, SubscriptionCreditGrantJob>();
+builder.Services.AddSingleton<ICronJob, Worker.Notifications.NotificationDeliveryJob>();
 builder.Services.AddWorkerScheduling(builder.Configuration);
 builder.Services.AddHostedService<MediaProcessingConsumerService>();
 builder.Services.AddHostedService<Worker.Email.EmailSendConsumerService>();

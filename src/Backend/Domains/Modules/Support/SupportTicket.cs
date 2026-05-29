@@ -2,7 +2,7 @@ using Domains.Common;
 
 namespace Domains.Support;
 
-public sealed class SupportTicket : AggregateRoot<Guid>
+public sealed class SupportTicket : AggregateRoot<Guid>, ITenantScoped
 {
     private readonly List<SupportTicketMessage> _messages = [];
 
@@ -10,6 +10,7 @@ public sealed class SupportTicket : AggregateRoot<Guid>
 
     private SupportTicket(
         Guid id,
+        Guid tenantId,
         Guid createdByUserId,
         string ticketNumber,
         string subject,
@@ -17,6 +18,7 @@ public sealed class SupportTicket : AggregateRoot<Guid>
         string? category,
         SupportTicketPriority priority) : base(id)
     {
+        TenantId = tenantId;
         CreatedByUserId = createdByUserId;
         TicketNumber = ticketNumber;
         Subject = subject;
@@ -31,6 +33,7 @@ public sealed class SupportTicket : AggregateRoot<Guid>
         LastMessageByUserId = createdByUserId;
     }
 
+    public Guid TenantId { get; private set; }
     public Guid CreatedByUserId { get; private set; }
     public string TicketNumber { get; private set; } = null!;
     public string Subject { get; private set; } = null!;
@@ -50,6 +53,7 @@ public sealed class SupportTicket : AggregateRoot<Guid>
     public IReadOnlyList<SupportTicketMessage> Messages => _messages.AsReadOnly();
 
     public static SupportTicket Create(
+        Guid tenantId,
         Guid createdByUserId,
         string ticketNumber,
         string subject,
@@ -57,7 +61,9 @@ public sealed class SupportTicket : AggregateRoot<Guid>
         string? category,
         SupportTicketPriority priority)
     {
-        return new SupportTicket(Guid.NewGuid(), createdByUserId, ticketNumber, subject, description, category, priority);
+        if (tenantId == Guid.Empty)
+            throw new ArgumentException("Tenant id is required.", nameof(tenantId));
+        return new SupportTicket(Guid.NewGuid(), tenantId, createdByUserId, ticketNumber, subject, description, category, priority);
     }
 
     public SupportTicketMessage AddMessage(

@@ -1,6 +1,7 @@
 using Domains.MediaAggregate;
 using Domains.MediaAggregate.Events;
 using Domains.MediaAggregate.ValueObjects;
+using Domains.Tenancy;
 
 namespace Domains.Tests.MediaAggregate;
 
@@ -11,6 +12,7 @@ namespace Domains.Tests.MediaAggregate;
 /// </summary>
 public sealed class MediaAssetTests
 {
+    private static readonly Guid TenantId = SystemTenants.DefaultTenantId;
     private static readonly Guid Owner = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private const string Key = "media/abc/original.jpg";
     private const string ContentType = "image/jpeg";
@@ -19,28 +21,28 @@ public sealed class MediaAssetTests
     public void CreateForUpload_throws_when_owner_is_empty()
     {
         Assert.Throws<ArgumentException>(() =>
-            MediaAsset.CreateForUpload(Guid.Empty, MediaKind.Image, Key, ContentType, byteSize: 100, DateTime.UtcNow));
+            MediaAsset.CreateForUpload(TenantId, Guid.Empty, MediaKind.Image, Key, ContentType, 100, DateTime.UtcNow));
     }
 
     [Fact]
     public void CreateForUpload_throws_when_key_is_blank()
     {
         Assert.Throws<ArgumentException>(() =>
-            MediaAsset.CreateForUpload(Owner, MediaKind.Image, "  ", ContentType, byteSize: 100, DateTime.UtcNow));
+            MediaAsset.CreateForUpload(TenantId, Owner, MediaKind.Image, "  ", ContentType, 100, DateTime.UtcNow));
     }
 
     [Fact]
     public void CreateForUpload_throws_when_byte_size_is_zero()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            MediaAsset.CreateForUpload(Owner, MediaKind.Image, Key, ContentType, byteSize: 0, DateTime.UtcNow));
+            MediaAsset.CreateForUpload(TenantId, Owner, MediaKind.Image, Key, ContentType, 0, DateTime.UtcNow));
     }
 
     [Fact]
     public void CreateForUpload_initialises_pending_state()
     {
         DateTime now = DateTime.UtcNow;
-        MediaAsset asset = MediaAsset.CreateForUpload(Owner, MediaKind.Image, Key, ContentType, byteSize: 1024, now);
+        MediaAsset asset = MediaAsset.CreateForUpload(TenantId, Owner, MediaKind.Image, Key, ContentType, 1024, now);
 
         Assert.Equal(MediaAssetStatus.Pending, asset.Status);
         Assert.Equal(now, asset.CreatedAtUtc);
@@ -225,11 +227,11 @@ public sealed class MediaAssetTests
     public void Explicit_id_factory_preserves_supplied_id()
     {
         MediaAssetId id = MediaAssetId.CreateNew();
-        MediaAsset asset = MediaAsset.CreateForUpload(id, Owner, MediaKind.Image, Key, ContentType, byteSize: 100, DateTime.UtcNow);
+        MediaAsset asset = MediaAsset.CreateForUpload(id, TenantId, Owner, MediaKind.Image, Key, ContentType, 100, DateTime.UtcNow);
 
         Assert.Equal(id, asset.Id);
     }
 
     private static MediaAsset Pending() =>
-        MediaAsset.CreateForUpload(Owner, MediaKind.Image, Key, ContentType, byteSize: 100, DateTime.UtcNow);
+        MediaAsset.CreateForUpload(TenantId, Owner, MediaKind.Image, Key, ContentType, 100, DateTime.UtcNow);
 }

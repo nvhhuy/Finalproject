@@ -57,6 +57,43 @@ export interface AdminUserDetailDto extends AdminUserSummaryDto {
   accountClosedAtUtc: string | null
 }
 
+export interface PlanLimitsDto {
+  maxUsers: number
+  maxStorageBytes: number
+  modules: string[]
+  maxOpenSupportTickets: number
+  adminSeats: number
+  impersonation: boolean
+  backupRestore: boolean
+}
+
+export interface PlanDto {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  priceMonthlyCents: number
+  currency: string
+  trialDays: number
+  limits: PlanLimitsDto
+  isActive: boolean
+  sortOrder: number
+}
+
+export interface BillingInvoiceDto {
+  id: string
+  tenantId: string | null
+  userId: string | null
+  invoiceNumber: string
+  description: string
+  amountCents: number
+  amountCredits: number | null
+  currency: string
+  status: string
+  provider: string
+  issuedAtUtc: string
+}
+
 export interface AdminUserListDto {
   items: AdminUserSummaryDto[]
   totalCount: number

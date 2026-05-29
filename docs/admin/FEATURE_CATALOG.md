@@ -16,8 +16,20 @@ Catalog of **existing** Admin Console features — routes, behavior, and corresp
 | `/settings` | Runtime toggles | Admin |
 | `/messaging` | DLQ peek / replay / drain | Admin |
 | `/support` | Support tickets operations | Admin |
+| `/plans` | Subscription plan catalog (create, edit, delete) | Admin |
 
-Nav sidebar: Dashboard, Users, Audit logs, Settings, DLQ, Support tickets.
+Nav sidebar: Dashboard, Users, Plans, Audit logs, Settings, DLQ, Support tickets.
+
+## Subscription plans
+
+| Capability | Notes |
+|------------|-------|
+| List plans | Cards with price, currency, limits |
+| Create plan | Modal; currency dropdown (ISO 4217 subset) |
+| Edit plan | Update price, currency, trial, limits, active flag; code is read-only |
+| Delete plan | Only when no subscriptions reference the plan; otherwise deactivate |
+
+API: `GET/POST/PUT/DELETE /api/v1/platform/plans`.
 
 ---
 

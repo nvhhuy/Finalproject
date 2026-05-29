@@ -14,6 +14,15 @@ export function PublicHeader({ showAuthLinks = true }: { showAuthLinks?: boolean
     <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <AppBrand className="text-lg sm:text-xl" />
       <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:gap-3">
+        <Link href="/pricing" className="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)]">
+          {t("nav.pricing")}
+        </Link>
+        <Link href="/about" className="hidden text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] sm:inline">
+          {t("nav.about")}
+        </Link>
+        <Link href="/contact" className="hidden text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] sm:inline">
+          {t("nav.contact")}
+        </Link>
         <ThemeSwitcher />
         <LanguageSwitcher />
         {showAuthLinks ? (

@@ -6,6 +6,7 @@ using Application.Contracts.Transactions;
 using Application.Modules.Media;
 using Application.Modules.Media.Pipeline;
 using Domains.MediaAggregate;
+using Domains.Tenancy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -506,11 +507,11 @@ public sealed class MediaProcessingPipelineTests
     }
 
     private static MediaAsset NewPending() =>
-        MediaAsset.CreateForUpload(Owner, MediaKind.Image, "media/abc/original.jpg", "image/jpeg", 100, DateTime.UtcNow);
+        MediaAsset.CreateForUpload(SystemTenants.DefaultTenantId, Owner, MediaKind.Image, "media/abc/original.jpg", "image/jpeg", 100, DateTime.UtcNow);
 
     private static MediaAsset NewUploaded(MediaKind kind, string contentType)
     {
-        MediaAsset asset = MediaAsset.CreateForUpload(Owner, kind, "media/abc/original.bin", contentType, 100, DateTime.UtcNow);
+        MediaAsset asset = MediaAsset.CreateForUpload(SystemTenants.DefaultTenantId, Owner, kind, "media/abc/original.bin", contentType, 100, DateTime.UtcNow);
         asset.MarkUploaded(DateTime.UtcNow);
         asset.ClearDomainEvents();
         return asset;

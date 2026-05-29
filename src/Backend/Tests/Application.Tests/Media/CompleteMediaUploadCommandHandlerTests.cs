@@ -7,6 +7,7 @@ using Application.Modules.Media.Commands;
 using Application.Modules.Media.Dtos;
 using Domains.MediaAggregate;
 using Domains.MediaAggregate.ValueObjects;
+using Domains.Tenancy;
 using Moq;
 using Shared.Common;
 using Shared.Errors;
@@ -40,7 +41,7 @@ public sealed class CompleteMediaUploadCommandHandlerTests
     public async Task Handle_returns_forbidden_when_caller_is_not_owner()
     {
         MediaAsset asset = MediaAsset.CreateForUpload(
-            MediaAssetId.CreateNew(), OwnerId, MediaKind.Image,
+            MediaAssetId.CreateNew(), SystemTenants.DefaultTenantId, OwnerId, MediaKind.Image,
             "media/originals/x.jpg", "image/jpeg", 1024, FixedNow);
 
         var repo = new Mock<IMediaAssetRepository>();
@@ -60,7 +61,7 @@ public sealed class CompleteMediaUploadCommandHandlerTests
     public async Task Handle_rejects_when_uploaded_object_is_missing_in_storage()
     {
         MediaAsset asset = MediaAsset.CreateForUpload(
-            MediaAssetId.CreateNew(), OwnerId, MediaKind.Image,
+            MediaAssetId.CreateNew(), SystemTenants.DefaultTenantId, OwnerId, MediaKind.Image,
             "media/originals/x.jpg", "image/jpeg", 1024, FixedNow);
 
         var repo = new Mock<IMediaAssetRepository>();
@@ -84,7 +85,7 @@ public sealed class CompleteMediaUploadCommandHandlerTests
     public async Task Handle_rejects_when_magic_bytes_do_not_match()
     {
         MediaAsset asset = MediaAsset.CreateForUpload(
-            MediaAssetId.CreateNew(), OwnerId, MediaKind.Image,
+            MediaAssetId.CreateNew(), SystemTenants.DefaultTenantId, OwnerId, MediaKind.Image,
             "media/originals/x.jpg", "image/jpeg", 1024, FixedNow);
 
         var repo = new Mock<IMediaAssetRepository>();

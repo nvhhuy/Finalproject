@@ -1,5 +1,6 @@
 using Application.Contracts.Events;
 using Application.Contracts.Services;
+using Application.Contracts.Tenancy;
 using Infrastructure.Messaging.Outbox;
 using Infrastructure.Modules.Users.Persistence.Conversions;
 using Infrastructure.Persistence;
@@ -135,6 +136,7 @@ public sealed class OutboxCleanupJobTests
         services.AddSingleton<IAfterCommitDomainEventQueue, AfterCommitDomainEventQueue>();
         services.AddSingleton<ICorrelationContext, AsyncLocalCorrelationContext>();
         services.AddScoped<DomainEventsSaveChangesInterceptor>();
+        services.AddScoped<ITenantContext, TestTenantContext>();
         services.AddDbContext<ApplicationDbContext>(opts => opts.UseSqlite(connection));
         services.AddSingleton<IDateTimeProvider>(clock);
 
@@ -155,5 +157,13 @@ public sealed class OutboxCleanupJobTests
         private readonly DateTime _now;
         public FixedClock(DateTime now) { _now = now; }
         public DateTime Now => _now;
+    }
+
+    private sealed class TestTenantContext : ITenantContext
+    {
+        public Guid? TenantId { get; private set; }
+        public bool BypassTenantIsolation { get; private set; }
+        public void SetTenant(Guid tenantId) => TenantId = tenantId;
+        public void EnableBypass() => BypassTenantIsolation = true;
     }
 }

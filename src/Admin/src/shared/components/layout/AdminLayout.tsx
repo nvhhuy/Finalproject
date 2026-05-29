@@ -9,6 +9,8 @@ import {
   Menu,
   MessageSquareWarning,
   LifeBuoy,
+  CreditCard,
+  Receipt,
   Settings,
   Users,
   X,
@@ -21,6 +23,8 @@ import { LanguageSwitcher } from '@/shared/components/layout/LanguageSwitcher'
 const navItems = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
   { to: '/users', labelKey: 'nav.users', icon: Users },
+  { to: '/plans', labelKey: 'nav.plans', icon: CreditCard },
+  { to: '/invoices', labelKey: 'nav.invoices', icon: Receipt },
   { to: '/audit-logs', labelKey: 'nav.auditLogs', icon: FileText },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
   { to: '/messaging', labelKey: 'nav.dlq', icon: MessageSquareWarning },

@@ -1,10 +1,14 @@
 using Application.Contracts.Persistence;
+using Application.Contracts.Tenancy;
 using Domains.Administration;
 using Domains.MediaAggregate;
 using Domains.Notifications;
 using Domains.Support;
 using Domains.SystemSettings;
+using Domains.Billing;
+using Domains.Tenancy;
 using Domains.UserAggregate;
+using Domains.Wallet;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -19,8 +23,13 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
     private const string WriteForbiddenMessage =
         "ApplicationReadDbContext is read-only. Use ApplicationDbContext (write side) and IUnitOfWork.SaveChangesAsync for mutations.";
 
-    public ApplicationReadDbContext(DbContextOptions<ApplicationReadDbContext> options) : base(options)
+    private readonly ITenantContext _tenantContext;
+
+    public ApplicationReadDbContext(
+        DbContextOptions<ApplicationReadDbContext> options,
+        ITenantContext tenantContext) : base(options)
     {
+        _tenantContext = tenantContext;
         ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         ChangeTracker.AutoDetectChangesEnabled = false;
         SavingChanges += (_, _) => throw new InvalidOperationException(WriteForbiddenMessage);
@@ -36,10 +45,21 @@ public sealed class ApplicationReadDbContext : DbContext, IApplicationReadDbCont
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
     public DbSet<SupportTicketMessage> SupportTicketMessages => Set<SupportTicketMessage>();
     public DbSet<SupportTicketAttachment> SupportTicketAttachments => Set<SupportTicketAttachment>();
+    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<TenantMember> TenantMembers => Set<TenantMember>();
+    public DbSet<TenantDomain> TenantDomains => Set<TenantDomain>();
+    public DbSet<TenantSsoSettings> TenantSsoSettings => Set<TenantSsoSettings>();
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
+    public DbSet<BillingInvoice> BillingInvoices => Set<BillingInvoice>();
+    public DbSet<PersonalWallet> PersonalWallets => Set<PersonalWallet>();
+    public DbSet<WalletLedgerEntry> WalletLedgerEntries => Set<WalletLedgerEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         PersistenceModel.Configure(modelBuilder);
+        TenantQueryFilterConfigurator.Apply(modelBuilder, _tenantContext);
         base.OnModelCreating(modelBuilder);
     }
 

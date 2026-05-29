@@ -31,6 +31,11 @@ const SupportTicketsPage = lazyNamedRoute(
   () => import('@/features/support/SupportTicketsPage'),
   'SupportTicketsPage',
 )
+const PlansPage = lazyNamedRoute(() => import('@/features/plans/PlansPage'), 'PlansPage')
+const InvoicesPage = lazyNamedRoute(
+  () => import('@/features/billing/InvoicesPage'),
+  'InvoicesPage',
+)
 
 function suspense(element: ReactNode) {
   return <Suspense fallback={<RouteFallback />}>{element}</Suspense>
@@ -56,6 +61,8 @@ export const router = createBrowserRouter([
       { path: 'settings', element: suspense(<SettingsPage />) },
       { path: 'messaging', element: suspense(<DlqPage />) },
       { path: 'support', element: suspense(<SupportTicketsPage />) },
+      { path: 'plans', element: suspense(<PlansPage />) },
+      { path: 'invoices', element: suspense(<InvoicesPage />) },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

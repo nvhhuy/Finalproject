@@ -19,6 +19,8 @@ public sealed record RegistrationResponseDto(string Email, string Message)
 
 public sealed record GoogleSignInRequest(string IdToken);
 
+public sealed record TenantOidcSignInRequest(string IdToken);
+
 public sealed record CompleteTwoFactorLoginRequest(string PendingLoginId, string Code);
 
 public sealed record ConfirmTwoFactorRequest(string Code);

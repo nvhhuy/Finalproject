@@ -10,10 +10,11 @@ namespace Domains.MediaAggregate;
 /// Processing → Ready, or terminates in <see cref="MediaAssetStatus.Failed"/> after exhausted
 /// retries. All transitions raise domain events so the outbox + worker pipeline can react.
 /// </summary>
-public sealed class MediaAsset : AggregateRoot<MediaAssetId>
+public sealed class MediaAsset : AggregateRoot<MediaAssetId>, ITenantScoped
 {
     private readonly List<MediaVariant> _variants = new();
 
+    public Guid TenantId { get; private set; }
     public Guid OwnerUserId { get; private set; }
     public MediaKind Kind { get; private set; }
     public MediaAssetStatus Status { get; private set; }
@@ -59,6 +60,7 @@ public sealed class MediaAsset : AggregateRoot<MediaAssetId>
 
     private MediaAsset(
         MediaAssetId id,
+        Guid tenantId,
         Guid ownerUserId,
         MediaKind kind,
         string originalKey,
@@ -66,6 +68,7 @@ public sealed class MediaAsset : AggregateRoot<MediaAssetId>
         long byteSize,
         DateTime createdAtUtc) : base(id)
     {
+        TenantId = tenantId;
         OwnerUserId = ownerUserId;
         Kind = kind;
         OriginalKey = originalKey;
@@ -85,21 +88,23 @@ public sealed class MediaAsset : AggregateRoot<MediaAssetId>
     /// different (anti-abuse).
     /// </param>
     public static MediaAsset CreateForUpload(
+        Guid tenantId,
         Guid ownerUserId,
         MediaKind kind,
         string originalKey,
         string contentType,
         long byteSize,
         DateTime utcNow) =>
-        CreateForUpload(MediaAssetId.CreateNew(), ownerUserId, kind, originalKey, contentType, byteSize, utcNow);
+        CreateForUpload(MediaAssetId.CreateNew(), tenantId, ownerUserId, kind, originalKey, contentType, byteSize, utcNow);
 
     /// <summary>
-    /// Same as <see cref="CreateForUpload(Guid, MediaKind, string, string, long, DateTime)"/> but
+    /// Same as <see cref="CreateForUpload(Guid, Guid, MediaKind, string, string, long, DateTime)"/> but
     /// lets the caller pre-allocate the id. Used by the upload command so the storage key
     /// (which embeds the id) is known before the row exists.
     /// </summary>
     public static MediaAsset CreateForUpload(
         MediaAssetId id,
+        Guid tenantId,
         Guid ownerUserId,
         MediaKind kind,
         string originalKey,
@@ -109,6 +114,8 @@ public sealed class MediaAsset : AggregateRoot<MediaAssetId>
     {
         if (id is null)
             throw new ArgumentNullException(nameof(id));
+        if (tenantId == Guid.Empty)
+            throw new ArgumentException("Tenant id is required.", nameof(tenantId));
         if (ownerUserId == Guid.Empty)
             throw new ArgumentException("Owner user id is required.", nameof(ownerUserId));
         if (string.IsNullOrWhiteSpace(originalKey))
@@ -118,7 +125,7 @@ public sealed class MediaAsset : AggregateRoot<MediaAssetId>
         if (byteSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(byteSize), "Byte size must be positive.");
 
-        return new MediaAsset(id, ownerUserId, kind, originalKey, contentType, byteSize, utcNow);
+        return new MediaAsset(id, tenantId, ownerUserId, kind, originalKey, contentType, byteSize, utcNow);
     }
 
     /// <summary>

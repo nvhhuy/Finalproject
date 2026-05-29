@@ -4,6 +4,7 @@ using Application.Modules.Media.Dtos;
 using Application.Modules.Media.Queries;
 using Domains.MediaAggregate;
 using Domains.MediaAggregate.ValueObjects;
+using Domains.Tenancy;
 using Moq;
 using Shared.Common;
 using Shared.Errors;
@@ -41,7 +42,7 @@ public sealed class GetMediaAssetQueryHandlerTests
         Guid owner = Guid.NewGuid();
         Guid attacker = Guid.NewGuid();
         MediaAsset asset = MediaAsset.CreateForUpload(
-            MediaAssetId.CreateNew(), owner, MediaKind.Image,
+            MediaAssetId.CreateNew(), SystemTenants.DefaultTenantId, owner, MediaKind.Image,
             "media/originals/x.jpg", "image/jpeg", 1024, FixedNow);
 
         var repo = new Mock<IMediaAssetRepository>();
@@ -63,7 +64,7 @@ public sealed class GetMediaAssetQueryHandlerTests
     {
         Guid owner = Guid.NewGuid();
         MediaAsset asset = MediaAsset.CreateForUpload(
-            MediaAssetId.CreateNew(), owner, MediaKind.Image,
+            MediaAssetId.CreateNew(), SystemTenants.DefaultTenantId, owner, MediaKind.Image,
             "media/originals/x.jpg", "image/jpeg", 1024, FixedNow);
 
         var repo = new Mock<IMediaAssetRepository>();

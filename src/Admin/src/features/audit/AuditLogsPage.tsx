@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { listAuditLogs } from '@/shared/api/admin-api'
+import { exportAuditLogsCsv, listAuditLogs } from '@/shared/api/admin-api'
+import { Button } from '@/shared/components/ui/Button'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { PageContent } from '@/shared/components/layout/PageContent'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
@@ -33,9 +34,29 @@ export function AuditLogsPage() {
 
   const totalPages = useTotalPages(data?.totalCount, data?.pageSize ?? PAGE_SIZE)
 
+  async function handleExport() {
+    const blob = await exportAuditLogsCsv({
+      targetUserId: targetUserId || undefined,
+    })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `admin-audit-${new Date().toISOString().slice(0, 10)}.csv`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <>
-      <PageHeader title={t('audit.title')} description={t('audit.description')} />
+      <PageHeader
+        title={t('audit.title')}
+        description={t('audit.description')}
+        actions={
+          <Button variant="secondary" onClick={() => void handleExport()}>
+            {t('audit.exportCsv')}
+          </Button>
+        }
+      />
       <PageContent>
         <Card className="p-4">
           <div className="flex flex-wrap gap-3">

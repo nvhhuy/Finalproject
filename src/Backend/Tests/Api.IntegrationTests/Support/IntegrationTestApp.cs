@@ -106,4 +106,14 @@ public sealed class IntegrationTestApp
         Assert.NotNull(payload.Data);
         return payload.Data;
     }
+
+    public async Task<Guid> GetCurrentUserIdAsync(string accessToken)
+    {
+        using HttpClient client = _factory.CreateClient().WithBearer(accessToken);
+        HttpResponseMessage response = await client.GetAsync("/api/v1/users/profile");
+        response.EnsureSuccessStatusCode();
+        ApiResponse<UserProfileDto>? payload = await response.ReadApiAsync<UserProfileDto>();
+        Assert.NotNull(payload?.Data);
+        return payload.Data.Id;
+    }
 }

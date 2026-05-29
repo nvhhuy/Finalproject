@@ -15,5 +15,7 @@ internal sealed class UserNotificationConfiguration : IEntityTypeConfiguration<U
         builder.Property(x => x.LinkUrl).HasMaxLength(512);
         builder.HasIndex(x => new { x.UserId, x.CreatedAtUtc });
         builder.HasIndex(x => new { x.UserId, x.ReadAtUtc });
+        builder.Property(x => x.LiveDeliveredAtUtc);
+        builder.HasIndex(x => new { x.LiveDeliveredAtUtc, x.CreatedAtUtc });
     }
 }

@@ -30,7 +30,13 @@
     "profile": "个人资料",
     "twoFa": "双因素",
     "mediaLab": "媒体实验室",
-    "support": "支持"
+    "support": "支持",
+    "wallet": "钱包",
+    "subscribe": "订阅",
+    "pricing": "定价",
+    "about": "关于",
+    "contact": "联系",
+    "tenant": "组织"
   },
   "authLayout": {
     "tagline": "面向终端用户的认证、资料、双因素与媒体流程，已对接 .NET 后端。"
@@ -180,6 +186,96 @@
     "selectTicket": "选择工单查看详情。",
     "replyPlaceholder": "补充回复...",
     "reply": "发送回复"
+  },
+  "pricing": {
+    "title": "套餐与定价",
+    "subtitle": "为组织（租户）选择订阅套餐。",
+    "month": "月",
+    "maxUsers": "最多 {{count}} 名成员",
+    "trialDays": "{{count}} 天试用",
+    "choosePlan": "开始使用"
+  },
+  "about": {
+    "title": "关于我们",
+    "body": "多租户 SaaS：组织订阅套餐 + 主应用个人积分钱包。"
+  },
+  "contact": {
+    "title": "联系我们",
+    "body": "有关计费、租户或账户的问题？随时联系。",
+    "emailLabel": "邮箱"
+  },
+  "subscribe": {
+    "title": "订阅套餐",
+    "subtitle": "创建新租户与订阅（MVP，暂无支付网关）。",
+    "formTitle": "组织信息",
+    "planCode": "套餐代码",
+    "tenantSlug": "URL 标识（如 acme-co）",
+    "tenantName": "显示名称",
+    "tagline": "公开标语（可选）",
+    "description": "公开描述（可选）",
+    "submit": "创建租户并订阅"
+  },
+  "tenantUsage": {
+    "title": "组织用量",
+    "subtitle": "当前租户的订阅状态与套餐限额。",
+    "selectTenant": "当前组织",
+    "subscription": "订阅",
+    "usage": "用量 / 限额",
+    "status": "状态",
+    "writeEnabled": "可写入",
+    "readOnly": "只读（需续订）",
+    "members": "成员",
+    "storage": "存储",
+    "openTickets": "未关闭工单",
+    "portal": "计费门户",
+    "changePlan": "更换套餐",
+    "changePlanSubmit": "应用",
+    "cancelSubscription": "取消订阅",
+    "cancelConfirm": "确定取消该组织的订阅？将失去写入权限。",
+    "invoices": "发票与收据",
+    "noInvoices": "暂无发票。",
+    "domains": "域名与工作区 URL",
+    "subdomainUrl": "子域名工作区",
+    "customDomainPlaceholder": "portal.yourcompany.com",
+    "addDomain": "添加自定义域名",
+    "noDomains": "暂无自定义域名。",
+    "domainStatus": "状态：{{status}}",
+    "verifyDomain": "验证 DNS",
+    "removeDomain": "移除",
+    "sso": "单点登录 (OIDC)",
+    "ssoHint": "成员可使用身份提供商的 OIDC id_token 登录。",
+    "ssoEnabled": "启用 SSO",
+    "ssoAuthority": "OIDC authority（颁发者 URL）",
+    "ssoClientId": "Client ID",
+    "ssoClientSecret": "Client secret",
+    "ssoClientSecretPlaceholder": "留空则保留现有密钥",
+    "ssoHasSecret": "已保存 client secret。",
+    "ssoSave": "保存 SSO 设置",
+    "ssoNotConfigured": "尚未配置 SSO。保存后将创建设置。",
+    "ssoPublicEndpoint": "公开配置",
+    "ssoSignInHint": "登录：POST /api/v1/auth/tenant-sso/{slug}，body { \"idToken\": \"...\" }"
+  },
+  "tenantPublic": {
+    "workspace": "组织",
+    "openApp": "打开工作区",
+    "notFound": "未找到该组织。",
+    "appEntry": "工作区应用",
+    "appEntryHint": "已设置当前租户。继续进入主应用使用资料、支持与媒体。",
+    "continueToMainApp": "进入主应用"
+  },
+  "wallet": {
+    "title": "个人钱包",
+    "subtitle": "积分按用户计，与租户订阅无关。",
+    "balance": "余额",
+    "creditsHint": "积分（MVP 手动充值）",
+    "topUp": "充值",
+    "meteredActions": "按量计费操作",
+    "debit": "使用（{{cost}} 积分）",
+    "ledger": "最近记录",
+    "emptyLedger": "暂无交易。",
+    "debitFailed": "扣款失败",
+    "receipts": "充值收据",
+    "noReceipts": "暂无收据。"
   },
   "errors": {
     "requestFailed": "请求失败",

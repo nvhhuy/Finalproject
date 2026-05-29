@@ -26,6 +26,8 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 | Operator setting up Gitea CI runners | [`backend/CI_GITEA_SETUP.md`](./backend/CI_GITEA_SETUP.md) |
 | Operator planning production deploy | [`deploy/README.md`](./deploy/README.md) → [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md) |
 | Operator scaling Api/Worker or moving to managed DB | [`deploy/SCALING.md`](./deploy/SCALING.md) |
+| Product — SaaS tenant, plans, billing roadmap | [`product/SAAS_ROADMAP.md`](./product/SAAS_ROADMAP.md) |
+| Product — SaaS implementation checklist (phases) | [`product/SAAS_IMPLEMENTATION_PLAN.md`](./product/SAAS_IMPLEMENTATION_PLAN.md) |
 | Engineer adding API or Playwright tests | [`test/EXTENSIBILITY_GUIDE.md`](./test/EXTENSIBILITY_GUIDE.md) + [`.cursor/rules/test.mdc`](../.cursor/rules/test.mdc) |
 | CI quality gates (PR / main) | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 

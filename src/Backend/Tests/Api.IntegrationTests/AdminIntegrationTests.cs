@@ -211,6 +211,12 @@ public sealed class AdminIntegrationTests
         HttpResponseMessage auditResponse = await adminClient.GetAsync("/api/v1/admin/audit-logs?page=1&pageSize=10");
         auditResponse.EnsureSuccessStatusCode();
 
+        HttpResponseMessage auditExport = await adminClient.GetAsync("/api/v1/admin/audit-logs/export?maxRows=100");
+        auditExport.EnsureSuccessStatusCode();
+        Assert.Equal("text/csv", auditExport.Content.Headers.ContentType?.MediaType);
+        string csv = await auditExport.Content.ReadAsStringAsync();
+        Assert.StartsWith("id,createdAtUtc,action,actorUserId", csv, StringComparison.Ordinal);
+
         HttpResponseMessage dlqPeek = await adminClient.GetAsync("/api/v1/admin/messaging/dlq/media.uploaded.v1/peek?count=1");
         Assert.True(
             dlqPeek.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable or HttpStatusCode.BadRequest,

@@ -132,7 +132,11 @@ if (applyPendingMigrations || seedBootstrapAdmin)
             await db.Database.MigrateAsync();
 
         if (seedBootstrapAdmin)
+        {
             await DbSeeder.SeedAdminIfMissingAsync(db, scope.ServiceProvider);
+            await DbSeeder.SeedDefaultTenantIfMissingAsync(db, scope.ServiceProvider);
+            await DbSeeder.SeedDefaultPlansIfMissingAsync(db, scope.ServiceProvider);
+        }
     }
     catch (Exception ex) when (ex.Message.Contains("Failed to connect", StringComparison.Ordinal))
     {
@@ -191,6 +195,9 @@ app.UseSerilogRequestLogging(options =>
 app.UseRouting();
 app.UseCors(Api.Configuration.CorsOptions.PolicyName);
 
+app.UseAuthentication();
+app.UseMiddleware<Api.Middleware.TenantContextMiddleware>();
+
 app.UseRateLimiter();
 
 app.Use(async (context, next) =>
@@ -222,10 +229,9 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("tenant-api");
 app.MapRealtimeHubs();
 
 // Health endpoints are split so the liveness probe stays cheap and information-free, while the

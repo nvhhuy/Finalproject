@@ -1,0 +1,21 @@
+# Traefik file provider — add one router per verified custom domain.
+# Mount into Traefik: /etc/traefik/dynamic/tenant-domains.yml
+# Command: --providers.file.directory=/etc/traefik/dynamic
+#
+# Replace portal.customer.com and point DNS to your edge IP before ACME runs.
+
+http:
+  routers:
+    tenant-custom-portal-customer-com:
+      rule: Host(`portal.customer.com`)
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: le
+      service: frontend@docker
+
+  services:
+    frontend@docker:
+      loadBalancer:
+        servers:
+          - url: http://frontend:3000

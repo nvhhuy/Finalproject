@@ -2,7 +2,10 @@ using Domains.Administration;
 using Domains.MediaAggregate;
 using Domains.Notifications;
 using Domains.Support;
+using Domains.Billing;
+using Domains.Tenancy;
 using Domains.UserAggregate;
+using Domains.Wallet;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Contracts.Persistence;
@@ -23,4 +26,14 @@ public interface IApplicationReadDbContext
     DbSet<SupportTicket> SupportTickets { get; }
     DbSet<SupportTicketMessage> SupportTicketMessages { get; }
     DbSet<SupportTicketAttachment> SupportTicketAttachments { get; }
+    DbSet<Tenant> Tenants { get; }
+    DbSet<TenantMember> TenantMembers { get; }
+    DbSet<TenantDomain> TenantDomains { get; }
+    DbSet<TenantSsoSettings> TenantSsoSettings { get; }
+    DbSet<Plan> Plans { get; }
+    DbSet<Subscription> Subscriptions { get; }
+    DbSet<PaymentWebhookEvent> PaymentWebhookEvents { get; }
+    DbSet<BillingInvoice> BillingInvoices { get; }
+    DbSet<PersonalWallet> PersonalWallets { get; }
+    DbSet<WalletLedgerEntry> WalletLedgerEntries { get; }
 }

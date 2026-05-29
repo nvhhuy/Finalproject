@@ -16,6 +16,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: "/app/security/2fa", label: t("nav.twoFa") },
     { href: "/app/media", label: t("nav.mediaLab") },
     { href: "/app/support", label: t("nav.support") },
+    { href: "/app/wallet", label: t("nav.wallet") },
+    { href: "/app/subscribe", label: t("nav.subscribe") },
+    { href: "/app/tenant", label: t("nav.tenant") },
   ];
 
   return (

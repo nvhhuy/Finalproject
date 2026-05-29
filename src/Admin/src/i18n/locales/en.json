@@ -30,6 +30,8 @@
     "settings": "Settings",
     "dlq": "DLQ",
     "support": "Support tickets",
+    "plans": "Plans",
+    "invoices": "Invoices",
     "signOut": "Sign out"
   },
   "login": {
@@ -240,7 +242,8 @@
     "colActor": "Actor",
     "colTarget": "Target",
     "colDetails": "Details",
-    "noEntries": "No audit entries."
+    "noEntries": "No audit entries.",
+    "exportCsv": "Export CSV"
   },
   "support": {
     "title": "Support tickets",
@@ -260,5 +263,47 @@
     "internal": "Internal",
     "unassign": "Unassign",
     "unassigned": "Ticket unassigned."
+  },
+  "plans": {
+    "title": "Subscription plans",
+    "subtitle": "Catalog used for tenant checkout (MVP — no Stripe yet).",
+    "maxUsers": "Max {{count}} members",
+    "trialDays": "{{count}} trial days",
+    "create": "Create plan",
+    "createTitle": "New subscription plan",
+    "editTitle": "Edit subscription plan",
+    "edit": "Edit plan",
+    "delete": "Delete plan",
+    "deleteConfirm": "Delete plan \"{{name}}\"? This cannot be undone. Plans with subscriptions must be deactivated instead.",
+    "created": "Plan created",
+    "updated": "Plan updated",
+    "deleted": "Plan deleted",
+    "isActive": "Active (visible on pricing)",
+    "code": "Plan code",
+    "codePlaceholder": "e.g. starter",
+    "codeHint": "Unique ID used at checkout (lowercase, no spaces). Cannot be changed after creation.",
+    "name": "Display name",
+    "namePlaceholder": "e.g. Starter",
+    "description": "Description",
+    "descriptionPlaceholder": "Short summary shown on the pricing page",
+    "descriptionHint": "Optional. Shown to customers on /pricing.",
+    "priceCents": "Monthly price (cents)",
+    "priceCentsHint": "Amount in smallest currency unit. Example: 2900 = $29.00 USD.",
+    "currency": "Currency",
+    "currencyHint": "ISO currency code for billing and display.",
+    "trialDaysLabel": "Trial days",
+    "maxUsersLabel": "Max users",
+    "sortOrder": "Sort order",
+    "sortOrderHint": "Lower numbers appear first on the pricing page."
+  },
+  "invoices": {
+    "title": "Billing invoices",
+    "subtitle": "Subscription and wallet receipts across the platform.",
+    "number": "Invoice #",
+    "description": "Description",
+    "amount": "Amount",
+    "provider": "Provider",
+    "issued": "Issued",
+    "empty": "No invoices yet."
   }
 }

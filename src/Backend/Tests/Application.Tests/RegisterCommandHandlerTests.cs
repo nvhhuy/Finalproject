@@ -3,6 +3,7 @@ using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
 using Application.Contracts.FeatureFlags;
+using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
 using Application.Modules.Users.Authentication.Commands.Register;
 using Application.Modules.Users.Authentication.Common;
@@ -141,6 +142,7 @@ public sealed class RegisterCommandHandlerTests
             featureFlags,
             clock.Object,
             emailSender ?? Mock.Of<IEmailVerificationSender>(),
-            uow ?? Mock.Of<IUnitOfWork>());
+            uow ?? Mock.Of<IUnitOfWork>(),
+            Mock.Of<ITenantEnrollmentService>());
     }
 }

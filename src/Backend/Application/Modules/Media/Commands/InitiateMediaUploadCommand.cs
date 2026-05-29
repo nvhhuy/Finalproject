@@ -1,9 +1,11 @@
 using Application.Contracts.Modules.Media.Persistence;
 using Application.Contracts.Services;
 using Application.Contracts.Storage;
+using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
 using Application.Modules.Media.Common;
 using Domains.MediaAggregate;
+using Domains.Tenancy;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -49,6 +51,7 @@ public sealed class InitiateMediaUploadCommandHandler
     private readonly IObjectStorage _storage;
     private readonly IUnitOfWork _uow;
     private readonly IDateTimeProvider _clock;
+    private readonly ITenantContext _tenantContext;
     private readonly MediaUploadOptions _options;
 
     public InitiateMediaUploadCommandHandler(
@@ -56,12 +59,14 @@ public sealed class InitiateMediaUploadCommandHandler
         IObjectStorage storage,
         IUnitOfWork uow,
         IDateTimeProvider clock,
+        ITenantContext tenantContext,
         IOptions<MediaUploadOptions> options)
     {
         _repo = repo;
         _storage = storage;
         _uow = uow;
         _clock = clock;
+        _tenantContext = tenantContext;
         _options = options.Value;
     }
 
@@ -84,9 +89,11 @@ public sealed class InitiateMediaUploadCommandHandler
         // magic-byte verification at completion will reject before the asset becomes Ready.
         string? canonicalExtension = MediaKeyPlanner.CanonicalExtensionFor(request.ContentType);
         string key = MediaKeyPlanner.OriginalKey(request.OwnerUserId, assetId.Value, canonicalExtension);
+        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
 
         MediaAsset asset = MediaAsset.CreateForUpload(
             assetId,
+            tenantId,
             request.OwnerUserId,
             kind,
             key,

@@ -30,7 +30,13 @@
     "profile": "Profile",
     "twoFa": "2FA",
     "mediaLab": "Media Lab",
-    "support": "Support"
+    "support": "Support",
+    "wallet": "Wallet",
+    "subscribe": "Subscribe",
+    "tenant": "Organization",
+    "pricing": "Pricing",
+    "about": "About",
+    "contact": "Contact"
   },
   "authLayout": {
     "tagline": "Production-ready auth, profile, 2FA, and media flows wired to your .NET backend."
@@ -180,6 +186,96 @@
     "selectTicket": "Select a ticket to view details.",
     "replyPlaceholder": "Write a follow-up reply...",
     "reply": "Send reply"
+  },
+  "pricing": {
+    "title": "Plans & pricing",
+    "subtitle": "Choose a subscription plan for your organization (tenant).",
+    "month": "month",
+    "maxUsers": "Up to {{count}} members",
+    "trialDays": "{{count}}-day trial",
+    "choosePlan": "Get started"
+  },
+  "about": {
+    "title": "About us",
+    "body": "We build a multi-tenant SaaS platform with subscription plans for organizations and a personal credit wallet for metered features on the main app."
+  },
+  "contact": {
+    "title": "Contact",
+    "body": "Questions about billing, tenants, or your account? Reach out anytime.",
+    "emailLabel": "Email"
+  },
+  "subscribe": {
+    "title": "Subscribe to a plan",
+    "subtitle": "Creates a new tenant and subscription (MVP checkout — no payment provider yet).",
+    "formTitle": "Organization details",
+    "planCode": "Plan code",
+    "tenantSlug": "URL slug (e.g. acme-co)",
+    "tenantName": "Display name",
+    "tagline": "Public tagline (optional)",
+    "description": "Public description (optional)",
+    "submit": "Create tenant & subscribe"
+  },
+  "tenantUsage": {
+    "title": "Organization usage",
+    "subtitle": "Subscription status and plan limits for your active tenant.",
+    "selectTenant": "Active organization",
+    "subscription": "Subscription",
+    "usage": "Usage vs limits",
+    "status": "Status",
+    "writeEnabled": "Write access enabled",
+    "readOnly": "Read-only (renew subscription)",
+    "members": "Members",
+    "storage": "Storage",
+    "openTickets": "Open support tickets",
+    "portal": "Billing portal",
+    "changePlan": "Change plan",
+    "changePlanSubmit": "Apply plan",
+    "cancelSubscription": "Cancel subscription",
+    "cancelConfirm": "Cancel this organization's subscription? Write access will be removed.",
+    "invoices": "Invoices & receipts",
+    "noInvoices": "No invoices yet.",
+    "domains": "Domains & workspace URL",
+    "subdomainUrl": "Subdomain workspace",
+    "customDomainPlaceholder": "portal.yourcompany.com",
+    "addDomain": "Add custom domain",
+    "noDomains": "No custom domains yet.",
+    "domainStatus": "Status: {{status}}",
+    "verifyDomain": "Verify DNS",
+    "removeDomain": "Remove",
+    "sso": "Single sign-on (OIDC)",
+    "ssoHint": "Members can sign in with your identity provider using an OIDC id_token.",
+    "ssoEnabled": "Enable SSO",
+    "ssoAuthority": "OIDC authority (issuer URL)",
+    "ssoClientId": "Client ID",
+    "ssoClientSecret": "Client secret",
+    "ssoClientSecretPlaceholder": "Leave blank to keep existing secret",
+    "ssoHasSecret": "A client secret is stored.",
+    "ssoSave": "Save SSO settings",
+    "ssoNotConfigured": "SSO is not configured yet. Save to create settings.",
+    "ssoPublicEndpoint": "Public config",
+    "ssoSignInHint": "Sign-in: POST /api/v1/auth/tenant-sso/{slug} with { \"idToken\": \"...\" }"
+  },
+  "tenantPublic": {
+    "workspace": "Organization",
+    "openApp": "Open workspace",
+    "notFound": "Organization not found.",
+    "appEntry": "Workspace app",
+    "appEntryHint": "We set your active tenant context. Continue to the main app for profile, support, and media.",
+    "continueToMainApp": "Continue to app"
+  },
+  "wallet": {
+    "title": "Personal wallet",
+    "subtitle": "Credits are per user — not tied to your tenant subscription.",
+    "balance": "Balance",
+    "creditsHint": "Credits (demo MVP top-up)",
+    "topUp": "Top up",
+    "meteredActions": "Metered actions",
+    "debit": "Use ({{cost}} credits)",
+    "ledger": "Recent activity",
+    "emptyLedger": "No transactions yet.",
+    "debitFailed": "Debit failed",
+    "receipts": "Top-up receipts",
+    "noReceipts": "No receipts yet."
   },
   "errors": {
     "requestFailed": "Request failed",

@@ -8,9 +8,9 @@ Inventory of automated tests as of the current baseline. Update this file when a
 
 | Layer | Project / folder | Approx. specs | Requires |
 |-------|------------------|---------------|----------|
-| API integration | `Api.IntegrationTests` | 15 active + 1 optional skip | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
-| Playwright — Frontend | `e2e/tests/frontend/` | 9 (+ 1 setup) | Postgres + migrated DB; Playwright `webServer` |
-| Playwright — Admin | `e2e/tests/admin/` | 6 | Same as Frontend |
+| API integration | `Api.IntegrationTests` | ~34 (+ 1 optional media skip) | Postgres (Testcontainers or `TEST_DATABASE_CONNECTION_STRING`) |
+| Playwright — Frontend | `e2e/tests/frontend/` | 12 (+ 1 setup) | Postgres + migrated DB; Playwright `webServer` |
+| Playwright — Admin | `e2e/tests/admin/` | 7 | Same as Frontend |
 
 ---
 
@@ -25,7 +25,12 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | `AuthIntegrationTests` | Health smoke; register does not issue tokens until verified |
 | `AuthFlowIntegrationTests` | Register → verify → login → refresh; forgot/reset password; resend verification |
 | `UsersIntegrationTests` | Profile GET/PATCH with `rowVersion` |
-| `AdminIntegrationTests` | Admin login; user CRUD lock/unlock/soft-delete; email verify, reset password, revoke sessions; impersonation; settings, audit logs, DLQ (Rabbit disabled) |
+| `AdminIntegrationTests` | Admin login; user CRUD lock/unlock/soft-delete; email verify, reset password, revoke sessions; impersonation; settings, audit logs + **CSV export**, DLQ (Rabbit disabled) |
+| `BillingIntegrationTests` | Public plans; subscribe → tenant + subscription; invoices; invite + member limit; cancel/change plan; Pro credit grant |
+| `TenancyIntegrationTests` | Platform admin create tenant; member isolation; default tenant seed |
+| `WalletIntegrationTests` | Top-up + metered debit |
+| `PaymentWebhookIntegrationTests` | Stripe idempotent + checkout provision; VNPay/PayOS idempotent |
+| `TenantHostIntegrationTests` | Subdomain resolve-host; custom domain register |
 | `MediaIntegrationTests` | Media initiate/complete/get (**skipped** unless `INTEGRATION_MEDIA_ENABLED=true`) |
 
 **Helpers:** `Support/IntegrationTestApp.cs`, `CapturingEmailSender`, `IntegrationHttpExtensions`, `EmailBodyParser`.
@@ -43,6 +48,9 @@ Inventory of automated tests as of the current baseline. Update this file when a
 |------|----------------|----------|
 | `auth.setup.ts` | setup `authenticate` | Saves `playwright/.auth/frontend.json` after login |
 | `public-auth.spec.ts` | Frontend — public auth | Landing links; login to `/app`; register; forgot-password |
+| `pricing.spec.ts` | Frontend — pricing & SaaS marketing | Pricing page plan cards; landing → pricing link |
+| `subscribe.spec.ts` | Frontend — subscribe flow | Manual subscribe (starter) → `/app` |
+| `saas-usage.spec.ts` | Frontend — SaaS usage | `/app/tenant` after subscribe; `/app/wallet` top-up; `/t/default` public landing |
 | `app-shell.spec.ts` | Frontend — authenticated app shell | Dashboard/profile nav; 2FA setup page; media lab page (uses `storageState`) |
 | `support.spec.ts` | Frontend — support center | Create support ticket; search by ticket number; reply flow |
 
@@ -59,6 +67,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 |------|----------------|----------|
 | `public-auth.spec.ts` | Admin console — public auth | Login page; login reaches dashboard |
 | `navigation.spec.ts` | Admin console — navigation | Dashboard metrics; audit logs + DLQ navigation |
+| `audit-export.spec.ts` | Admin console — audit export | Export CSV button → `GET .../audit-logs/export` |
 | `settings.spec.ts` | Admin console — settings | Users list → settings; public-register toggle; backup controls |
 | `support.spec.ts` | Admin console — support tickets | Support route, search/filter controls, empty-state detail panel |
 
@@ -71,6 +80,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | File | Purpose |
 |------|---------|
 | `e2e/tests/helpers/login.ts` | `loginFrontend`, `loginAdminConsole`; waits for `POST /api/v1/auth/login` |
+| `e2e/tests/helpers/saas.ts` | `subscribeStarterPlan` — shared manual subscribe helper |
 
 ---
 
@@ -84,9 +94,14 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | 2FA | Via API flows | Setup page smoke |
 | Notifications (in-app + realtime hook) | Yes (`NotificationsController`, query/mark-read) | Implicit by authenticated app requests in frontend suite |
 | Support tickets | Yes (`/support/tickets`, `/admin/support/tickets`) | Yes (frontend create/search/reply + admin support page controls) |
-| Admin users / settings / audit | Yes | Users, settings (including backup controls), dashboard, audit navigation |
+| Admin users / settings / audit | Yes | Users, settings (including backup controls), dashboard, audit navigation, **audit CSV export** |
+| Billing / subscription (Follow 1) | Yes (`BillingIntegrationTests`) | Pricing, subscribe, `/app/tenant` smoke |
+| Personal wallet (Follow 2) | Yes (`WalletIntegrationTests`) | `/app/wallet` top-up smoke |
+| Tenant public `/t/[slug]` | Yes (API) | `/t/default` smoke |
 | Media pipeline | Optional (MinIO) | Media lab page smoke |
 | Messaging / DLQ | Admin test (Rabbit off) | — |
+| Tenant SSO OIDC | API only | — |
+| Per-tenant rate limits | — | — |
 
 Gaps are intentional smoke-level coverage; extend per [`EXTENSIBILITY_GUIDE.md`](./EXTENSIBILITY_GUIDE.md).
 

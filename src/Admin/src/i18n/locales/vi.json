@@ -30,6 +30,8 @@
     "settings": "Cài đặt",
     "dlq": "DLQ",
     "support": "Ticket hỗ trợ",
+    "plans": "Gói đăng ký",
+    "invoices": "Hóa đơn",
     "signOut": "Đăng xuất"
   },
   "login": {
@@ -239,7 +241,8 @@
     "colActor": "Người thực hiện",
     "colTarget": "Đích",
     "colDetails": "Chi tiết",
-    "noEntries": "Không có mục audit."
+    "noEntries": "Không có mục audit.",
+    "exportCsv": "Xuất CSV"
   },
   "support": {
     "title": "Ticket hỗ trợ",
@@ -259,5 +262,47 @@
     "internal": "Nội bộ",
     "unassign": "Bỏ phân công",
     "unassigned": "Đã bỏ phân công ticket."
+  },
+  "plans": {
+    "title": "Gói đăng ký",
+    "subtitle": "Danh mục dùng cho checkout tenant (MVP — chưa tích hợp Stripe).",
+    "maxUsers": "Tối đa {{count}} thành viên",
+    "trialDays": "{{count}} ngày dùng thử",
+    "create": "Tạo gói",
+    "createTitle": "Gói đăng ký mới",
+    "editTitle": "Chỉnh sửa gói đăng ký",
+    "edit": "Sửa gói",
+    "delete": "Xóa gói",
+    "deleteConfirm": "Xóa gói \"{{name}}\"? Không thể hoàn tác. Gói đã có subscription phải tắt kích hoạt thay vì xóa.",
+    "created": "Đã tạo gói",
+    "updated": "Đã cập nhật gói",
+    "deleted": "Đã xóa gói",
+    "isActive": "Đang bật (hiển thị trên trang giá)",
+    "code": "Mã gói",
+    "codePlaceholder": "vd. starter",
+    "codeHint": "Mã duy nhất khi checkout (chữ thường, không dấu cách). Không đổi được sau khi tạo.",
+    "name": "Tên hiển thị",
+    "namePlaceholder": "vd. Gói Starter",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Mô tả ngắn hiển thị trên trang giá",
+    "descriptionHint": "Tùy chọn. Hiển thị cho khách tại /pricing.",
+    "priceCents": "Giá tháng (cent)",
+    "priceCentsHint": "Số tiền theo đơn vị nhỏ nhất. Ví dụ: 2900 = 29,00 USD.",
+    "currency": "Tiền tệ",
+    "currencyHint": "Mã ISO dùng cho thanh toán và hiển thị giá.",
+    "trialDaysLabel": "Ngày dùng thử",
+    "maxUsersLabel": "Số user tối đa",
+    "sortOrder": "Thứ tự sắp xếp",
+    "sortOrderHint": "Số nhỏ hơn hiển thị trước trên trang giá."
+  },
+  "invoices": {
+    "title": "Hóa đơn thanh toán",
+    "subtitle": "Biên lai gói tenant và ví credit trên toàn hệ thống.",
+    "number": "Số HĐ",
+    "description": "Mô tả",
+    "amount": "Số tiền",
+    "provider": "Cổng thanh toán",
+    "issued": "Ngày phát hành",
+    "empty": "Chưa có hóa đơn."
   }
 }

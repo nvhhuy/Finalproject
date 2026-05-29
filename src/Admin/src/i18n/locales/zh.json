@@ -30,6 +30,8 @@
     "settings": "设置",
     "dlq": "DLQ",
     "support": "支持工单",
+    "plans": "订阅方案",
+    "invoices": "发票",
     "signOut": "退出登录"
   },
   "login": {
@@ -239,7 +241,8 @@
     "colActor": "执行者",
     "colTarget": "目标",
     "colDetails": "详情",
-    "noEntries": "暂无审计记录。"
+    "noEntries": "暂无审计记录。",
+    "exportCsv": "导出 CSV"
   },
   "support": {
     "title": "支持工单",
@@ -259,5 +262,47 @@
     "internal": "内部",
     "unassign": "取消分配",
     "unassigned": "工单已取消分配。"
+  },
+  "plans": {
+    "title": "订阅方案",
+    "subtitle": "租户结账使用的方案目录（MVP — 尚未接入 Stripe）。",
+    "maxUsers": "最多 {{count}} 名成员",
+    "trialDays": "{{count}} 天试用",
+    "create": "创建方案",
+    "createTitle": "新建订阅方案",
+    "editTitle": "编辑订阅方案",
+    "edit": "编辑方案",
+    "delete": "删除方案",
+    "deleteConfirm": "删除方案「{{name}}」？此操作不可撤销。已有订阅的方案请改为停用。",
+    "created": "方案已创建",
+    "updated": "方案已更新",
+    "deleted": "方案已删除",
+    "isActive": "启用（在定价页显示）",
+    "code": "方案代码",
+    "codePlaceholder": "例如 starter",
+    "codeHint": "结账时使用的唯一标识（小写、无空格）。创建后不可修改。",
+    "name": "显示名称",
+    "namePlaceholder": "例如 Starter",
+    "description": "描述",
+    "descriptionPlaceholder": "定价页显示的简短说明",
+    "descriptionHint": "可选。在 /pricing 向客户展示。",
+    "priceCents": "月费（分）",
+    "priceCentsHint": "最小货币单位。例如：2900 = 29.00 美元。",
+    "currency": "货币",
+    "currencyHint": "用于计费和显示价格的 ISO 货币代码。",
+    "trialDaysLabel": "试用天数",
+    "maxUsersLabel": "最大用户数",
+    "sortOrder": "排序",
+    "sortOrderHint": "数字越小，在定价页越靠前显示。"
+  },
+  "invoices": {
+    "title": "账单发票",
+    "subtitle": "平台订阅与钱包充值收据。",
+    "number": "发票号",
+    "description": "说明",
+    "amount": "金额",
+    "provider": "支付渠道",
+    "issued": "开具时间",
+    "empty": "暂无发票。"
   }
 }

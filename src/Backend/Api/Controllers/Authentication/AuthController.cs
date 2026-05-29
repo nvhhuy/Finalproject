@@ -4,6 +4,7 @@ using Api.Models.Auth;
 using Application.Modules.Users.Authentication.Commands.CompleteTwoFactorLogin;
 using Application.Modules.Users.Authentication.Commands.ForgotPassword;
 using Application.Modules.Users.Authentication.Commands.GoogleSignIn;
+using Application.Modules.Tenancy;
 using Application.Modules.Users.Authentication.Commands.RefreshSession;
 using Application.Modules.Users.Authentication.Commands.VerifyEmail;
 using Application.Modules.Users.Authentication.Commands.Register;
@@ -91,6 +92,18 @@ public sealed class AuthController : ApiControllerBase
     {
         var command = new GoogleSignInCommand(body.IdToken, ClientIp);
         Result<AuthenticationResponse, Error> result = await Sender.Send(command, cancellationToken);
+        return MapAuthResult(result);
+    }
+
+    [HttpPost("tenant-sso/{tenantSlug}")]
+    [AllowAnonymous]
+    [Transactional]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> TenantSso(string tenantSlug, [FromBody] TenantOidcSignInRequest body, CancellationToken cancellationToken)
+    {
+        Result<AuthenticationResponse, Error> result = await Sender.Send(
+            new TenantOidcSignInCommand(tenantSlug, body.IdToken, ClientIp),
+            cancellationToken);
         return MapAuthResult(result);
     }
 

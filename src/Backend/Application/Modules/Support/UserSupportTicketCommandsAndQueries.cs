@@ -1,6 +1,9 @@
+using Application.Contracts.Billing;
 using Application.Contracts.Persistence;
 using Application.Contracts.Support;
+using Application.Contracts.Tenancy;
 using Domains.Support;
+using Domains.Tenancy;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Shared.Common;
@@ -19,12 +22,28 @@ public sealed record CreateSupportTicketCommand(
 public sealed class CreateSupportTicketCommandHandler : IRequestHandler<CreateSupportTicketCommand, Result<Guid, Error>>
 {
     private readonly ISupportTicketService _service;
-    public CreateSupportTicketCommandHandler(ISupportTicketService service) => _service = service;
+    private readonly ITenantContext _tenantContext;
+    private readonly IEntitlementService _entitlements;
+
+    public CreateSupportTicketCommandHandler(
+        ISupportTicketService service,
+        ITenantContext tenantContext,
+        IEntitlementService entitlements)
+    {
+        _service = service;
+        _tenantContext = tenantContext;
+        _entitlements = entitlements;
+    }
 
     public async Task<Result<Guid, Error>> Handle(CreateSupportTicketCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Description))
             return new Error("BadRequest", 400, "Subject and description are required.");
+
+        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
+        EntitlementCheckResult check = await _entitlements.CheckOpenSupportTicketAsync(tenantId, cancellationToken);
+        if (!check.Allowed)
+            return new Error("Forbidden", 403, check.DenyReason ?? "Not allowed.");
 
         Guid id = await _service.CreateAsync(
             request.UserId,
@@ -135,14 +154,22 @@ public sealed class ListMySupportTicketsQueryHandler
     : IRequestHandler<ListMySupportTicketsQuery, Result<SupportTicketListDto, Error>>
 {
     private readonly IApplicationReadDbContext _read;
-    public ListMySupportTicketsQueryHandler(IApplicationReadDbContext read) => _read = read;
+    private readonly ITenantContext _tenantContext;
+
+    public ListMySupportTicketsQueryHandler(IApplicationReadDbContext read, ITenantContext tenantContext)
+    {
+        _read = read;
+        _tenantContext = tenantContext;
+    }
 
     public async Task<Result<SupportTicketListDto, Error>> Handle(ListMySupportTicketsQuery request, CancellationToken cancellationToken)
     {
         if (request.Page < 1 || request.PageSize is < 1 or > 200)
             return new Error("BadRequest", 400, "Page must be at least 1 and page size between 1 and 200.");
 
-        IQueryable<SupportTicket> q = _read.SupportTickets.Where(t => t.CreatedByUserId == request.UserId);
+        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
+        IQueryable<SupportTicket> q = _read.SupportTickets
+            .Where(t => t.TenantId == tenantId && t.CreatedByUserId == request.UserId);
         if (request.Status is not null)
             q = q.Where(t => t.Status == request.Status.Value);
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -178,12 +205,19 @@ public sealed class GetMySupportTicketDetailQueryHandler
     : IRequestHandler<GetMySupportTicketDetailQuery, Result<SupportTicketDetailDto, Error>>
 {
     private readonly IApplicationReadDbContext _read;
-    public GetMySupportTicketDetailQueryHandler(IApplicationReadDbContext read) => _read = read;
+    private readonly ITenantContext _tenantContext;
+
+    public GetMySupportTicketDetailQueryHandler(IApplicationReadDbContext read, ITenantContext tenantContext)
+    {
+        _read = read;
+        _tenantContext = tenantContext;
+    }
 
     public async Task<Result<SupportTicketDetailDto, Error>> Handle(GetMySupportTicketDetailQuery request, CancellationToken cancellationToken)
     {
+        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
         SupportTicketDetailDto? ticket = await _read.SupportTickets
-            .Where(t => t.Id == request.TicketId && t.CreatedByUserId == request.UserId)
+            .Where(t => t.Id == request.TicketId && t.TenantId == tenantId && t.CreatedByUserId == request.UserId)
             .Select(t => new SupportTicketDetailDto(
                 t.Id,
                 t.TicketNumber,

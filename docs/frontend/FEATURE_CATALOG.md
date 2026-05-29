@@ -14,6 +14,11 @@ Catalog of **existing** Frontend base features — routes, behavior, and backend
 | `/forgot-password` | Request reset email | Public |
 | `/reset-password` | `?tokenId=&token=` from email link | Public |
 | `/verify-email` | `?tokenId=&token=` from email link | Public |
+| `/pricing` | Plans from API, CTA → subscribe | Public |
+| `/about` | About page | Public |
+| `/contact` | Contact page | Public |
+| `/t/[slug]` | Tenant public landing (branding) | Public |
+| `/t/[slug]/app` | Set `X-Tenant-Id` context → main app | Auth |
 
 ---
 
@@ -25,8 +30,14 @@ Catalog of **existing** Frontend base features — routes, behavior, and backend
 | `/app/profile` | View/edit profile, avatar demo, resend verification | ✓ |
 | `/app/security/2fa` | Begin/confirm 2FA + QR | ✓ |
 | `/app/media` | Media lab (upload flow) | ✓ |
+| `/app/support` | Support tickets | ✓ |
+| `/app/wallet` | Personal credits (top-up, metered debit) | ✓ |
+| `/app/subscribe` | MVP tenant + subscription checkout | ✓ |
+| `/app/tenant` | Org usage vs plan limits | ✓ |
 
 Guard: `RequireAuth` in `app/app/layout.tsx`.
+
+**Tenant header:** authenticated API calls send `X-Tenant-Id` from `localStorage` (`lib/tenancy/tenant-context.ts`) when set (e.g. after subscribe or `/t/[slug]/app`).
 
 ---
 
@@ -101,6 +112,18 @@ Client: `lib/features/media/media-api.ts`.
 | Chinese (Simplified) | `i18n/locales/zh.json` |
 
 Switcher: `components/layout/LanguageSwitcher.tsx`.
+
+---
+
+## Billing & wallet (SaaS MVP)
+
+| Capability | UI | API client |
+|------------|-----|------------|
+| Public pricing | `/pricing` | `lib/features/billing/billing-api.ts` → `GET /public/plans` |
+| Subscribe (new tenant) | `/app/subscribe` | `POST /billing/subscribe` |
+| Personal wallet | `/app/wallet` | `lib/features/wallet/wallet-api.ts` |
+| Billing portal (cancel / change plan) | `/app/tenant` | `cancelSubscription`, `changeSubscriptionPlan` |
+| Public tenant page | `/t/[slug]` | `GET /public/tenants/{slug}` |
 
 ---
 

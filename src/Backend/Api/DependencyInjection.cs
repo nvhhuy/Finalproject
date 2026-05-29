@@ -1,7 +1,10 @@
 using Api.Authorization;
 using Api.Configuration;
 using Api.Realtime;
+using Application.Contracts.Billing;
 using Application.Contracts.Notifications;
+using Application.Contracts.Tenancy;
+using Infrastructure.Modules.Billing;
 using Api.ExceptionHandling;
 using Api.Filters;
 using Api.Hubs;
@@ -62,9 +65,48 @@ public static class DependencyInjection
                 policy.RequireRole(UserRoles.Admin));
         });
 
+        services.AddMemoryCache();
+        services.Configure<TenantRateLimitOptions>(configuration.GetSection(TenantRateLimitOptions.SectionName));
+        services.AddScoped<ITenantRateLimitProvider, TenantRateLimitProvider>();
+
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, token) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new { success = false, message = "Tenant API rate limit exceeded. Try again shortly." },
+                    token);
+            };
+
+            options.AddPolicy("tenant-api", httpContext =>
+            {
+                if (IsTenantRateLimitExempt(httpContext))
+                    return RateLimitPartition.GetNoLimiter("exempt");
+
+                ITenantRateLimitProvider provider =
+                    httpContext.RequestServices.GetRequiredService<ITenantRateLimitProvider>();
+                ITenantContext tenantContext =
+                    httpContext.RequestServices.GetRequiredService<ITenantContext>();
+
+                Guid? tenantId = tenantContext.TenantId;
+                int permitLimit = provider.GetRequestsPerMinute(tenantId);
+                string partitionKey = tenantId is { } id && id != Guid.Empty
+                    ? $"tenant:{id:N}"
+                    : $"ip:{httpContext.Connection.RemoteIpAddress}";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = permitLimit,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0,
+                    });
+            });
+
             options.AddPolicy("auth", context =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? context.Request.Headers.Host.ToString(),
@@ -109,6 +151,15 @@ public static class DependencyInjection
         AddRealtimeServices(services, configuration);
 
         return services;
+    }
+
+    private static bool IsTenantRateLimitExempt(HttpContext context)
+    {
+        PathString path = context.Request.Path;
+        return path.StartsWithSegments("/health")
+            || path.StartsWithSegments("/swagger")
+            || path.StartsWithSegments("/hubs")
+            || path.Value?.Contains("/webhooks/", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
@@ -157,7 +208,7 @@ public static class DependencyInjection
         }
         else
         {
-            services.AddSingleton<INotificationDispatcher, NullNotificationDispatcher>();
+            services.AddSingleton<INotificationDispatcher, Infrastructure.Modules.Notifications.NullNotificationDispatcher>();
         }
     }
 

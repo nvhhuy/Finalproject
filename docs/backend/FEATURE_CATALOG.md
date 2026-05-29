@@ -234,7 +234,34 @@ Not for production use.
 
 ---
 
-## 13. Tests (current coverage)
+## 13. Tenancy & SaaS billing (MVP)
+
+| Feature | Status | Endpoint |
+|---------|--------|----------|
+| List my tenants | Ready (JWT) | `GET /api/v1/tenants/mine` |
+| Public tenant by slug | Ready | `GET /api/v1/public/tenants/{slug}` |
+| Invite tenant member | Ready | `POST /api/v1/tenants/{tenantId}/members` |
+| Public plans | Ready | `GET /api/v1/public/plans` |
+| Subscribe (MVP checkout) | Ready | `POST /api/v1/billing/subscribe` |
+| Tenant subscription | Ready | `GET /api/v1/billing/tenants/{tenantId}/subscription` |
+| Platform plan CRUD | Admin JWT | `GET/POST/PUT/DELETE /api/v1/platform/plans` |
+| Personal wallet balance | Ready | `GET /api/v1/wallet/balance` |
+| Wallet ledger | Ready | `GET /api/v1/wallet/ledger` |
+| Wallet top-up (manual MVP) | Ready | `POST /api/v1/wallet/top-up` |
+| Wallet metered debit | Ready | `POST /api/v1/wallet/debit` |
+| Stripe webhook inbox | Ready | `POST /api/v1/webhooks/stripe` |
+| Tenant entitlements / usage | Ready | `GET /api/v1/billing/tenants/{tenantId}/entitlements` |
+| Cancel subscription (owner) | Ready | `POST /api/v1/billing/tenants/{tenantId}/subscription/cancel` |
+| Change plan (owner) | Ready | `PUT /api/v1/billing/tenants/{tenantId}/subscription/plan` |
+| Subscription dunning job | Worker | `SubscriptionDunningJob` (hourly cron) |
+
+**Headers:** `X-Tenant-Id` on tenant-scoped routes (middleware validates membership).
+
+**Config:** `Stripe:WebhookSecret` — when set, verifies `Stripe-Signature` (HMAC). Webhook `checkout.session.completed` metadata: `user_id`, `plan_code`, `tenant_slug`, `tenant_display_name`.
+
+---
+
+## 14. Tests (current coverage)
 
 | Project | Scope |
 |---------|-------|

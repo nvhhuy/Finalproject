@@ -1,4 +1,6 @@
+import { API_V1 } from '@/config/env'
 import { apiRequest } from '@/shared/api/client'
+import { useAuthStore } from '@/shared/stores/auth-store'
 import type {
   AdminAuditLogListDto,
   AdminDashboardMetricsDto,
@@ -18,6 +20,8 @@ import type {
   SupportTicketStatus,
   SystemBackupItemDto,
   SystemBackupSettingsDto,
+  PlanDto,
+  BillingInvoiceDto,
 } from '@/shared/types/api'
 
 export interface ListUsersParams {
@@ -242,6 +246,25 @@ export function listAuditLogs(params: {
   )
 }
 
+export async function exportAuditLogsCsv(params: {
+  fromUtc?: string
+  toUtc?: string
+  targetUserId?: string
+  maxRows?: number
+}): Promise<Blob> {
+  const q = new URLSearchParams()
+  if (params.fromUtc) q.set('fromUtc', params.fromUtc)
+  if (params.toUtc) q.set('toUtc', params.toUtc)
+  if (params.targetUserId) q.set('targetUserId', params.targetUserId)
+  if (params.maxRows) q.set('maxRows', String(params.maxRows))
+  const token = useAuthStore.getState().accessToken
+  const response = await fetch(`${API_V1}/admin/audit-logs/export?${q.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}`, Accept: 'text/csv' } : { Accept: 'text/csv' },
+  })
+  if (!response.ok) throw new Error('Export failed')
+  return response.blob()
+}
+
 export function peekDlq(queueName: string, count = 10) {
   return apiRequest<DeadLetterMessage[]>(
     `/admin/messaging/dlq/${encodeURIComponent(queueName)}/peek?count=${count}`,
@@ -307,6 +330,47 @@ export function changeSupportTicketPriority(ticketId: string, priority: SupportT
     body: { priority },
     idempotent: true,
   })
+}
+
+export function listPlans() {
+  return apiRequest<PlanDto[]>('/platform/plans')
+}
+
+export function createPlan(body: {
+  code: string
+  name: string
+  description?: string | null
+  priceMonthlyCents: number
+  currency: string
+  trialDays: number
+  limits: PlanDto['limits']
+  sortOrder: number
+}) {
+  return apiRequest<PlanDto>('/platform/plans', { method: 'POST', body, idempotent: true })
+}
+
+export function updatePlan(
+  planId: string,
+  body: {
+    name: string
+    description?: string | null
+    priceMonthlyCents: number
+    currency: string
+    trialDays: number
+    limits: PlanDto['limits']
+    isActive: boolean
+    sortOrder: number
+  },
+) {
+  return apiRequest<PlanDto>(`/platform/plans/${planId}`, { method: 'PUT', body, idempotent: true })
+}
+
+export function deletePlan(planId: string) {
+  return apiRequest<boolean>(`/platform/plans/${planId}`, { method: 'DELETE', idempotent: true })
+}
+
+export function listPlatformInvoices(page = 1, pageSize = 50) {
+  return apiRequest<BillingInvoiceDto[]>(`/platform/invoices?page=${page}&pageSize=${pageSize}`)
 }
 
 export function addSupportTicketMessage(

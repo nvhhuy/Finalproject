@@ -3,7 +3,7 @@ using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Services;
 using Application.Contracts.FeatureFlags;
-using Application.Contracts.Settings;
+using Application.Contracts.Tenancy;
 using Application.FeatureFlags;
 using Application.Contracts.Transactions;
 using Application.Extensions;
@@ -26,6 +26,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IDateTimeProvider _clock;
     private readonly IEmailVerificationSender _emailVerification;
     private readonly IUnitOfWork _uow;
+    private readonly ITenantEnrollmentService _tenantEnrollment;
 
     public RegisterCommandHandler(
         IUserReadRepository userRead,
@@ -34,7 +35,8 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         IFeatureFlagService featureFlags,
         IDateTimeProvider clock,
         IEmailVerificationSender emailVerification,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        ITenantEnrollmentService tenantEnrollment)
     {
         _userRead = userRead;
         _userWrite = userWrite;
@@ -43,6 +45,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         _clock = clock;
         _emailVerification = emailVerification;
         _uow = uow;
+        _tenantEnrollment = tenantEnrollment;
     }
 
     public async Task<Result<RegistrationResult, Error>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -65,6 +68,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         user.AddDomainEvent(new UserRegisteredAfterCommitEvent(user.Id.Value));
 
         _userWrite.AddUser(user);
+        await _tenantEnrollment.EnrollInDefaultTenantAsync(user.Id.Value, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         await _userWrite.InvalidateUserCacheAsync(user.Id.Value, user.Email, user.UserName, cancellationToken);
 

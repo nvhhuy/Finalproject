@@ -1,5 +1,6 @@
 using Application.Contracts.Events;
 using Application.Contracts.Services;
+using Application.Contracts.Tenancy;
 using Infrastructure.Modules.Users.Persistence.Conversions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Events;
@@ -35,8 +36,16 @@ internal static class TestDbContextFactory
             .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
-        return new ApplicationDbContext(options, domainEvents);
+        return new ApplicationDbContext(options, domainEvents, new TestTenantContext());
     }
+}
+
+internal sealed class TestTenantContext : ITenantContext
+{
+    public Guid? TenantId { get; private set; }
+    public bool BypassTenantIsolation { get; private set; }
+    public void SetTenant(Guid tenantId) => TenantId = tenantId;
+    public void EnableBypass() => BypassTenantIsolation = true;
 }
 
 /// <summary>MediatR <see cref="IPublisher"/> stub that records every notification it sees.</summary>

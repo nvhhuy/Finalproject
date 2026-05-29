@@ -27,15 +27,23 @@ public sealed class UserNotificationService : IUserNotificationService, IUserNot
         _db.Set<UserNotification>().Add(notification);
         await _db.SaveChangesAsync(cancellationToken);
 
-        await _dispatcher.DispatchAsync(
-            userId,
-            new LiveNotificationPayload(
-                notification.Id,
-                notification.Title,
-                notification.Body,
-                notification.LinkUrl,
-                notification.CreatedAtUtc),
-            cancellationToken);
+        try
+        {
+            await _dispatcher.DispatchAsync(
+                userId,
+                new LiveNotificationPayload(
+                    notification.Id,
+                    notification.Title,
+                    notification.Body,
+                    notification.LinkUrl,
+                    notification.CreatedAtUtc),
+                cancellationToken);
+            notification.MarkLiveDelivered(DateTime.UtcNow);
+        }
+        catch
+        {
+            // Worker job retries undelivered notifications.
+        }
 
         return notification.Id;
     }

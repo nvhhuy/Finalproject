@@ -30,7 +30,13 @@
     "profile": "Hồ sơ",
     "twoFa": "2FA",
     "mediaLab": "Media Lab",
-    "support": "Hỗ trợ"
+    "support": "Hỗ trợ",
+    "wallet": "Ví credit",
+    "subscribe": "Đăng ký gói",
+    "pricing": "Bảng giá",
+    "about": "Giới thiệu",
+    "contact": "Liên hệ",
+    "tenant": "Tổ chức"
   },
   "authLayout": {
     "tagline": "Auth, hồ sơ, 2FA và media sẵn sàng kết nối backend .NET của bạn."
@@ -180,6 +186,96 @@
     "selectTicket": "Chọn ticket để xem chi tiết.",
     "replyPlaceholder": "Viết phản hồi thêm...",
     "reply": "Gửi phản hồi"
+  },
+  "pricing": {
+    "title": "Bảng giá & gói",
+    "subtitle": "Chọn gói đăng ký cho tổ chức (tenant) của bạn.",
+    "month": "tháng",
+    "maxUsers": "Tối đa {{count}} thành viên",
+    "trialDays": "Dùng thử {{count}} ngày",
+    "choosePlan": "Bắt đầu"
+  },
+  "about": {
+    "title": "Giới thiệu",
+    "body": "Nền tảng SaaS đa tenant với gói đăng ký cho tổ chức và ví credit cá nhân cho tính năng trả theo lượt trên app chính."
+  },
+  "contact": {
+    "title": "Liên hệ",
+    "body": "Câu hỏi về thanh toán, tenant hoặc tài khoản? Liên hệ bất cứ lúc nào.",
+    "emailLabel": "Email"
+  },
+  "subscribe": {
+    "title": "Đăng ký gói",
+    "subtitle": "Tạo tenant và subscription mới (MVP — chưa tích hợp cổng thanh toán).",
+    "formTitle": "Thông tin tổ chức",
+    "planCode": "Mã gói",
+    "tenantSlug": "Slug URL (vd: acme-co)",
+    "tenantName": "Tên hiển thị",
+    "tagline": "Tagline công khai (tùy chọn)",
+    "description": "Mô tả công khai (tùy chọn)",
+    "submit": "Tạo tenant & đăng ký"
+  },
+  "tenantUsage": {
+    "title": "Sử dụng tổ chức",
+    "subtitle": "Trạng thái gói và giới hạn cho tenant đang chọn.",
+    "selectTenant": "Tổ chức đang hoạt động",
+    "subscription": "Gói đăng ký",
+    "usage": "Đã dùng / giới hạn",
+    "status": "Trạng thái",
+    "writeEnabled": "Cho phép ghi",
+    "readOnly": "Chỉ đọc (cần gia hạn)",
+    "members": "Thành viên",
+    "storage": "Lưu trữ",
+    "openTickets": "Ticket đang mở",
+    "portal": "Quản lý gói",
+    "changePlan": "Đổi gói",
+    "changePlanSubmit": "Áp dụng",
+    "cancelSubscription": "Hủy gói",
+    "cancelConfirm": "Hủy gói đăng ký của tổ chức này? Quyền ghi sẽ bị tắt.",
+    "invoices": "Hóa đơn & biên lai",
+    "noInvoices": "Chưa có hóa đơn.",
+    "domains": "Tên miền & URL workspace",
+    "subdomainUrl": "Workspace subdomain",
+    "customDomainPlaceholder": "portal.congtyban.com",
+    "addDomain": "Thêm tên miền",
+    "noDomains": "Chưa có tên miền tùy chỉnh.",
+    "domainStatus": "Trạng thái: {{status}}",
+    "verifyDomain": "Xác minh DNS",
+    "removeDomain": "Xóa",
+    "sso": "Đăng nhập một lần (OIDC)",
+    "ssoHint": "Thành viên có thể đăng nhập bằng nhà cung cấp danh tính qua OIDC id_token.",
+    "ssoEnabled": "Bật SSO",
+    "ssoAuthority": "OIDC authority (URL issuer)",
+    "ssoClientId": "Client ID",
+    "ssoClientSecret": "Client secret",
+    "ssoClientSecretPlaceholder": "Để trống nếu giữ secret hiện tại",
+    "ssoHasSecret": "Đã lưu client secret.",
+    "ssoSave": "Lưu cài đặt SSO",
+    "ssoNotConfigured": "Chưa cấu hình SSO. Lưu để tạo cài đặt.",
+    "ssoPublicEndpoint": "Cấu hình công khai",
+    "ssoSignInHint": "Đăng nhập: POST /api/v1/auth/tenant-sso/{slug} với { \"idToken\": \"...\" }"
+  },
+  "tenantPublic": {
+    "workspace": "Tổ chức",
+    "openApp": "Mở workspace",
+    "notFound": "Không tìm thấy tổ chức.",
+    "appEntry": "Ứng dụng workspace",
+    "appEntryHint": "Đã đặt tenant hiện tại. Tiếp tục vào app chính để dùng hồ sơ, hỗ trợ và media.",
+    "continueToMainApp": "Vào app chính"
+  },
+  "wallet": {
+    "title": "Ví cá nhân",
+    "subtitle": "Credit theo user — không gắn gói tenant.",
+    "balance": "Số dư",
+    "creditsHint": "Credit (MVP nạp thủ công)",
+    "topUp": "Nạp credit",
+    "meteredActions": "Tác vụ trừ credit",
+    "debit": "Dùng ({{cost}} credit)",
+    "ledger": "Giao dịch gần đây",
+    "emptyLedger": "Chưa có giao dịch.",
+    "debitFailed": "Trừ credit thất bại",
+    "receipts": "Biên lai nạp credit",
+    "noReceipts": "Chưa có biên lai."
   },
   "errors": {
     "requestFailed": "Yêu cầu thất bại",

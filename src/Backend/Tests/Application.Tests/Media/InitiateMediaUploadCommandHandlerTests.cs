@@ -1,6 +1,7 @@
 using Application.Contracts.Modules.Media.Persistence;
 using Application.Contracts.Services;
 using Application.Contracts.Storage;
+using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
 using Application.Modules.Media;
 using Application.Modules.Media.Commands;
@@ -82,6 +83,11 @@ public sealed class InitiateMediaUploadCommandHandlerTests
         });
 
         return new InitiateMediaUploadCommandHandler(
-            repo, storage, uow ?? Mock.Of<IUnitOfWork>(), clock.Object, opts);
+            repo,
+            storage,
+            uow ?? Mock.Of<IUnitOfWork>(),
+            clock.Object,
+            Mock.Of<ITenantContext>(),
+            opts);
     }
 }

@@ -2,11 +2,15 @@ using Domains.Administration;
 using Domains.MediaAggregate;
 using Domains.Notifications;
 using Domains.Support;
+using Domains.Billing;
+using Domains.Tenancy;
+using Domains.Wallet;
 using Domains.UserAggregate;
 using Domains.SystemSettings;
 using Infrastructure.Idempotency;
 using Infrastructure.Messaging.Outbox;
 using Infrastructure.Persistence.Interceptors;
+using Application.Contracts.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -18,6 +22,7 @@ namespace Infrastructure.Persistence;
 public sealed class ApplicationDbContext : DbContext
 {
     private readonly DomainEventsSaveChangesInterceptor _domainEventsInterceptor;
+    private readonly ITenantContext _tenantContext;
 
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -31,12 +36,24 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
     public DbSet<SupportTicketMessage> SupportTicketMessages => Set<SupportTicketMessage>();
     public DbSet<SupportTicketAttachment> SupportTicketAttachments => Set<SupportTicketAttachment>();
+    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<TenantMember> TenantMembers => Set<TenantMember>();
+    public DbSet<TenantDomain> TenantDomains => Set<TenantDomain>();
+    public DbSet<TenantSsoSettings> TenantSsoSettings => Set<TenantSsoSettings>();
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
+    public DbSet<BillingInvoice> BillingInvoices => Set<BillingInvoice>();
+    public DbSet<PersonalWallet> PersonalWallets => Set<PersonalWallet>();
+    public DbSet<WalletLedgerEntry> WalletLedgerEntries => Set<WalletLedgerEntry>();
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
-        DomainEventsSaveChangesInterceptor domainEventsInterceptor) : base(options)
+        DomainEventsSaveChangesInterceptor domainEventsInterceptor,
+        ITenantContext tenantContext) : base(options)
     {
         _domainEventsInterceptor = domainEventsInterceptor;
+        _tenantContext = tenantContext;
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -48,6 +65,7 @@ public sealed class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         PersistenceModel.Configure(modelBuilder);
+        TenantQueryFilterConfigurator.Apply(modelBuilder, _tenantContext);
         base.OnModelCreating(modelBuilder);
     }
 }

@@ -2,6 +2,8 @@ using System.Net.Http.Json;
 using Api.IntegrationTests.Support;
 using Api.Models;
 using Api.Models.Auth;
+using Api.Tenancy;
+using Domains.Tenancy;
 
 namespace Api.IntegrationTests;
 
@@ -27,6 +29,7 @@ public sealed class SupportTicketsIntegrationTests
         AuthResponseDto adminAuth = await app.LoginAdminAsync();
 
         using HttpClient userClient = app.Client.WithBearer(userAuth.AccessToken);
+        userClient.DefaultRequestHeaders.Add(TenantHttpHeaders.TenantId, SystemTenants.DefaultTenantId.ToString());
         using HttpClient adminClient = _fixture.Factory.CreateClient().WithBearer(adminAuth.AccessToken);
 
         using HttpRequestMessage create = new HttpRequestMessage(HttpMethod.Post, "/api/v1/support/tickets")

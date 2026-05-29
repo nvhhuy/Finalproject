@@ -22,8 +22,11 @@ public sealed class UserNotification
     public string? LinkUrl { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? ReadAtUtc { get; private set; }
+    public DateTime? LiveDeliveredAtUtc { get; private set; }
 
     public bool IsRead => ReadAtUtc is not null;
 
     public void MarkRead(DateTime utcNow) => ReadAtUtc = utcNow;
+
+    public void MarkLiveDelivered(DateTime utcNow) => LiveDeliveredAtUtc = utcNow;
 }

@@ -1,7 +1,9 @@
 using Application.Contracts.Email;
 using Application.Contracts.Notifications;
 using Application.Contracts.Support;
+using Application.Contracts.Tenancy;
 using Domains.Support;
+using Domains.Tenancy;
 using Domains.UserAggregate.ValueObjects;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -13,15 +15,18 @@ public sealed class SupportTicketService : ISupportTicketService
     private readonly ApplicationDbContext _db;
     private readonly IUserNotificationService _notifications;
     private readonly IEmailSender _emailSender;
+    private readonly ITenantContext _tenantContext;
 
     public SupportTicketService(
         ApplicationDbContext db,
         IUserNotificationService notifications,
-        IEmailSender emailSender)
+        IEmailSender emailSender,
+        ITenantContext tenantContext)
     {
         _db = db;
         _notifications = notifications;
         _emailSender = emailSender;
+        _tenantContext = tenantContext;
     }
 
     public async Task<Guid> CreateAsync(
@@ -32,10 +37,13 @@ public sealed class SupportTicketService : ISupportTicketService
         SupportTicketPriority priority,
         CancellationToken cancellationToken = default)
     {
-        int next = await _db.SupportTickets.CountAsync(cancellationToken) + 1;
+        Guid tenantId = _tenantContext.TenantId ?? SystemTenants.DefaultTenantId;
+        int next = await _db.SupportTickets
+            .IgnoreQueryFilters()
+            .CountAsync(t => t.TenantId == tenantId, cancellationToken) + 1;
         string ticketNumber = $"SUP-{DateTime.UtcNow:yyyyMMdd}-{next:D5}";
 
-        SupportTicket ticket = SupportTicket.Create(userId, ticketNumber, subject, description, category, priority);
+        SupportTicket ticket = SupportTicket.Create(tenantId, userId, ticketNumber, subject, description, category, priority);
         _db.SupportTickets.Add(ticket);
         ticket.AddMessage(userId, description, isInternalNote: false);
         await _db.SaveChangesAsync(cancellationToken);

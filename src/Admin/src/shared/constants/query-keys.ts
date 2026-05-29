@@ -25,6 +25,14 @@ export const queryKeys = {
     peek: (queueName: string, count: number) =>
       ['admin', 'dlq', queueName, count] as const,
   },
+  plans: {
+    all: () => ['admin', 'plans'] as const,
+    list: () => ['admin', 'plans', 'list'] as const,
+  },
+  invoices: {
+    all: () => ['admin', 'invoices'] as const,
+    list: () => ['admin', 'invoices', 'list'] as const,
+  },
   support: {
     all: () => ['admin', 'support'] as const,
     list: (params: unknown) => ['admin', 'support', 'list', params] as const,

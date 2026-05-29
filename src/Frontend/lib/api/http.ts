@@ -2,6 +2,7 @@ import type { ApiResponse } from "./types";
 import { getApiBaseUrl } from "./config";
 import { loadTokens, saveTokens } from "@/lib/auth/tokens";
 import { IDEMPOTENCY_HEADER, newIdempotencyKey } from "./idempotency";
+import { tenantHeaders } from "@/lib/tenancy/tenant-context";
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -54,6 +55,7 @@ export async function apiRequest<T>(options: RequestOptions): Promise<ApiRespons
 
   if (options.idempotent) headers[IDEMPOTENCY_HEADER] = newIdempotencyKey();
   if (tokens?.accessToken) headers.Authorization = `Bearer ${tokens.accessToken}`;
+  if (options.auth) Object.assign(headers, tenantHeaders());
 
   const res = await fetch(url, {
     method: options.method ?? "GET",

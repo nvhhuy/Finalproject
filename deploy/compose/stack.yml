@@ -39,6 +39,8 @@ x-api-env: &api-env
   Email__QueueViaOutbox: ${EMAIL_QUEUE_VIA_OUTBOX:-true}
   Realtime__Enabled: ${REALTIME_ENABLED:-true}
   Realtime__UseRedisBackplane: ${REALTIME_USE_REDIS_BACKPLANE:-true}
+  Tenancy__SubdomainBaseHost: ${TENANT_SUBDOMAIN_BASE_HOST:-${APP_HOST}}
+  Tenancy__PlatformCnameTarget: ${TENANT_PLATFORM_CNAME_TARGET:-${APP_HOST}}
 
 x-traefik-api-labels: &traefik-api-labels
   traefik.enable: "true"
@@ -65,6 +67,10 @@ services:
       traefik.http.routers.api-app.entrypoints: websecure
       traefik.http.routers.api-app.tls.certresolver: le
       traefik.http.routers.api-app.priority: "100"
+      traefik.http.routers.api-tenants.rule: HostRegexp(`{subdomain:[a-z0-9-]+}.${TENANT_SUBDOMAIN_BASE_HOST:-${APP_HOST}}`) && PathPrefix(`/api`)
+      traefik.http.routers.api-tenants.entrypoints: websecure
+      traefik.http.routers.api-tenants.tls.certresolver: le
+      traefik.http.routers.api-tenants.priority: "100"
       traefik.http.routers.api-admin.rule: Host(`${ADMIN_HOST}`) && PathPrefix(`/api`)
       traefik.http.routers.api-admin.entrypoints: websecure
       traefik.http.routers.api-admin.tls.certresolver: le
@@ -112,7 +118,12 @@ services:
       traefik.http.routers.frontend.entrypoints: websecure
       traefik.http.routers.frontend.tls.certresolver: le
       traefik.http.routers.frontend.priority: "1"
+      traefik.http.routers.frontend-tenants.rule: HostRegexp(`{subdomain:[a-z0-9-]+}.${TENANT_SUBDOMAIN_BASE_HOST:-${APP_HOST}}`)
+      traefik.http.routers.frontend-tenants.entrypoints: websecure
+      traefik.http.routers.frontend-tenants.tls.certresolver: le
+      traefik.http.routers.frontend-tenants.priority: "1"
       traefik.http.services.frontend.loadbalancer.server.port: "3000"
+      TENANT_SUBDOMAIN_BASE_HOST: ${TENANT_SUBDOMAIN_BASE_HOST:-${APP_HOST}}
 
   admin:
     image: ${IMAGE_REGISTRY:-baseproject}/admin:${IMAGE_TAG:-latest}

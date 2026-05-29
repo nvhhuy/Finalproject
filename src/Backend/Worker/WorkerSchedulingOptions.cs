@@ -89,4 +89,15 @@ public sealed class WorkerSchedulingOptions
     /// Cron for full PostgreSQL logical backups; default daily at 01:45 UTC.
     /// </summary>
     public string DatabaseBackupCronExpression { get; init; } = "45 1 * * *";
+
+    /// <summary>Cron for <see cref="Worker.Billing.SubscriptionDunningJob"/>; default hourly.</summary>
+    public string SubscriptionDunningCronExpression { get; init; } = "0 * * * *";
+
+    /// <summary>Cron for <see cref="Worker.Billing.SubscriptionCreditGrantJob"/>; default daily at 00:30 UTC.</summary>
+    public string SubscriptionCreditGrantCronExpression { get; init; } = "30 0 * * *";
+
+    /// <summary>Cron for <see cref="Worker.Notifications.NotificationDeliveryJob"/>; default every minute.</summary>
+    public string NotificationDeliveryCronExpression { get; init; } = "* * * * *";
+
+    public int NotificationDeliveryBatchSize { get; init; } = 200;
 }

@@ -135,6 +135,7 @@ Requires **AdminOnly** policy (JWT on Api only).
 - Default: **Quartz.NET** (`Worker:UseQuartzScheduler: true`).
 - Fallback: in-process **Cronos** (`UseQuartzScheduler: false`).
 - Clustered cron: `Worker:Quartz:UsePersistentStore: true` + shared Postgres.
+- First-time persistent store: run `./tools/backend/quartz-schema.sh` (creates `qrtz_*` tables; matches `deploy/sql/quartz/tables_postgres.sql`).
 
 Cron expressions in config are **5-field** (minute hour dom month dow); infrastructure normalizes to Quartz **6-field** (seconds first).
 

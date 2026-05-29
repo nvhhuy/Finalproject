@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
+using Quartz.Serialization.SystemTextJson;
 
 namespace Infrastructure.Scheduling;
 
@@ -34,6 +35,7 @@ public static class QuartzSchedulingExtensions
                     store.UseProperties = true;
                     store.UsePostgres(connectionString!);
                     store.UseClustering();
+                    store.UseSystemTextJsonSerializer();
                 });
             }
         });

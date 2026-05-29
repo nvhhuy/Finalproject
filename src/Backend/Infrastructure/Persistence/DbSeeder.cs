@@ -1,4 +1,9 @@
+using Application.Contracts.Billing;
+using Domains.Billing;
+using Domains.Tenancy;
+using Domains.Tenancy.ValueObjects;
 using Domains.UserAggregate;
+using Domains.UserAggregate.ValueObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,5 +67,79 @@ public static class DbSeeder
                 "Seeded bootstrap admin '{Email}' with the DEV default password. Change it immediately via the admin profile endpoint.",
                 email);
         }
+    }
+
+    /// <summary>
+    /// Ensures the system default tenant exists and links the bootstrap admin as owner when present.
+    /// Existing rows are backfilled by migration; this covers fresh databases after migrate.
+    /// </summary>
+    public static async Task SeedDefaultTenantIfMissingAsync(ApplicationDbContext db, IServiceProvider services)
+    {
+        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        TenantId defaultId = TenantId.Create(SystemTenants.DefaultTenantId);
+
+        if (!await db.Tenants.AnyAsync(t => t.Id == defaultId))
+        {
+        UserId? ownerId = await db.Users
+            .AsNoTracking()
+            .Where(u => u.Role == UserRoles.Admin)
+            .OrderBy(u => u.RegisteredAtUtc)
+            .Select(u => u.Id)
+            .FirstOrDefaultAsync();
+
+        if (ownerId is null || ownerId.Value == Guid.Empty)
+            {
+                logger.LogWarning("Default tenant seed skipped: no admin user exists yet.");
+                return;
+            }
+
+            DateTime now = DateTime.UtcNow;
+            Tenant tenant = Tenant.CreateExisting(
+                defaultId,
+                SystemTenants.DefaultSlug,
+                SystemTenants.DefaultDisplayName,
+                ownerId,
+                TenantStatus.Active,
+                now,
+                now);
+            tenant.AddMember(ownerId, TenantMemberRoles.Owner, now);
+            db.Tenants.Add(tenant);
+            await db.SaveChangesAsync();
+            logger.LogInformation("Seeded default tenant '{Slug}' ({TenantId}).", SystemTenants.DefaultSlug, defaultId.Value);
+        }
+    }
+
+    public static async Task SeedDefaultPlansIfMissingAsync(ApplicationDbContext db, IServiceProvider services)
+    {
+        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+        if (await db.Plans.AnyAsync())
+            return;
+
+        DateTime now = DateTime.UtcNow;
+        var starterLimits = new PlanLimits
+        {
+            MaxUsers = 5,
+            MaxStorageBytes = 2_147_483_648,
+            Modules = [BillingModules.Support, BillingModules.Media],
+            MaxOpenSupportTickets = 20,
+            ApiRequestsPerMinute = 120,
+            MonthlyCreditGrant = 0,
+        };
+        var proLimits = new PlanLimits
+        {
+            MaxUsers = 25,
+            MaxStorageBytes = 10_737_418_240,
+            Modules = [BillingModules.Support, BillingModules.Media, BillingModules.Notifications],
+            MaxOpenSupportTickets = 100,
+            Impersonation = true,
+            BackupRestore = true,
+            ApiRequestsPerMinute = 600,
+            MonthlyCreditGrant = 500,
+        };
+
+        db.Plans.Add(Plan.Create("starter", "Starter", "For small teams getting started.", 2900, "USD", 14, starterLimits.ToJson(), 10, now));
+        db.Plans.Add(Plan.Create("pro", "Professional", "For growing organizations.", 9900, "USD", 14, proLimits.ToJson(), 20, now));
+        await db.SaveChangesAsync();
+        logger.LogInformation("Seeded default billing plans (starter, pro).");
     }
 }

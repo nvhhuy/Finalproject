@@ -14,6 +14,7 @@ public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasConversion(id => id.Value, value => MediaAssetId.Create(value));
 
+        builder.Property(e => e.TenantId).IsRequired();
         builder.Property(e => e.OwnerUserId).IsRequired();
         builder.Property(e => e.Kind).HasConversion<int>().IsRequired();
         builder.Property(e => e.Status).HasConversion<int>().IsRequired();
@@ -47,6 +48,7 @@ public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
 
         builder.Navigation(e => e.Variants).HasField("_variants").UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => e.OwnerUserId);
         builder.HasIndex(e => e.Status);
 

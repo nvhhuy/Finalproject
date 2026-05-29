@@ -14,6 +14,8 @@ public sealed class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOption
 
     public void Configure(SwaggerGenOptions options)
     {
+        options.CustomSchemaIds(type => type.FullName?.Replace("+", ".", StringComparison.Ordinal));
+
         foreach (ApiVersionDescription description in _provider.ApiVersionDescriptions)
         {
             options.SwaggerDoc(description.GroupName, new OpenApiInfo
