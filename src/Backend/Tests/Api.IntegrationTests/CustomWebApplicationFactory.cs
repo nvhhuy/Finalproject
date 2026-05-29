@@ -46,7 +46,11 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["DataProtection:KeysDirectory"] = _dataProtectionKeysDirectory,
                 ["Tenancy:SubdomainBaseHost"] = "app.local",
                 ["Tenancy:PlatformCnameTarget"] = "app.local",
-                ["IntegrationTesting:DisableRateLimiting"] = "true"
+                ["IntegrationTesting:DisableRateLimiting"] = "true",
+                // Force in-memory distributed cache so tests are self-contained
+                // and don't require a live Redis instance.
+                ["Redis:ConnectionString"] = "",
+                ["Realtime:UseRedisBackplane"] = "false"
             });
         });
         builder.ConfigureServices(services =>
