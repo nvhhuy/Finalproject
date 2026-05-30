@@ -1,5 +1,6 @@
 using Domains.Administration;
 using Domains.Billing;
+using Domains.Contact;
 using Domains.MediaAggregate;
 using Domains.Notifications;
 using Domains.Support;
@@ -17,6 +18,7 @@ namespace Application.Contracts.Persistence;
 /// </summary>
 public interface IApplicationReadDbContext
 {
+    DbSet<ContactMessage> ContactMessages { get; }
     DbSet<User> Users { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<ExternalUserLogin> ExternalLogins { get; }

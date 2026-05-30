@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TurnstileWidget } from "@/components/ui/TurnstileWidget";
 import { useAuth } from "@/lib/auth/auth-context";
 import { ApiClientError } from "@/lib/errors";
 
@@ -28,12 +29,13 @@ function LoginForm() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   async function onLogin() {
     setError(null);
     setLoading(true);
     try {
-      const result = await auth.login(email, password);
+      const result = await auth.login(email, password, turnstileToken);
       if (result.kind === "ok") {
         router.push(next);
         return;
@@ -44,6 +46,7 @@ function LoginForm() {
       }
       if (result.kind === "error") {
         setError(result.message);
+        setTurnstileToken(null);
         return;
       }
     } catch (e) {
@@ -51,6 +54,7 @@ function LoginForm() {
       setError(
         msg.includes("fetch") || msg.includes("Failed to fetch") ? t("login.apiUnreachable") : msg,
       );
+      setTurnstileToken(null);
     } finally {
       setLoading(false);
     }
@@ -107,6 +111,11 @@ function LoginForm() {
                   autoComplete="current-password"
                 />
               </div>
+              <TurnstileWidget
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+              />
               <Button onClick={onLogin} loading={loading} className="w-full">
                 {t("login.signIn")}
               </Button>

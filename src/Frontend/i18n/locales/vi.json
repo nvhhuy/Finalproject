@@ -215,9 +215,20 @@
     "body": "Nền tảng SaaS đa tenant với gói đăng ký cho tổ chức và ví credit cá nhân cho tính năng trả theo lượt trên app chính."
   },
   "contact": {
-    "title": "Liên hệ",
-    "body": "Câu hỏi về thanh toán, tenant hoặc tài khoản? Liên hệ bất cứ lúc nào.",
-    "emailLabel": "Email"
+    "title": "Liên hệ chúng tôi",
+    "body": "Có câu hỏi về thanh toán, tài khoản hoặc bất kỳ điều gì khác? Điền vào biểu mẫu và chúng tôi sẽ phản hồi sớm.",
+    "nameLabel": "Họ và tên",
+    "namePlaceholder": "Nguyễn Văn A",
+    "emailLabel": "Địa chỉ email",
+    "emailPlaceholder": "email@example.com",
+    "subjectLabel": "Tiêu đề",
+    "subjectPlaceholder": "Nội dung liên quan đến điều gì?",
+    "messageLabel": "Tin nhắn",
+    "messagePlaceholder": "Mô tả chi tiết câu hỏi hoặc vấn đề của bạn…",
+    "submit": "Gửi tin nhắn",
+    "successTitle": "Đã gửi tin nhắn!",
+    "successBody": "Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi qua email của bạn sớm.",
+    "sendAnother": "Gửi tin nhắn khác"
   },
   "subscribe": {
     "title": "Đăng ký gói",

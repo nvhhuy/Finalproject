@@ -7,6 +7,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   MessageSquareWarning,
   LifeBuoy,
@@ -35,6 +36,7 @@ const navItems = [
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
   { to: '/messaging', labelKey: 'nav.dlq', icon: MessageSquareWarning },
   { to: '/support', labelKey: 'nav.support', icon: LifeBuoy },
+  { to: '/contact-messages', labelKey: 'nav.contactMessages', icon: Mail },
 ] as const
 
 export function AdminLayout() {

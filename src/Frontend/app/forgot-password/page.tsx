@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TurnstileWidget } from "@/components/ui/TurnstileWidget";
 import { authApi } from "@/lib/features/auth/auth-api";
 
 export default function ForgotPasswordPage() {
@@ -16,10 +17,11 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   async function submit() {
     setLoading(true);
-    await authApi.forgotPassword(email);
+    await authApi.forgotPassword(email, turnstileToken);
     setSent(true);
     setLoading(false);
   }
@@ -32,6 +34,11 @@ export default function ForgotPasswordPage() {
             <Label htmlFor="email">{t("common.email")}</Label>
             <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
           </div>
+          <TurnstileWidget
+            onVerify={setTurnstileToken}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
+          />
           <Button onClick={submit} disabled={loading || !email} className="w-full">
             {t("forgotPassword.send")}
           </Button>

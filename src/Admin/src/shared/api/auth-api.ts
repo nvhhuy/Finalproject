@@ -5,6 +5,7 @@ import { ApiClientError } from '@/shared/lib/errors'
 export interface LoginInput {
   email: string
   password: string
+  turnstileToken?: string | null
 }
 
 export type LoginResult =
@@ -12,11 +13,13 @@ export type LoginResult =
   | { kind: 'twoFactor'; data: TwoFactorChallengeDto }
 
 export async function login(input: LoginInput): Promise<LoginResult> {
+  const { turnstileToken, ...body } = input
   const { status, envelope } = await apiRaw<AuthResponseDto | TwoFactorChallengeDto>(
     '/auth/login',
     {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify(body),
+      turnstileToken,
     },
   )
 

@@ -11,29 +11,29 @@ export function PublicHeader({ showAuthLinks = true }: { showAuthLinks?: boolean
   const { t } = useTranslation();
 
   return (
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <AppBrand className="text-lg sm:text-xl" />
-      <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:gap-3">
-        <Link href="/pricing" className="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)]">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end lg:gap-3">
+        <Link href="/pricing" className="shrink-0 text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)]">
           {t("nav.pricing")}
         </Link>
-        <Link href="/about" className="hidden text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] sm:inline">
+        <Link href="/about" className="shrink-0 text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)]">
           {t("nav.about")}
         </Link>
-        <Link href="/contact" className="hidden text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] sm:inline">
+        <Link href="/contact" className="shrink-0 text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)]">
           {t("nav.contact")}
         </Link>
-        <ThemeSwitcher />
-        <LanguageSwitcher />
+        <ThemeSwitcher className="shrink-0" />
+        <LanguageSwitcher className="shrink-0" />
         {showAuthLinks ? (
           <>
-            <Link href="/login" className="w-full sm:w-auto">
-              <Button variant="secondary" size="sm" className="w-full sm:w-auto">
+            <Link href="/login" className="shrink-0">
+              <Button variant="secondary" size="sm">
                 {t("common.login")}
               </Button>
             </Link>
-            <Link href="/app" className="w-full sm:w-auto">
-              <Button size="sm" className="w-full sm:w-auto">
+            <Link href="/app" className="shrink-0">
+              <Button size="sm">
                 {t("common.openApp")}
               </Button>
             </Link>

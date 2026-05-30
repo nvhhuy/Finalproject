@@ -13,7 +13,7 @@ export function AppBrand({
     <Link
       href={href}
       className={cn(
-        "max-w-[min(100%,12rem)] truncate font-semibold tracking-tight sm:max-w-none",
+        "shrink-0 font-semibold tracking-tight max-w-[min(100%,12rem)] truncate sm:max-w-none",
         className,
       )}
       title={APP_NAME}

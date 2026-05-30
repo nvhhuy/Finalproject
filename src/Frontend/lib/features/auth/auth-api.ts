@@ -48,10 +48,11 @@ function throwFromEnvelope(status: number, envelope: ApiResponse<unknown>): neve
 }
 
 export const authApi = {
-  async login(input: { email: string; password: string }): Promise<LoginResult> {
+  async login(input: { email: string; password: string; turnstileToken?: string | null }): Promise<LoginResult> {
+    const { email, password, turnstileToken } = input;
     const { status, envelope } = await apiRaw<AuthResponseDto | TwoFactorChallengeDto>(
       "/api/v1/auth/login",
-      { method: "POST", body: JSON.stringify(input), auth: false },
+      { method: "POST", body: JSON.stringify({ email, password }), auth: false, turnstileToken },
     );
 
     if (status === 202 && envelope.success && envelope.data && "pendingLoginId" in envelope.data) {
@@ -106,22 +107,36 @@ export const authApi = {
     password: string;
     firstName: string;
     lastName: string;
+    turnstileToken?: string | null;
   }) {
+    const { turnstileToken, ...body } = input;
     return await apiRequest<{ email: string; message: string }>({
       method: "POST",
       path: "/api/v1/auth/register",
-      body: input,
+      body,
       auth: false,
       idempotent: true,
+      turnstileToken,
     });
   },
 
-  async forgotPassword(email: string) {
+  async forgotPassword(email: string, turnstileToken?: string | null) {
     return await apiRequest<unknown>({
       method: "POST",
       path: "/api/v1/auth/forgot-password",
       body: { email },
       auth: false,
+      turnstileToken,
+    });
+  },
+
+  async resendVerification(email: string, turnstileToken?: string | null) {
+    return await apiRequest<unknown>({
+      method: "POST",
+      path: "/api/v1/auth/resend-verification",
+      body: { email },
+      auth: false,
+      turnstileToken,
     });
   },
 
@@ -139,15 +154,6 @@ export const authApi = {
       method: "POST",
       path: "/api/v1/auth/verify-email",
       body: { tokenId, token },
-      auth: false,
-    });
-  },
-
-  async resendVerification(email: string) {
-    return await apiRequest<unknown>({
-      method: "POST",
-      path: "/api/v1/auth/resend-verification",
-      body: { email },
       auth: false,
     });
   },

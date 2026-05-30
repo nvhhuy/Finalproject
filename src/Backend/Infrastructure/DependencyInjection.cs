@@ -20,6 +20,7 @@ using Application.Contracts.Persistence;
 using Application.Contracts.Services;
 using Application.Contracts.Settings;
 using Application.Contracts.Storage;
+using Application.Contracts.Contact;
 using Application.Contracts.Support;
 using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
@@ -39,6 +40,7 @@ using Infrastructure.Messaging.Outbox;
 using Infrastructure.Modules.Billing;
 using Infrastructure.Modules.Media.Persistence;
 using Infrastructure.Modules.Notifications;
+using Infrastructure.Modules.Contact;
 using Infrastructure.Modules.Support;
 using Infrastructure.Modules.Tenancy;
 using Infrastructure.Modules.Users.Persistence.Conversions;
@@ -221,6 +223,9 @@ public static class DependencyInjection
 
     public static IServiceCollection AddIntegrations(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<TurnstileOptions>(configuration.GetSection(TurnstileOptions.SectionName));
+        services.AddHttpClient<ITurnstileService, TurnstileService>();
+
         services.Configure<PasswordResetEmailOptions>(configuration.GetSection(PasswordResetEmailOptions.SectionName));
         services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
         services.AddScoped<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
@@ -399,6 +404,7 @@ public static class DependencyInjection
         services.AddScoped<IUserWriteRepository, UserWriteRepository>();
         services.AddScoped<IAdminAuditLogWriter, AdminAuditLogWriter>();
         services.AddScoped<IMediaAssetRepository, MediaAssetRepository>();
+        services.AddScoped<IContactMessageService, ContactMessageService>();
         services.AddScoped<ISupportTicketService, SupportTicketService>();
         services.AddScoped<ITenantContext, HttpTenantContext>();
         services.AddScoped<ITenantMembershipService, TenantMembershipService>();

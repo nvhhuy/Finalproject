@@ -1,6 +1,7 @@
 using Application.Contracts.Tenancy;
 using Domains.Administration;
 using Domains.Billing;
+using Domains.Contact;
 using Domains.MediaAggregate;
 using Domains.Notifications;
 using Domains.Support;
@@ -33,6 +34,7 @@ public sealed class ApplicationDbContext : DbContext
         _tenantContext = tenantContext;
     }
 
+    public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ExternalUserLogin> ExternalLogins => Set<ExternalUserLogin>();

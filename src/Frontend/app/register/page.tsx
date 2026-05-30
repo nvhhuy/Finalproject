@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TurnstileWidget } from "@/components/ui/TurnstileWidget";
 import { authApi } from "@/lib/features/auth/auth-api";
 
 export default function RegisterPage() {
@@ -24,19 +25,21 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   async function submit() {
     setLoading(true);
     setMessage(null);
     setIsSuccess(false);
     try {
-      const res = await authApi.register(form);
+      const res = await authApi.register({ ...form, turnstileToken });
       if (res.success) {
         setMessage(res.data?.message ?? t("register.success"));
         setIsSuccess(true);
         return;
       }
       setMessage(res.error?.message ?? t("errors.requestFailed"));
+      setTurnstileToken(null);
     } finally {
       setLoading(false);
     }
@@ -45,9 +48,10 @@ export default function RegisterPage() {
   async function resend() {
     setLoading(true);
     try {
-      const res = await authApi.resendVerification(form.email);
+      const res = await authApi.resendVerification(form.email, turnstileToken);
       setMessage(res.success ? t("profile.resendSent") : res.error?.message ?? t("errors.requestFailed"));
       setIsSuccess(res.success);
+      if (!res.success) setTurnstileToken(null);
     } finally {
       setLoading(false);
     }
@@ -84,6 +88,11 @@ export default function RegisterPage() {
               <Input id="lastName" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
             </div>
           </div>
+          <TurnstileWidget
+            onVerify={setTurnstileToken}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
+          />
           <Button onClick={submit} disabled={loading} className="w-full">
             {t("register.create")}
           </Button>

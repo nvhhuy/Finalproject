@@ -357,6 +357,54 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("Subscriptions", (string)null);
                 });
 
+            modelBuilder.Entity("Domains.Contact.ContactMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("SubmittedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("NormalizedEmail");
+
+                    b.HasIndex("SubmittedAtUtc");
+
+                    b.ToTable("ContactMessages", (string)null);
+                });
+
             modelBuilder.Entity("Domains.MediaAggregate.MediaAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -751,7 +799,6 @@ namespace Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Domains.Tenancy.TenantMember", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("JoinedAtUtc")
@@ -998,7 +1045,6 @@ namespace Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Domains.Wallet.PersonalWallet", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<long>("BalanceCredits")
@@ -1008,7 +1054,6 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<uint>("RowVersion")
-                        .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
@@ -1030,7 +1075,6 @@ namespace Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Domains.Wallet.WalletLedgerEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("ActionCode")
@@ -1060,7 +1104,6 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(128)");
 
                     b.Property<uint>("RowVersion")
-                        .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");

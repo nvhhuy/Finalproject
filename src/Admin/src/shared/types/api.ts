@@ -295,3 +295,20 @@ export const USER_ROLES = ['User', 'Admin'] as const
 export type UserRole = (typeof USER_ROLES)[number]
 
 export const DEFAULT_DLQ_QUEUE = 'media.uploaded.v1.dlq'
+
+export interface ContactMessageSummaryDto {
+  id: string
+  name: string
+  email: string
+  subject: string
+  body: string
+  isRead: boolean
+  submittedAtUtc: string
+}
+
+export interface ContactMessageListDto {
+  items: ContactMessageSummaryDto[]
+  totalCount: number
+  page: number
+  pageSize: number
+}

@@ -10,6 +10,7 @@ import { Input } from '@/shared/components/ui/Input'
 import { Button } from '@/shared/components/ui/Button'
 import { Alert } from '@/shared/components/ui/Alert'
 import { LanguageSwitcher } from '@/shared/components/layout/LanguageSwitcher'
+import { TurnstileWidget } from '@/shared/components/ui/TurnstileWidget'
 import { createLoginSchemas, firstZodError } from '@/shared/lib'
 
 export function LoginPage() {
@@ -27,6 +28,7 @@ export function LoginPage() {
   const [twoFaCode, setTwoFaCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/'
 
@@ -48,7 +50,7 @@ export function LoginPage() {
 
     setLoading(true)
     try {
-      const result = await login(parsed.data!)
+      const result = await login({ ...parsed.data!, turnstileToken })
       if (result.kind === 'twoFactor') {
         setPendingLoginId(result.data.pendingLoginId)
         return
@@ -57,6 +59,7 @@ export function LoginPage() {
       navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : t('login.signInFailed'))
+      setTurnstileToken(null)
     } finally {
       setLoading(false)
     }
@@ -152,6 +155,11 @@ export function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
+              />
+              <TurnstileWidget
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
               />
               <Button type="submit" className="w-full" loading={loading}>
                 {t('login.signIn')}

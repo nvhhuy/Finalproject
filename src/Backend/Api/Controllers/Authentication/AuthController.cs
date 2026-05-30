@@ -39,6 +39,7 @@ public sealed class AuthController : ApiControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
+    [RequiresTurnstile]
     [RequiresIdempotencyKey(Scope = "auth.register")]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<RegistrationResponseDto>), StatusCodes.Status200OK)]
@@ -52,6 +53,7 @@ public sealed class AuthController : ApiControllerBase
 
     [HttpPost("resend-verification")]
     [AllowAnonymous]
+    [RequiresTurnstile]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ResendVerification([FromBody] ResendEmailVerificationRequest body,
         CancellationToken cancellationToken)
@@ -62,6 +64,7 @@ public sealed class AuthController : ApiControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [RequiresTurnstile]
     [Transactional]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TwoFactorChallengeDto>), StatusCodes.Status202Accepted)]
@@ -110,6 +113,7 @@ public sealed class AuthController : ApiControllerBase
 
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [RequiresTurnstile]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest body,
         CancellationToken cancellationToken)

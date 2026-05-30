@@ -31,7 +31,12 @@ public static class DependencyInjection
         services.AddCorsPolicy(configuration);
         services.AddScoped<TransactionalActionFilter>();
         services.AddScoped<IdempotencyActionFilter>();
-        services.AddControllers(options => { options.Filters.AddService<IdempotencyActionFilter>(); });
+        services.AddScoped<TurnstileActionFilter>();
+        services.AddControllers(options =>
+        {
+            options.Filters.AddService<IdempotencyActionFilter>();
+            options.Filters.AddService<TurnstileActionFilter>();
+        });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
@@ -115,6 +120,24 @@ public static class DependencyInjection
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 5
+                    });
+            });
+
+            // Public contact-form submissions. Keyed by IP. Very tight: 5 per 10 minutes per IP
+            // to prevent automated spam while not blocking genuine visitors.
+            options.AddPolicy("contact", context =>
+            {
+                if (disableRateLimiting)
+                    return RateLimitPartition.GetNoLimiter("exempt");
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? context.Request.Headers.Host.ToString(),
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(10),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
                     });
             });
 

@@ -27,7 +27,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   isAuthenticated: boolean;
-  login(email: string, password: string): Promise<LoginResult>;
+  login(email: string, password: string, turnstileToken?: string | null): Promise<LoginResult>;
   completeTwoFactor(pendingLoginId: string, code: string): Promise<{ user: AuthUser; tokens: AuthTokens }>;
   refresh(): Promise<AuthTokens | null>;
   logout(): void;
@@ -123,8 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [logout, setSession]);
 
   const login = useCallback(
-    async (email: string, password: string): Promise<LoginResult> => {
-      const result = await authApi.login({ email, password });
+    async (email: string, password: string, turnstileToken?: string | null): Promise<LoginResult> => {
+      const result = await authApi.login({ email, password, turnstileToken });
       if (result.kind === "ok") setSession(result.user, result.tokens);
       return result;
     },

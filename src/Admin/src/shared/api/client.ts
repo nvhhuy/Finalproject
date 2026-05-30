@@ -231,19 +231,28 @@ export async function apiFormRequest<T>(
   return envelope.data
 }
 
+export const TURNSTILE_HEADER = 'X-Turnstile-Token'
+
 /** Login may return 200 (tokens) or 202 (2FA challenge) — handled outside apiRequest. */
-export async function apiRaw<T>(path: string, init: RequestInit): Promise<{
+export async function apiRaw<T>(
+  path: string,
+  init: RequestInit & { turnstileToken?: string | null },
+): Promise<{
   status: number
   envelope: ApiResponse<T>
 }> {
+  const { turnstileToken, ...fetchInit } = init
   const url = `${API_V1}${path.startsWith('/') ? path : `/${path}`}`
+  const extraHeaders: Record<string, string> = {}
+  if (turnstileToken) extraHeaders[TURNSTILE_HEADER] = turnstileToken
   const response = await fetch(url, {
-    ...init,
+    ...fetchInit,
     credentials: 'same-origin',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      ...init.headers,
+      ...fetchInit.headers,
+      ...extraHeaders,
     },
   })
   const envelope = (await response.json()) as ApiResponse<T>

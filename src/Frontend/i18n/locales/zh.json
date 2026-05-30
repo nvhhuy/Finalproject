@@ -216,8 +216,19 @@
   },
   "contact": {
     "title": "联系我们",
-    "body": "有关计费、租户或账户的问题？随时联系。",
-    "emailLabel": "邮箱"
+    "body": "有关计费、账户或其他问题？请填写表单，我们会尽快回复。",
+    "nameLabel": "您的姓名",
+    "namePlaceholder": "张三",
+    "emailLabel": "电子邮箱",
+    "emailPlaceholder": "zhang@example.com",
+    "subjectLabel": "主题",
+    "subjectPlaceholder": "这是关于什么的？",
+    "messageLabel": "消息",
+    "messagePlaceholder": "详细描述您的问题…",
+    "submit": "发送消息",
+    "successTitle": "消息已发送！",
+    "successBody": "感谢您联系我们，我们会尽快通过邮件回复您。",
+    "sendAnother": "发送另一条消息"
   },
   "subscribe": {
     "title": "订阅套餐",

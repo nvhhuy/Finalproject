@@ -31,6 +31,7 @@
     "settings": "设置",
     "dlq": "DLQ",
     "support": "支持工单",
+    "contactMessages": "联系消息",
     "plans": "订阅方案",
     "creditPackages": "积分套餐",
     "tenants": "租户",
@@ -382,6 +383,22 @@
     "confirm": "向所有活跃成员发送此公告？此操作无法撤销。",
     "sent": "已向 {{count}} 名成员发送公告。",
     "sendFailed": "发送公告失败"
+  },
+  "contact": {
+    "title": "联系消息",
+    "description": "来自公开联系表单的访客留言。",
+    "searchPlaceholder": "按姓名、邮箱或主题搜索…",
+    "allMessages": "全部消息",
+    "unread": "未读",
+    "read": "已读",
+    "colSender": "发件人",
+    "colSubject": "主题",
+    "colStatus": "状态",
+    "colDate": "日期",
+    "selectMessage": "选择一条消息查看详情。",
+    "markRead": "标记为已读",
+    "markedRead": "已标记为已读。",
+    "empty": "暂无联系消息。"
   },
   "invoices": {
     "title": "账单发票",

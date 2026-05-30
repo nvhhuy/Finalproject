@@ -8,6 +8,7 @@ import type {
   AdminUserListDto,
   AuthResponseDto,
   BooleanSettingDto,
+  ContactMessageListDto,
   DeadLetterActionResult,
   DeadLetterMessage,
   DatabaseBackupItemDto,
@@ -512,5 +513,28 @@ export function broadcastMemberNotification(body: {
     method: 'POST',
     body,
     idempotent: true,
+  })
+}
+
+export interface ListContactMessagesParams {
+  page?: number
+  pageSize?: number
+  search?: string
+  isRead?: boolean
+}
+
+export function listContactMessages(params: ListContactMessagesParams = {}) {
+  const q = new URLSearchParams()
+  if (params.page) q.set('page', String(params.page))
+  if (params.pageSize) q.set('pageSize', String(params.pageSize))
+  if (params.search) q.set('search', params.search)
+  if (params.isRead !== undefined) q.set('isRead', String(params.isRead))
+  const query = q.toString()
+  return apiRequest<ContactMessageListDto>(`/admin/contact-messages${query ? `?${query}` : ''}`)
+}
+
+export function markContactMessageRead(messageId: string) {
+  return apiRequest<boolean>(`/admin/contact-messages/${messageId}/mark-read`, {
+    method: 'POST',
   })
 }

@@ -4,6 +4,8 @@ import { loadTokens, saveTokens } from "@/lib/auth/tokens";
 import { IDEMPOTENCY_HEADER, newIdempotencyKey } from "./idempotency";
 import { tenantHeaders } from "@/lib/tenancy/tenant-context";
 
+export const TURNSTILE_HEADER = "X-Turnstile-Token";
+
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   path: string;
@@ -12,6 +14,8 @@ type RequestOptions = {
   auth?: boolean;
   idempotent?: boolean;
   headers?: Record<string, string>;
+  /** Cloudflare Turnstile challenge token. Sent as X-Turnstile-Token header when provided. */
+  turnstileToken?: string | null;
 };
 
 function buildUrl(path: string, query?: RequestOptions["query"]) {
@@ -56,6 +60,7 @@ export async function apiRequest<T>(options: RequestOptions): Promise<ApiRespons
   if (options.idempotent) headers[IDEMPOTENCY_HEADER] = newIdempotencyKey();
   if (tokens?.accessToken) headers.Authorization = `Bearer ${tokens.accessToken}`;
   if (options.auth) Object.assign(headers, tenantHeaders());
+  if (options.turnstileToken) headers[TURNSTILE_HEADER] = options.turnstileToken;
 
   const res = await fetch(url, {
     method: options.method ?? "GET",
@@ -103,7 +108,7 @@ export async function apiRequest<T>(options: RequestOptions): Promise<ApiRespons
 /** For endpoints with non-200 success (e.g. login → 202 for 2FA). */
 export async function apiRaw<T>(
   path: string,
-  init: RequestInit & { auth?: boolean; idempotent?: boolean } = {},
+  init: RequestInit & { auth?: boolean; idempotent?: boolean; turnstileToken?: string | null } = {},
 ): Promise<{ status: number; envelope: ApiResponse<T> }> {
   const url = buildUrl(path);
   const tokens = init.auth ? loadTokens() : null;
@@ -114,6 +119,7 @@ export async function apiRaw<T>(
   };
   if (init.idempotent) headers[IDEMPOTENCY_HEADER] = newIdempotencyKey();
   if (tokens?.accessToken) headers.Authorization = `Bearer ${tokens.accessToken}`;
+  if (init.turnstileToken) headers[TURNSTILE_HEADER] = init.turnstileToken;
 
   const res = await fetch(url, {
     ...init,

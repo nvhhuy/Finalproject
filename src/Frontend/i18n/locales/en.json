@@ -215,9 +215,20 @@
     "body": "We build a multi-tenant SaaS platform with subscription plans for organizations and a personal credit wallet for metered features on the main app."
   },
   "contact": {
-    "title": "Contact",
-    "body": "Questions about billing, tenants, or your account? Reach out anytime.",
-    "emailLabel": "Email"
+    "title": "Contact us",
+    "body": "Have a question about billing, your account, or anything else? Fill out the form and we'll get back to you.",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Jane Smith",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "jane@example.com",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "What's this about?",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Describe your question or issue in detail…",
+    "submit": "Send message",
+    "successTitle": "Message sent!",
+    "successBody": "Thanks for reaching out. We'll reply to your email shortly.",
+    "sendAnother": "Send another message"
   },
   "subscribe": {
     "title": "Subscribe to a plan",

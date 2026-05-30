@@ -48,4 +48,8 @@ export const queryKeys = {
     list: (params: unknown) => ['admin', 'support', 'list', params] as const,
     detail: (ticketId: string | null | undefined) => ['admin', 'support', 'detail', ticketId] as const,
   },
+  contactMessages: {
+    all: () => ['admin', 'contact-messages'] as const,
+    list: (params: unknown) => ['admin', 'contact-messages', 'list', params] as const,
+  },
 } as const

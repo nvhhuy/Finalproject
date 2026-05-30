@@ -31,6 +31,7 @@
     "settings": "Cài đặt",
     "dlq": "DLQ",
     "support": "Ticket hỗ trợ",
+    "contactMessages": "Tin nhắn liên hệ",
     "plans": "Gói đăng ký",
     "creditPackages": "Gói credit",
     "tenants": "Tenant",
@@ -382,6 +383,22 @@
     "confirm": "Gửi thông báo này cho mọi thành viên đang hoạt động? Không thể hoàn tác.",
     "sent": "Đã gửi thông báo tới {{count}} thành viên.",
     "sendFailed": "Gửi thông báo thất bại"
+  },
+  "contact": {
+    "title": "Tin nhắn liên hệ",
+    "description": "Tin nhắn gửi qua biểu mẫu liên hệ công khai.",
+    "searchPlaceholder": "Tìm theo tên, email hoặc tiêu đề…",
+    "allMessages": "Tất cả tin nhắn",
+    "unread": "Chưa đọc",
+    "read": "Đã đọc",
+    "colSender": "Người gửi",
+    "colSubject": "Tiêu đề",
+    "colStatus": "Trạng thái",
+    "colDate": "Ngày",
+    "selectMessage": "Chọn một tin nhắn để xem chi tiết.",
+    "markRead": "Đánh dấu đã đọc",
+    "markedRead": "Đã đánh dấu là đã đọc.",
+    "empty": "Chưa có tin nhắn liên hệ."
   },
   "invoices": {
     "title": "Hóa đơn thanh toán",

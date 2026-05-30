@@ -31,6 +31,7 @@
     "settings": "Settings",
     "dlq": "DLQ",
     "support": "Support tickets",
+    "contactMessages": "Contact messages",
     "plans": "Plans",
     "creditPackages": "Credit packages",
     "tenants": "Tenants",
@@ -382,6 +383,22 @@
     "confirm": "Send this announcement to every active member? This cannot be undone.",
     "sent": "Announcement sent to {{count}} member(s).",
     "sendFailed": "Failed to send announcement"
+  },
+  "contact": {
+    "title": "Contact messages",
+    "description": "Public contact form submissions from visitors.",
+    "searchPlaceholder": "Search by name, email, or subject…",
+    "allMessages": "All messages",
+    "unread": "Unread",
+    "read": "Read",
+    "colSender": "Sender",
+    "colSubject": "Subject",
+    "colStatus": "Status",
+    "colDate": "Date",
+    "selectMessage": "Select a message to view details.",
+    "markRead": "Mark as read",
+    "markedRead": "Marked as read.",
+    "empty": "No contact messages yet."
   },
   "invoices": {
     "title": "Billing invoices",
