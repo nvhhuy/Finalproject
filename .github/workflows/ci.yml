@@ -102,6 +102,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: API integration tests
+        timeout-minutes: 15
         env:
           TEST_DATABASE_CONNECTION_STRING: >-
             Host=localhost;Port=5432;Database=baseproject_integration;
@@ -110,7 +111,8 @@ jobs:
           createdb -h localhost -U postgres baseproject_integration 2>/dev/null || true
           dotnet test src/Backend/Tests/Api.IntegrationTests/Api.IntegrationTests.csproj \
             --configuration Release \
-            --verbosity minimal
+            --verbosity normal \
+            --blame-hang-timeout 3m
 
   backend-media:
     name: Backend media integration
@@ -165,6 +167,7 @@ jobs:
           aws --endpoint-url http://localhost:9000 s3 mb s3://media || true
 
       - name: Media integration tests
+        timeout-minutes: 15
         env:
           INTEGRATION_MEDIA_ENABLED: 'true'
           TEST_DATABASE_CONNECTION_STRING: >-
@@ -180,7 +183,8 @@ jobs:
           dotnet test src/Backend/Tests/Api.IntegrationTests/Api.IntegrationTests.csproj \
             --filter "FullyQualifiedName~MediaIntegrationTests" \
             --configuration Release \
-            --verbosity minimal
+            --verbosity normal \
+            --blame-hang-timeout 3m
 
   playwright:
     name: Playwright E2E

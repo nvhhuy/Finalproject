@@ -1,7 +1,9 @@
 using Api.IntegrationTests.Support;
 using Application.Contracts.Email;
+using Application.Contracts.Notifications;
 using Application.Contracts.Persistence;
 using Application.Contracts.Storage;
+using Infrastructure.Modules.Notifications;
 using Infrastructure.Persistence;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Hosting;
@@ -32,6 +34,11 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Development");
         builder.UseSetting("DataProtection:KeysDirectory", _dataProtectionKeysDirectory);
         builder.UseSetting("IntegrationTesting:DisableRateLimiting", "true");
+        // Disable Redis before Program.cs registers services — UseSetting runs before
+        // ConfigureAppConfiguration and therefore before AddCaching / AddWebApi read the config.
+        // This prevents both IDistributedCache and SignalR from trying to connect to Redis.
+        builder.UseSetting("Redis:ConnectionString", "");
+        builder.UseSetting("Realtime:UseRedisBackplane", "false");
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -62,12 +69,16 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailSender>();
             services.RemoveAll<IObjectStorage>();
 
-            // Swap out Redis distributed cache for an in-memory one so tests
-            // are self-contained and do not require a live Redis instance.
-            // ConfigureAppConfiguration overrides are too late (AddCaching already
-            // ran in Program.cs), so we replace the registration here instead.
+            // Swap out Redis distributed cache — AddCaching already ran in Program.cs
+            // so we must replace the registration here in ConfigureServices.
             services.RemoveAll<IDistributedCache>();
             services.AddDistributedMemoryCache();
+
+            // Replace SignalR notification dispatcher with a no-op so tests never
+            // touch the Redis backplane (SignalRNotificationDispatcher → IHubLifetimeManager
+            // → RedisHubLifetimeManager → Redis connection → hang in CI without Redis).
+            services.RemoveAll<INotificationDispatcher>();
+            services.AddSingleton<INotificationDispatcher, NullNotificationDispatcher>();
 
             services.AddSingleton<IEmailSender>(EmailSink);
             services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
