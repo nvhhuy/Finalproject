@@ -182,11 +182,11 @@ export default function WalletPage() {
         <CardBody className="space-y-2 text-sm">
           {invoices.length === 0 ? <p className="text-[var(--color-muted)]">{t("wallet.noReceipts")}</p> : null}
           {invoices.map((inv) => (
-            <div key={inv.id} className="flex justify-between gap-2 border-b border-[var(--color-border)] py-2">
-              <span>
+            <div key={inv.id} className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 border-b border-[var(--color-border)] py-2">
+              <span className="min-w-0 break-words">
                 {inv.invoiceNumber} — {inv.description}
               </span>
-              <span className="text-[var(--color-muted)]">
+              <span className="shrink-0 text-[var(--color-muted)]">
                 +{inv.amountCredits ?? 0} · {formatDateTimeOrDash(inv.issuedAtUtc)}
               </span>
             </div>
@@ -201,11 +201,11 @@ export default function WalletPage() {
         <CardBody className="space-y-2 text-sm">
           {ledger.length === 0 ? <p className="text-[var(--color-muted)]">{t("wallet.emptyLedger")}</p> : null}
           {ledger.map((e) => (
-            <div key={e.id} className="flex justify-between gap-2 border-b border-[var(--color-border)] py-2">
-              <span>
+            <div key={e.id} className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 border-b border-[var(--color-border)] py-2">
+              <span className="min-w-0 break-words">
                 {e.entryType} {e.amountCredits > 0 ? `+${e.amountCredits}` : e.amountCredits}
               </span>
-              <span className="text-[var(--color-muted)]">{formatDateTimeOrDash(e.createdAtUtc)}</span>
+              <span className="shrink-0 text-[var(--color-muted)]">{formatDateTimeOrDash(e.createdAtUtc)}</span>
             </div>
           ))}
         </CardBody>

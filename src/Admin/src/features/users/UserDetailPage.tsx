@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Copy, KeyRound, Mail, Shield, UserX } from 'lucide-react'
@@ -48,6 +48,7 @@ type UserActionKey =
 export function UserDetailPage() {
   const { t } = useTranslation()
   const { userId } = useParams<{ userId: string }>()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [lockReason, setLockReason] = useState('')
   const [lockModalOpen, setLockModalOpen] = useState(false)
@@ -64,6 +65,12 @@ export function UserDetailPage() {
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.users.all() })
     void queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs.all() })
+  }
+
+  const invalidateAfterDelete = () => {
+    queryClient.removeQueries({ queryKey: queryKeys.users.detail(userId) })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.users.all() })
+    navigate('/users', { replace: true })
   }
 
   const rowVersion = () => {
@@ -275,7 +282,12 @@ export function UserDetailPage() {
                 className="w-full sm:w-auto"
                 onClick={() => {
                   if (confirmAction(t('userDetail.deleteConfirm'))) {
-                    void runAction('delete', () => deleteUser(userId, rowVersion()))
+                    void runAdminAction(
+                      t,
+                      'userDetail.actions.delete',
+                      () => deleteUser(userId, rowVersion()),
+                      { onSuccess: invalidateAfterDelete },
+                    )
                   }
                 }}
               >

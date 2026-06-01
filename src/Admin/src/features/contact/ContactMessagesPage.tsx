@@ -88,7 +88,7 @@ export function ContactMessagesPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead className="border-b border-[var(--color-border)] text-slate-400">
                   <tr>
                     <th className="px-3 py-2 text-left">{t('contact.colSender')}</th>
@@ -101,7 +101,7 @@ export function ContactMessagesPage() {
                   {(listQuery.data?.items ?? []).map((msg) => (
                     <tr
                       key={msg.id}
-                      className="cursor-pointer border-b border-[var(--color-border)]/40 hover:bg-[var(--color-surface-muted)]/40"
+                      className={`cursor-pointer border-b border-[var(--color-border)]/40 transition-colors ${selected?.id === msg.id ? 'bg-[var(--color-accent)]/10 outline outline-1 outline-[var(--color-accent)]/30' : 'hover:bg-[var(--color-surface-muted)]/40'}`}
                       onClick={() => setSelected(msg)}
                     >
                       <td className="px-3 py-2">

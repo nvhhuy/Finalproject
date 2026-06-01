@@ -14,6 +14,7 @@ type NotificationsContextValue = {
   notifications: NotificationDto[];
   unreadCount: number;
   markRead: (id: string) => Promise<void>;
+  markAllRead: () => Promise<void>;
 };
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
@@ -146,8 +147,9 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       notifications,
       unreadCount,
       markRead,
+      markAllRead,
     }),
-    [notifications, unreadCount, markRead],
+    [notifications, unreadCount, markRead, markAllRead],
   );
 
   return (

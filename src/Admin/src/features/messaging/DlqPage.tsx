@@ -26,22 +26,26 @@ export function DlqPage() {
 
   const replayMutation = useMutation({
     mutationFn: () => replayDlq(queueName, count),
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       toast.success(
         t('toast.replayedMessages', { count: result.count, queue: result.queue }),
       )
-      void queryClient.invalidateQueries({ queryKey: queryKeys.dlq.all() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dlq.all() })
+      // Re-peek so the panel reflects current queue state after replay
+      await refetch()
     },
     onError: (err) => toastApiError(err, 'toast.replayFailed'),
   })
 
   const drainMutation = useMutation({
     mutationFn: () => drainDlq(queueName, count),
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       toast.success(
         t('toast.drainedMessages', { count: result.count, queue: result.queue }),
       )
-      void queryClient.invalidateQueries({ queryKey: queryKeys.dlq.all() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dlq.all() })
+      // Re-peek so the panel clears after drain
+      await refetch()
     },
     onError: (err) => toastApiError(err, 'toast.drainFailed'),
   })

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardDescription, CardTitle } from "@/components/ui/card";
@@ -21,23 +21,40 @@ export default function DashboardPage() {
   const [openTickets, setOpenTickets] = useState<number | null>(null);
   const [planName, setPlanName] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      const [balRes, ticketsRes, tenantsRes] = await Promise.all([
-        walletApi.getBalance(),
-        supportApi.list(1, 1, undefined, "Open"),
-        billingApi.listMyTenants(),
-      ]);
-      if (balRes.success && balRes.data) setBalance(balRes.data.balanceCredits);
-      if (ticketsRes.success && ticketsRes.data) setOpenTickets(ticketsRes.data.totalCount);
+  const loadData = async () => {
+    setLoading(true);
+    const [balRes, ticketsRes, tenantsRes] = await Promise.all([
+      walletApi.getBalance(),
+      supportApi.list(1, 1, undefined, "Open"),
+      billingApi.listMyTenants(),
+    ]);
+    if (balRes.success && balRes.data) setBalance(balRes.data.balanceCredits);
+    if (ticketsRes.success && ticketsRes.data) setOpenTickets(ticketsRes.data.totalCount);
 
-      const tenantId = getActiveTenantId() ?? tenantsRes.data?.[0]?.id;
-      if (tenantId) {
-        const ent = await billingApi.getTenantEntitlements(tenantId);
-        if (ent.success && ent.data) setPlanName(ent.data.subscription.planName);
-      }
-      setLoading(false);
-    })();
+    const tenantId = getActiveTenantId() ?? tenantsRes.data?.[0]?.id;
+    if (tenantId) {
+      const ent = await billingApi.getTenantEntitlements(tenantId);
+      if (ent.success && ent.data) setPlanName(ent.data.subscription.planName);
+    }
+    setLoading(false);
+  };
+
+  // Initial load
+  useEffect(() => {
+    void loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refresh cards when user returns to this tab/window
+  const hasMounted = useRef(false);
+  useEffect(() => {
+    if (!hasMounted.current) { hasMounted.current = true; return; }
+    function onVisibility() {
+      if (document.visibilityState === "visible") void loadData();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const quickLinks = [

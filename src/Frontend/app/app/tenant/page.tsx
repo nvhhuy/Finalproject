@@ -188,8 +188,13 @@ export default function TenantUsagePage() {
       setError(res.error?.message ?? t("errors.requestFailed"));
       return;
     }
-    const ent = await billingApi.getTenantEntitlements(tenantId);
+    const [ent, inv] = await Promise.all([
+      billingApi.getTenantEntitlements(tenantId),
+      billingApi.listTenantInvoices(tenantId),
+    ]);
     if (ent.success && ent.data) setEntitlements(ent.data);
+    if (inv.success && inv.data) setInvoices(inv.data);
+    else setInvoices([]);
   }
 
   async function handleSaveSso() {
@@ -258,8 +263,11 @@ export default function TenantUsagePage() {
             className="mt-1 h-10 w-full max-w-md rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm"
             value={tenantId ?? ""}
             onChange={(e) => {
-              setTenantId(e.target.value);
-              setActiveTenantId(e.target.value);
+              const id = e.target.value;
+              setTenantId(id);
+              setActiveTenantId(id);
+              const slug = tenants.find((tn) => tn.id === id)?.slug;
+              if (slug) setActiveTenantSlug(slug);
             }}
           >
             {tenants.map((tn) => (

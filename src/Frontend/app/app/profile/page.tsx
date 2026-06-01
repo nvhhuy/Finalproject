@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/lib/auth/auth-context";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/ui/cn";
 
 export default function ProfilePage() {
   const { t } = useTranslation();
+  const { reloadProfile } = useAuth();
   const qc = useQueryClient();
   const profileQuery = useQuery({
     queryKey: ["me", "profile"],
@@ -56,6 +58,8 @@ export default function ProfilePage() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["me", "profile"] });
+      // Sync AuthContext so UserMenu/header name updates immediately without reload
+      await reloadProfile();
     },
   });
 

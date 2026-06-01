@@ -134,6 +134,9 @@ export function SettingsPage() {
     mutationFn: ({ key, confirmation }: { key: string; confirmation: string }) =>
       restoreSystemBackup(key, confirmation),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.systemBackup() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.systemBackupHistory(20) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.allowPublicRegister() })
       toast.success(t('settings.backupRestored'))
     },
     onError: (err) => toastApiError(err, 'settings.backupRestoreFailed'),
@@ -158,6 +161,8 @@ export function SettingsPage() {
     mutationFn: ({ key, confirmation }: { key: string; confirmation: string }) =>
       restoreDatabaseBackup(key, confirmation),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.databaseBackup() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.databaseBackupHistory(20) })
       toast.success(t('settings.databaseBackupRestored'))
     },
     onError: (err) => toastApiError(err, 'settings.databaseBackupRestoreFailed'),

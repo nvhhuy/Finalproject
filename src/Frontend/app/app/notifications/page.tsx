@@ -1,56 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
-import { PageSkeleton } from "@/components/ui/skeleton";
 import { formatDateTimeOrDash } from "@/lib/shared";
-import { notificationsApi, type NotificationDto } from "@/lib/features/notifications/notifications-api";
+import { useNotifications } from "@/lib/features/notifications/notifications-context";
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState<NotificationDto[]>([]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await notificationsApi.list(1, 50);
-    if (res.success && res.data) setNotifications(res.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  async function markRead(id: string) {
-    await notificationsApi.markRead(id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAtUtc: new Date().toISOString() } : n)));
-  }
-
-  async function markAllRead() {
-    const unread = notifications.filter((n) => !n.readAtUtc);
-    await Promise.all(unread.map((n) => notificationsApi.markRead(n.id)));
-    setNotifications((prev) => prev.map((n) => ({ ...n, readAtUtc: n.readAtUtc ?? new Date().toISOString() })));
-  }
-
-  if (loading) {
-    return (
-      <PageContent>
-        <PageHeader title={t("notifications.pageTitle")} description={t("notifications.pageDescription")} />
-        <PageSkeleton />
-      </PageContent>
-    );
-  }
+  const { notifications, markRead, markAllRead } = useNotifications();
 
   return (
     <PageContent>
       <PageHeader title={t("notifications.pageTitle")} description={t("notifications.pageDescription")} />
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>{t("notifications.title")}</CardTitle>
           <Button
             variant="secondary"

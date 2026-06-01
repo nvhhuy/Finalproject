@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,7 @@ export default function SupportPage() {
   const canClose = selected && selected.status !== "Closed";
   const canReopen = selected && selected.status === "Closed";
 
-  async function loadList() {
+  const loadList = useCallback(async () => {
     setLoading(true);
     setError(null);
     const res = await supportApi.list(1, 50, search || undefined, status || undefined);
@@ -62,15 +62,31 @@ export default function SupportPage() {
     );
     const safe = details.filter(Boolean) as SupportTicketDetailDto[];
     setItems(safe);
-    if (!selectedId && safe.length > 0) setSelectedId(safe[0].id);
-    else if (selectedId && !safe.some((x) => x.id === selectedId)) setSelectedId(safe[0]?.id ?? null);
+    setSelectedId((prev) => {
+      if (!prev && safe.length > 0) return safe[0].id;
+      if (prev && !safe.some((x) => x.id === prev)) return safe[0]?.id ?? null;
+      return prev;
+    });
     setLoading(false);
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, status]);
 
+  // Debounce search so rapid typing doesn't fire N requests
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [searchDebounced, setSearchDebounced] = useState(search);
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setSearchDebounced(search), 350);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [search]);
+
+  // Auto-refetch whenever debounced search or status filter changes
   useEffect(() => {
     void loadList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchDebounced, status]);
 
   async function handleCreate() {
     if (!subject.trim() || !description.trim()) return;
@@ -171,7 +187,7 @@ export default function SupportPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Input placeholder={t("support.category")} value={category} onChange={(e) => setCategory(e.target.value)} />
               <select
                 className="h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm"
@@ -205,8 +221,9 @@ export default function SupportPage() {
             <CardTitle>{t("support.myTickets")}</CardTitle>
           </CardHeader>
           <CardBody className="space-y-3">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Input
+                className="min-w-[140px] flex-1"
                 placeholder={t("support.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -223,8 +240,8 @@ export default function SupportPage() {
                   </option>
                 ))}
               </select>
-              <Button variant="secondary" loading={loading} onClick={() => void loadList()}>
-                {t("common.submit")}
+              <Button variant="secondary" size="sm" loading={loading} onClick={() => void loadList()} aria-label={t("common.refresh")}>
+                ↻
               </Button>
             </div>
 

@@ -93,7 +93,10 @@ export function SupportTicketsPage() {
 
   const assignMutation = useMutation({
     mutationFn: ({ ticketId }: { ticketId: string }) => assignSupportTicket(ticketId, null),
-    onSuccess: () => void invalidate(),
+    onSuccess: () => {
+      toast.success(t('support.unassigned'))
+      void invalidate()
+    },
   })
 
   const replyMutation = useMutation({
@@ -110,8 +113,9 @@ export function SupportTicketsPage() {
       <PageContent className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <Card>
           <CardBody className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Input
+                className="min-w-[140px] flex-1"
                 placeholder={t('support.searchPlaceholder')}
                 value={searchInput}
                 onChange={(e) => {
@@ -133,7 +137,7 @@ export function SupportTicketsPage() {
               </select>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead className="border-b border-[var(--color-border)] text-slate-400">
                   <tr>
                     <th className="px-3 py-2 text-left">{t('support.ticket')}</th>
@@ -146,7 +150,7 @@ export function SupportTicketsPage() {
                   {(listQuery.data?.items ?? []).map((it) => (
                     <tr
                       key={it.id}
-                      className="cursor-pointer border-b border-[var(--color-border)]/40 hover:bg-[var(--color-surface-muted)]/40"
+                      className={`cursor-pointer border-b border-[var(--color-border)]/40 transition-colors ${selectedId === it.id ? 'bg-[var(--color-accent)]/10 outline outline-1 outline-[var(--color-accent)]/30' : 'hover:bg-[var(--color-surface-muted)]/40'}`}
                       onClick={() => setSelectedId(it.id)}
                     >
                       <td className="px-3 py-2">
@@ -203,10 +207,10 @@ export function SupportTicketsPage() {
                 </div>
                 <Button
                   variant="secondary"
+                  loading={assignMutation.isPending}
                   onClick={() => {
                     if (!selectedId) return
                     void assignMutation.mutateAsync({ ticketId: selectedId })
-                    toast.success(t('support.unassigned'))
                   }}
                 >
                   {t('support.unassign')}
