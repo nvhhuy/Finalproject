@@ -16,11 +16,11 @@ export default function RegisterPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const [form, setForm] = useState({
-    email: "user@localhost.com",
-    userName: "user",
-    password: "Temp!ChangeMe123",
-    firstName: "User",
-    lastName: "Demo",
+    email: "",
+    userName: "",
+    password: "",
+    firstName: "",
+    lastName: "",
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

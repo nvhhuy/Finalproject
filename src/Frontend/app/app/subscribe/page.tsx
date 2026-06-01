@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "@tanstack/react-query";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,44 +16,48 @@ export default function SubscribePage() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const [planCode, setPlanCode] = useState(searchParams.get("plan") ?? "starter");
   const [tenantSlug, setTenantSlug] = useState("");
   const [tenantDisplayName, setTenantDisplayName] = useState("");
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fromQuery = searchParams.get("plan");
-    if (fromQuery) setPlanCode(fromQuery);
-  }, [searchParams]);
+  const subscribeMutation = useMutation({
+    mutationFn: () =>
+      billingApi.subscribe({
+        planCode: planCode.trim(),
+        tenantSlug: tenantSlug.trim(),
+        tenantDisplayName: tenantDisplayName.trim(),
+        publicTagline: tagline.trim() || null,
+        publicDescription: description.trim() || null,
+      }),
+    onSuccess: (res) => {
+      if (!res.success || !res.data) {
+        subscribeMutation.reset();
+        return;
+      }
+      setActiveTenantId(res.data.tenantId);
+      setActiveTenantSlug(res.data.tenantSlug);
+      router.push("/app");
+    },
+  });
 
-  async function handleSubmit(e: React.FormEvent) {
+  const errorMessage = subscribeMutation.data?.success === false
+    ? (subscribeMutation.data.error?.message ?? t("errors.requestFailed"))
+    : subscribeMutation.error instanceof Error
+      ? subscribeMutation.error.message
+      : null;
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const res = await billingApi.subscribe({
-      planCode: planCode.trim(),
-      tenantSlug: tenantSlug.trim(),
-      tenantDisplayName: tenantDisplayName.trim(),
-      publicTagline: tagline.trim() || null,
-      publicDescription: description.trim() || null,
-    });
-    setLoading(false);
-    if (!res.success || !res.data) {
-      setError(res.error?.message ?? t("errors.requestFailed"));
-      return;
-    }
-    setActiveTenantId(res.data.tenantId);
-    setActiveTenantSlug(res.data.tenantSlug);
-    router.push("/app");
+    subscribeMutation.mutate();
   }
 
   return (
     <PageContent>
       <PageHeader title={t("subscribe.title")} description={t("subscribe.subtitle")} />
-      {error ? <Alert variant="error">{error}</Alert> : null}
+      {errorMessage ? <Alert variant="error">{errorMessage}</Alert> : null}
       <Card>
         <CardHeader>
           <CardTitle>{t("subscribe.formTitle")}</CardTitle>
@@ -69,7 +74,7 @@ export default function SubscribePage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-            <Button type="submit" loading={loading}>
+            <Button type="submit" loading={subscribeMutation.isPending}>
               {t("subscribe.submit")}
             </Button>
           </form>

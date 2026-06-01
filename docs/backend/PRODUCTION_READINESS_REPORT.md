@@ -1,6 +1,6 @@
 # Production Readiness & Scalability Report
 
-**Date:** 2026-05-27 (summary also in [`../OVERVIEW.md`](../OVERVIEW.md))  
+**Date:** 2026-06-01 (summary also in [`../OVERVIEW.md`](../OVERVIEW.md))  
 **Scope:** `src/Backend` (Api + Worker + Infrastructure)  
 **Verdict:** **Production-viable baseline with clear scale paths** — suitable for controlled launch; several items remain for high-traffic / multi-tenant production.
 
@@ -14,7 +14,7 @@
 | Feature flags | **Ready (framework)** | Config + DB + env + % rollout; extend keys as needed |
 | Admin impersonation | **Ready** | JWT `impersonator_sub`, guards, audit; read claim in API layer |
 | Optimistic locking | **Ready** | `RowVersion` on `User`, `MediaAsset`; 409 on conflict |
-| Notifications / SignalR | **Partial** | Outbox + email solid; SignalR scaffold only |
+| Notifications / SignalR | **Partial** | Email outboxed; SignalR hub + dispatcher implemented; realtime delivery guard in place; Redis backplane required for multi-replica |
 | Search (Elasticsearch) | **Not implemented** | **Feasible** via existing outbox/Rabbit pattern |
 | Horizontal scale | **Ready (core)** | Api/Worker split, outbox, RabbitMQ, Redis hooks |
 
@@ -135,7 +135,7 @@ flowchart LR
 |-----------|-----------------|
 | **Transactional outbox** | `FOR UPDATE SKIP LOCKED` — safe N publisher instances |
 | **RabbitMQ** | Competing consumers, DLQ, admin replay API |
-| **Email (SMTP)** | Config-gated; synchronous from handlers |
+| **Email (SMTP)** | **Outboxed** — `OutboxQueuingEmailSender` → RabbitMQ → `EmailSendConsumerService`; SMTP credentials required |
 | **Redis cache** | Distributed cache + optional SignalR backplane |
 | **Read replica** | `DatabaseReadConnectionString` wired |
 
@@ -143,18 +143,19 @@ flowchart LR
 
 | Component | State |
 |-----------|--------|
-| **SignalR** | `Realtime:Enabled` default **false**; hub is placeholder (`Ping` only) |
+| **SignalR** | `Realtime:Enabled` configurable; `SignalRNotificationDispatcher` implemented; `INotificationDispatcher.IsRealtime` guard prevents false delivery marking on Worker; Redis backplane required for multi-replica |
 | **Push notifications** | Not implemented |
-| **Email outbox** | Email sent inline — no outbox; retry/scale limited |
+| **Email outbox** | **Implemented** — `OutboxQueuingEmailSender` + `EmailSendConsumerService`; Worker resolves `SmtpEmailSender` directly |
+| **Payment webhooks** | VNPay + PayOS HMAC-SHA256 via `HmacWebhookSignatureVerifier`; Stripe uses `StripeWebhookSignatureVerifier`; all gated on secret presence |
 | **Unified notification bus** | Only `media.uploaded.v1` integration event |
 
 ### Recommendation before high notification volume
 
 1. Add integration events (`user.registered.v1`, `media.ready.v1`) → dedicated notification worker.
-2. Outbox email sends (same pattern as media).
-3. Enable SignalR + Redis backplane when realtime UI ships.
+2. Enable `Realtime:Enabled=true` + Redis backplane (`Realtime:UseRedisBackplane=true`).
+3. Validate VNPay/PayOS signature format against provider sandbox before live payment traffic.
 
-**Scale verdict:** **Async processing pipeline is production-grade; user-facing push/realtime is not.**
+**Scale verdict:** **Email + async pipeline are production-grade; realtime push requires Redis backplane at scale.**
 
 ---
 

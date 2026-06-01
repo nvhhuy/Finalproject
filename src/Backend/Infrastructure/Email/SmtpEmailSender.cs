@@ -26,7 +26,7 @@ public sealed class SmtpEmailSender : IEmailSender
         message.From.Add(new MailboxAddress(_options.FromDisplayName, _options.FromAddress));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
-        message.Body = new TextPart("plain") { Text = htmlBody };
+        message.Body = new TextPart("html") { Text = htmlBody };
 
         using var client = new SmtpClient();
         await client.ConnectAsync(_options.Host, _options.Port,

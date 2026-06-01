@@ -30,7 +30,7 @@ namespace Infrastructure.Persistence.Interceptors;
 public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
 {
     private static readonly JsonSerializerOptions OutboxJsonOptions = new()
-        { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     private readonly IAfterCommitDomainEventQueue _afterCommitQueue;
     private readonly ICorrelationContext _correlation;
@@ -79,23 +79,23 @@ public sealed class DomainEventsSaveChangesInterceptor : SaveChangesInterceptor
             .ToList();
 
         foreach (var carrier in carriers)
-        foreach (var ev in carrier.DomainEvents)
-        {
-            if (ev is not IIntegrationEvent integration)
-                continue;
+            foreach (var ev in carrier.DomainEvents)
+            {
+                if (ev is not IIntegrationEvent integration)
+                    continue;
 
-            var payload = JsonSerializer.Serialize(integration, integration.GetType(), OutboxJsonOptions);
-            var row = new OutboxMessage(
-                integration.EventId,
-                integration.OccurredOnUtc,
-                integration.GetType().AssemblyQualifiedName ?? integration.GetType().FullName!,
-                integration.RoutingKey,
-                null,
-                payload,
-                correlationId);
+                var payload = JsonSerializer.Serialize(integration, integration.GetType(), OutboxJsonOptions);
+                var row = new OutboxMessage(
+                    integration.EventId,
+                    integration.OccurredOnUtc,
+                    integration.GetType().AssemblyQualifiedName ?? integration.GetType().FullName!,
+                    integration.RoutingKey,
+                    null,
+                    payload,
+                    correlationId);
 
-            context.Set<OutboxMessage>().Add(row);
-        }
+                context.Set<OutboxMessage>().Add(row);
+            }
     }
 
     private async Task DispatchInProcessDomainEventsAsync(DbContext context, CancellationToken cancellationToken)

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -12,87 +13,125 @@ import { formatDateTimeOrDash } from "@/lib/shared";
 import { formatPackagePrice } from "@/lib/features/wallet/format-package-price";
 import {
   walletApi,
-  type BillingInvoiceDto,
   type CreditPackageDto,
   type MeteredActionDto,
+  type BillingInvoiceDto,
   type WalletLedgerEntryDto,
 } from "@/lib/features/wallet/wallet-api";
 
+const QUERY_KEYS = {
+  balance: ["wallet", "balance"] as const,
+  ledger: ["wallet", "ledger"] as const,
+  actions: ["wallet", "actions"] as const,
+  packages: ["wallet", "packages"] as const,
+  invoices: ["wallet", "invoices"] as const,
+};
+
 export default function WalletPage() {
   const { t } = useTranslation();
-  const [balance, setBalance] = useState<number | null>(null);
-  const [ledger, setLedger] = useState<WalletLedgerEntryDto[]>([]);
-  const [actions, setActions] = useState<MeteredActionDto[]>([]);
-  const [packages, setPackages] = useState<CreditPackageDto[]>([]);
+  const qc = useQueryClient();
   const [topUpAmount, setTopUpAmount] = useState("100");
-  const [error, setError] = useState<string | null>(null);
-  const [invoices, setInvoices] = useState<BillingInvoiceDto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
-  async function reload() {
-    setLoading(true);
-    setError(null);
-    const [balRes, ledgerRes, actionsRes, invoicesRes, packagesRes] = await Promise.all([
-      walletApi.getBalance(),
-      walletApi.getLedger(1, 20),
-      walletApi.listActions(),
-      walletApi.listInvoices(1, 20),
-      walletApi.listPackages(),
-    ]);
-    if (!balRes.success || !balRes.data) {
-      setError(balRes.error?.message ?? t("errors.requestFailed"));
-    } else {
-      setBalance(balRes.data.balanceCredits);
-    }
-    if (ledgerRes.success && ledgerRes.data) setLedger(ledgerRes.data);
-    if (actionsRes.success && actionsRes.data) setActions(actionsRes.data);
-    if (invoicesRes.success && invoicesRes.data) setInvoices(invoicesRes.data);
-    if (packagesRes.success && packagesRes.data) setPackages(packagesRes.data);
-    setLoading(false);
-  }
+  const balanceQuery = useQuery({
+    queryKey: QUERY_KEYS.balance,
+    queryFn: async () => {
+      const res = await walletApi.getBalance();
+      if (!res.success || !res.data) throw new Error(res.error?.message ?? t("errors.requestFailed"));
+      return res.data.balanceCredits;
+    },
+  });
 
-  async function handlePurchase(packageCode: string) {
-    const res = await walletApi.purchasePackage(packageCode);
-    if (!res.success || !res.data) {
-      setError(res.error?.message ?? t("errors.requestFailed"));
-      return;
-    }
-    setBalance(res.data.balanceCredits);
-    await reload();
-  }
+  const ledgerQuery = useQuery({
+    queryKey: QUERY_KEYS.ledger,
+    queryFn: async () => {
+      const res = await walletApi.getLedger(1, 20);
+      if (!res.success || !res.data) return [] as WalletLedgerEntryDto[];
+      return res.data;
+    },
+  });
 
-  useEffect(() => {
-    void reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const actionsQuery = useQuery({
+    queryKey: QUERY_KEYS.actions,
+    queryFn: async () => {
+      const res = await walletApi.listActions();
+      if (!res.success || !res.data) return [] as MeteredActionDto[];
+      return res.data;
+    },
+  });
 
-  async function handleTopUp() {
-    const amount = Number(topUpAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return;
-    const res = await walletApi.topUp(amount);
-    if (!res.success || !res.data) {
-      setError(res.error?.message ?? t("errors.requestFailed"));
-      return;
-    }
-    setBalance(res.data.balanceCredits);
-    await reload();
-  }
+  const packagesQuery = useQuery({
+    queryKey: QUERY_KEYS.packages,
+    queryFn: async () => {
+      const res = await walletApi.listPackages();
+      if (!res.success || !res.data) return [] as CreditPackageDto[];
+      return res.data;
+    },
+  });
 
-  async function handleDebit(code: string) {
-    const res = await walletApi.debit(code);
-    if (!res.success || !res.data) {
-      setError(res.error?.message ?? t("errors.requestFailed"));
-      return;
-    }
-    if (!res.data.success) {
-      setError(res.data.denyReason ?? t("wallet.debitFailed"));
-      return;
-    }
-    setBalance(res.data.remainingBalance);
-    await reload();
-  }
+  const invoicesQuery = useQuery({
+    queryKey: QUERY_KEYS.invoices,
+    queryFn: async () => {
+      const res = await walletApi.listInvoices(1, 20);
+      if (!res.success || !res.data) return [] as BillingInvoiceDto[];
+      return res.data;
+    },
+  });
 
-  if (loading) {
+  const invalidateAll = () =>
+    qc.invalidateQueries({ queryKey: ["wallet"] });
+
+  const purchaseMutation = useMutation({
+    mutationFn: (packageCode: string) => walletApi.purchasePackage(packageCode),
+    onSuccess: (res) => {
+      if (!res.success || !res.data) {
+        setMutationError(res.error?.message ?? t("errors.requestFailed"));
+        return;
+      }
+      setMutationError(null);
+      void invalidateAll();
+    },
+    onError: () => setMutationError(t("errors.requestFailed")),
+  });
+
+  const topUpMutation = useMutation({
+    mutationFn: () => {
+      const amount = Number(topUpAmount);
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error(t("errors.requestFailed"));
+      return walletApi.topUp(amount);
+    },
+    onSuccess: (res) => {
+      if (!res.success || !res.data) {
+        setMutationError(res.error?.message ?? t("errors.requestFailed"));
+        return;
+      }
+      setMutationError(null);
+      void invalidateAll();
+    },
+    onError: () => setMutationError(t("errors.requestFailed")),
+  });
+
+  const debitMutation = useMutation({
+    mutationFn: (code: string) => walletApi.debit(code),
+    onSuccess: (res) => {
+      if (!res.success || !res.data) {
+        setMutationError(res.error?.message ?? t("errors.requestFailed"));
+        return;
+      }
+      if (!res.data.success) {
+        setMutationError(res.data.denyReason ?? t("wallet.debitFailed"));
+        return;
+      }
+      setMutationError(null);
+      void invalidateAll();
+    },
+    onError: () => setMutationError(t("errors.requestFailed")),
+  });
+
+  const isLoading = balanceQuery.isLoading || ledgerQuery.isLoading || actionsQuery.isLoading ||
+    packagesQuery.isLoading || invoicesQuery.isLoading;
+
+  if (isLoading) {
     return (
       <PageContent>
         <PageHeader title={t("wallet.title")} description={t("wallet.subtitle")} />
@@ -101,17 +140,26 @@ export default function WalletPage() {
     );
   }
 
+  const balance = balanceQuery.data ?? 0;
+  const ledger = ledgerQuery.data ?? [];
+  const actions = actionsQuery.data ?? [];
+  const packages = packagesQuery.data ?? [];
+  const invoices = invoicesQuery.data ?? [];
+
   return (
     <PageContent>
       <PageHeader title={t("wallet.title")} description={t("wallet.subtitle")} />
-      {error ? <Alert variant="error">{error}</Alert> : null}
+      {balanceQuery.isError ? (
+        <Alert variant="error">{(balanceQuery.error as Error).message}</Alert>
+      ) : null}
+      {mutationError ? <Alert variant="error">{mutationError}</Alert> : null}
 
       <Card>
         <CardHeader>
           <CardTitle>{t("wallet.balance")}</CardTitle>
         </CardHeader>
         <CardBody>
-          <p className="text-3xl font-semibold">{balance ?? 0}</p>
+          <p className="text-3xl font-semibold">{balance}</p>
           <p className="text-sm text-[var(--color-muted)]">{t("wallet.creditsHint")}</p>
         </CardBody>
       </Card>
@@ -133,7 +181,11 @@ export default function WalletPage() {
                   {pkg.description ?? pkg.code} · {t("wallet.packageCredits", { count: pkg.creditsAmount })}
                 </p>
               </div>
-              <Button size="sm" onClick={() => void handlePurchase(pkg.code)}>
+              <Button
+                size="sm"
+                loading={purchaseMutation.isPending && purchaseMutation.variables === pkg.code}
+                onClick={() => purchaseMutation.mutate(pkg.code)}
+              >
                 {t("wallet.purchase", { price: formatPackagePrice(pkg.priceCents, pkg.currency) })}
               </Button>
             </div>
@@ -149,7 +201,7 @@ export default function WalletPage() {
           <p className="text-sm text-[var(--color-muted)]">{t("wallet.demoTopUpHint")}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Input className="max-w-[140px]" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
-            <Button variant="secondary" onClick={() => void handleTopUp()}>
+            <Button variant="secondary" loading={topUpMutation.isPending} onClick={() => topUpMutation.mutate()}>
               {t("wallet.topUp")}
             </Button>
           </div>
@@ -167,7 +219,12 @@ export default function WalletPage() {
                 <p className="font-medium">{a.code}</p>
                 <p className="text-[var(--color-muted)]">{a.description}</p>
               </div>
-              <Button size="sm" variant="secondary" onClick={() => void handleDebit(a.code)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={debitMutation.isPending && debitMutation.variables === a.code}
+                onClick={() => debitMutation.mutate(a.code)}
+              >
                 {t("wallet.debit", { cost: a.costCredits })}
               </Button>
             </div>

@@ -200,7 +200,8 @@
     "reopen": "Mở lại ticket",
     "closedHint": "Ticket đã đóng. Mở lại để gửi phản hồi mới.",
     "attachments": "Tệp đính kèm",
-    "attachmentsMessage": "Tệp đính kèm bổ sung"
+    "attachmentsMessage": "Tệp đính kèm bổ sung",
+    "search": "Tìm"
   },
   "pricing": {
     "title": "Bảng giá & gói",

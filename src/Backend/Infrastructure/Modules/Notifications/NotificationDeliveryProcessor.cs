@@ -17,6 +17,12 @@ public sealed class NotificationDeliveryProcessor : INotificationDeliveryProcess
 
     public async Task<bool> TryDeliverAsync(Guid notificationId, CancellationToken cancellationToken = default)
     {
+        // Guard: never mark as live-delivered if the host has no real push dispatcher.
+        // NullNotificationDispatcher (Worker) always succeeds silently — if we let it mark delivered,
+        // users would never receive the realtime push but retries would stop.
+        if (!_dispatcher.IsRealtime)
+            return false;
+
         var row = await _db.UserNotifications
             .FirstOrDefaultAsync(n => n.Id == notificationId, cancellationToken);
         if (row is null || row.LiveDeliveredAtUtc is not null)

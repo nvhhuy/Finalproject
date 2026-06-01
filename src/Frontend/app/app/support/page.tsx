@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
 import { SupportSkeleton } from "@/components/ui/skeleton";
 import { formatDateTimeOrDash } from "@/lib/shared";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { uploadSupportAttachment } from "@/lib/features/support/support-attachments";
 import {
   supportApi,
@@ -23,14 +25,10 @@ const PRIORITY_OPTIONS: SupportTicketPriority[] = ["Low", "Normal", "High", "Urg
 
 export default function SupportPage() {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [replying, setReplying] = useState(false);
-  const [statusBusy, setStatusBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<SupportTicketStatus | "">("");
-  const [items, setItems] = useState<SupportTicketDetailDto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
@@ -40,128 +38,112 @@ export default function SupportPage() {
   const [createFiles, setCreateFiles] = useState<File[]>([]);
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
 
+  const searchDebounced = useDebouncedValue(search, 350);
+
+  const ticketsQueryKey = ["support", "tickets", searchDebounced, status] as const;
+
+  const ticketsQuery = useQuery({
+    queryKey: ticketsQueryKey,
+    queryFn: async () => {
+      const res = await supportApi.list(1, 50, searchDebounced || undefined, status || undefined);
+      if (!res.success || !res.data) throw new Error(res.error?.message ?? t("errors.requestFailed"));
+      const details = await Promise.all(
+        res.data.items.map(async (it) => {
+          const d = await supportApi.detail(it.id);
+          return d.success && d.data ? d.data : null;
+        }),
+      );
+      return details.filter(Boolean) as SupportTicketDetailDto[];
+    },
+  });
+
+  const items = ticketsQuery.data ?? [];
+
   const selected = useMemo(() => items.find((x) => x.id === selectedId) ?? null, [items, selectedId]);
   const canReply = selected && selected.status !== "Closed";
   const canClose = selected && selected.status !== "Closed";
   const canReopen = selected && selected.status === "Closed";
 
-  const loadList = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const res = await supportApi.list(1, 50, search || undefined, status || undefined);
-    if (!res.success || !res.data) {
-      setError(res.error?.message ?? t("errors.requestFailed"));
-      setLoading(false);
-      return;
-    }
-    const details = await Promise.all(
-      res.data.items.map(async (it) => {
-        const d = await supportApi.detail(it.id);
-        return d.success && d.data ? d.data : null;
-      }),
-    );
-    const safe = details.filter(Boolean) as SupportTicketDetailDto[];
-    setItems(safe);
-    setSelectedId((prev) => {
-      if (!prev && safe.length > 0) return safe[0].id;
-      if (prev && !safe.some((x) => x.id === prev)) return safe[0]?.id ?? null;
-      return prev;
-    });
-    setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, status]);
+  // Auto-select first ticket when list changes
+  const resolvedId = useMemo(() => {
+    if (!ticketsQuery.isSuccess) return selectedId;
+    if (selectedId && items.some((x) => x.id === selectedId)) return selectedId;
+    return items[0]?.id ?? null;
+  }, [items, selectedId, ticketsQuery.isSuccess]);
 
-  // Debounce search so rapid typing doesn't fire N requests
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [searchDebounced, setSearchDebounced] = useState(search);
-  useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setSearchDebounced(search), 350);
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    };
-  }, [search]);
+  if (resolvedId !== selectedId) setSelectedId(resolvedId);
 
-  // Auto-refetch whenever debounced search or status filter changes
-  useEffect(() => {
-    void loadList();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchDebounced, status]);
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["support", "tickets"] });
 
-  async function handleCreate() {
-    if (!subject.trim() || !description.trim()) return;
-    setCreating(true);
-    setError(null);
-    try {
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (!subject.trim() || !description.trim()) throw new Error("Subject and description required");
       const res = await supportApi.create({
         subject: subject.trim(),
         description: description.trim(),
         category: category.trim() || undefined,
         priority,
       });
-      if (!res.success || !res.data) {
-        setError(res.error?.message ?? t("errors.requestFailed"));
-        return;
-      }
+      if (!res.success || !res.data) throw new Error(res.error?.message ?? t("errors.requestFailed"));
       if (createFiles.length > 0) {
         const attachments = await Promise.all(createFiles.map((f) => uploadSupportAttachment(f)));
         await supportApi.addMessage(res.data, t("support.attachmentsMessage"), attachments);
       }
+      return res.data;
+    },
+    onSuccess: (ticketId) => {
+      setMutationError(null);
       setSubject("");
       setDescription("");
       setCategory("");
       setPriority("Normal");
       setCreateFiles([]);
-      await loadList();
-      setSelectedId(res.data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("errors.requestFailed"));
-    } finally {
-      setCreating(false);
-    }
-  }
+      void invalidate();
+      setSelectedId(ticketId);
+    },
+    onError: (e) => setMutationError(e instanceof Error ? e.message : t("errors.requestFailed")),
+  });
 
-  async function handleReply() {
-    if (!selectedId || !reply.trim()) return;
-    setReplying(true);
-    setError(null);
-    try {
+  const replyMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedId || !reply.trim()) return;
       const attachments =
         replyFiles.length > 0 ? await Promise.all(replyFiles.map((f) => uploadSupportAttachment(f))) : undefined;
       const res = await supportApi.addMessage(selectedId, reply.trim(), attachments);
-      if (!res.success) {
-        setError(res.error?.message ?? t("errors.requestFailed"));
-        return;
-      }
+      if (!res.success) throw new Error(res.error?.message ?? t("errors.requestFailed"));
+    },
+    onSuccess: () => {
+      setMutationError(null);
       setReply("");
       setReplyFiles([]);
-      await loadList();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("errors.requestFailed"));
-    } finally {
-      setReplying(false);
-    }
-  }
+      void invalidate();
+    },
+    onError: (e) => setMutationError(e instanceof Error ? e.message : t("errors.requestFailed")),
+  });
 
-  async function handleClose() {
-    if (!selectedId) return;
-    setStatusBusy(true);
-    const res = await supportApi.close(selectedId);
-    setStatusBusy(false);
-    if (!res.success) setError(res.error?.message ?? t("errors.requestFailed"));
-    else await loadList();
-  }
+  const closeMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedId) return;
+      const res = await supportApi.close(selectedId);
+      if (!res.success) throw new Error(res.error?.message ?? t("errors.requestFailed"));
+    },
+    onSuccess: () => { setMutationError(null); void invalidate(); },
+    onError: (e) => setMutationError(e instanceof Error ? e.message : t("errors.requestFailed")),
+  });
 
-  async function handleReopen() {
-    if (!selectedId) return;
-    setStatusBusy(true);
-    const res = await supportApi.reopen(selectedId);
-    setStatusBusy(false);
-    if (!res.success) setError(res.error?.message ?? t("errors.requestFailed"));
-    else await loadList();
-  }
+  const reopenMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedId) return;
+      const res = await supportApi.reopen(selectedId);
+      if (!res.success) throw new Error(res.error?.message ?? t("errors.requestFailed"));
+    },
+    onSuccess: () => { setMutationError(null); void invalidate(); },
+    onError: (e) => setMutationError(e instanceof Error ? e.message : t("errors.requestFailed")),
+  });
 
-  if (loading && items.length === 0) {
+  const statusBusy = closeMutation.isPending || reopenMutation.isPending;
+
+  if (ticketsQuery.isLoading && items.length === 0) {
     return (
       <PageContent>
         <PageHeader title={t("support.title")} description={t("support.description")} />
@@ -210,7 +192,7 @@ export default function SupportPage() {
                 onChange={(e) => setCreateFiles(Array.from(e.target.files ?? []))}
               />
             </label>
-            <Button loading={creating} onClick={() => void handleCreate()}>
+            <Button loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
               {t("support.create")}
             </Button>
           </CardBody>
@@ -240,13 +222,30 @@ export default function SupportPage() {
                   </option>
                 ))}
               </select>
-              <Button variant="secondary" size="sm" loading={loading} onClick={() => void loadList()} aria-label={t("common.refresh")}>
+              <Button
+                size="sm"
+                onClick={() => qc.invalidateQueries({ queryKey: ticketsQueryKey })}
+              >
+                {t("support.search")}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={ticketsQuery.isFetching}
+                onClick={() => qc.invalidateQueries({ queryKey: ticketsQueryKey })}
+                aria-label={t("common.refresh")}
+              >
                 ↻
               </Button>
             </div>
 
-            {error ? <Alert variant="error">{error}</Alert> : null}
-            {loading ? (
+            {(mutationError ?? ticketsQuery.error) ? (
+              <Alert variant="error">
+                {mutationError ?? (ticketsQuery.error as Error)?.message}
+              </Alert>
+            ) : null}
+
+            {ticketsQuery.isFetching ? (
               <div className="grid gap-2 lg:grid-cols-[0.9fr_1.1fr]">
                 <div className="max-h-96 space-y-2 rounded-lg border border-[var(--color-border)] p-2">
                   {Array.from({ length: 4 }).map((_, i) => (
@@ -287,12 +286,12 @@ export default function SupportPage() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {canClose ? (
-                            <Button size="sm" variant="secondary" loading={statusBusy} onClick={() => void handleClose()}>
+                            <Button size="sm" variant="secondary" loading={statusBusy} onClick={() => closeMutation.mutate()}>
                               {t("support.close")}
                             </Button>
                           ) : null}
                           {canReopen ? (
-                            <Button size="sm" variant="secondary" loading={statusBusy} onClick={() => void handleReopen()}>
+                            <Button size="sm" variant="secondary" loading={statusBusy} onClick={() => reopenMutation.mutate()}>
                               {t("support.reopen")}
                             </Button>
                           ) : null}
@@ -332,7 +331,7 @@ export default function SupportPage() {
                               onChange={(e) => setReplyFiles(Array.from(e.target.files ?? []))}
                             />
                           </label>
-                          <Button loading={replying} onClick={() => void handleReply()}>
+                          <Button loading={replyMutation.isPending} onClick={() => replyMutation.mutate()}>
                             {t("support.reply")}
                           </Button>
                         </>

@@ -25,11 +25,13 @@ type NotificationToast = {
   body: string;
 };
 
+const TODAY_SENTINEL = "__today__";
+
 function formatGroupDate(value: string, locale: string) {
   const date = new Date(value);
   const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();
-  if (sameDay) return "today";
+  if (sameDay) return TODAY_SENTINEL;
   return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
@@ -195,7 +197,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
                 groupedNotifications.map(([group, items]) => (
                   <div key={group} className="mb-2">
                     <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">
-                      {group === "today" ? t("notifications.today") : group}
+                      {group === TODAY_SENTINEL ? t("notifications.today") : group}
                     </p>
                     {items.map((n) => (
                       <div key={n.id} className="mb-1 rounded-lg px-2 py-2 hover:bg-[var(--color-surface-muted)]">

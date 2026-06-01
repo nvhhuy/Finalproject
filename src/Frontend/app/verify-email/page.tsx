@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardBody } from "@/components/ui/card";
@@ -15,31 +16,31 @@ function VerifyBody() {
   const params = useSearchParams();
   const tokenId = params.get("tokenId") ?? "";
   const token = params.get("token") ?? "";
-  const [status, setStatus] = useState<"loading" | "ok" | "fail">("loading");
-  const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!tokenId || !token) {
-      setStatus("fail");
-      setMessage(t("verifyEmail.missingParams"));
-      return;
-    }
-    void authApi.verifyEmail(tokenId, token).then((res) => {
-      if (res.success) {
-        setStatus("ok");
-        setMessage(t("verifyEmail.success"));
-      } else {
-        setStatus("fail");
-        setMessage(res.error?.message ?? t("verifyEmail.failed"));
-      }
-    });
-  }, [tokenId, token, t]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["verify-email", tokenId, token],
+    queryFn: async () => {
+      const res = await authApi.verifyEmail(tokenId, token);
+      if (!res.success) throw new Error(res.error?.message ?? t("verifyEmail.failed"));
+      return res.data;
+    },
+    enabled: !!tokenId && !!token,
+    retry: false,
+  });
 
-  return (
-    <Alert variant={status === "ok" ? "success" : status === "fail" ? "error" : "info"}>
-      {status === "loading" ? t("verifyEmail.verifying") : message}
-    </Alert>
-  );
+  if (!tokenId || !token) {
+    return <Alert variant="error">{t("verifyEmail.missingParams")}</Alert>;
+  }
+
+  if (isLoading) {
+    return <Alert variant="info">{t("verifyEmail.verifying")}</Alert>;
+  }
+
+  if (error) {
+    return <Alert variant="error">{error instanceof Error ? error.message : t("verifyEmail.failed")}</Alert>;
+  }
+
+  return <Alert variant="success">{t("verifyEmail.success")}</Alert>;
 }
 
 export default function VerifyEmailPage() {

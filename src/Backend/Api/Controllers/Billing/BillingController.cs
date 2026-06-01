@@ -1,5 +1,6 @@
 using Api.Authorization;
 using Api.Controllers.Base;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Billing;
 using Application.Modules.Billing;
@@ -24,6 +25,7 @@ public sealed class BillingController : ApiControllerBase
     ///     Replace with payment-provider webhook flow in production.
     /// </summary>
     [HttpPost("subscribe")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<SubscribeToPlanResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Subscribe([FromBody] SubscribeToPlanRequest request,
         CancellationToken cancellationToken)
@@ -76,6 +78,7 @@ public sealed class BillingController : ApiControllerBase
     }
 
     [HttpPut("tenants/{tenantId:guid}/subscription/plan")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<SubscriptionResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ChangePlan(Guid tenantId, [FromBody] ChangeSubscriptionPlanRequest request,
         CancellationToken cancellationToken)

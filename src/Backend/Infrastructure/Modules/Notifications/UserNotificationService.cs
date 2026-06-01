@@ -27,22 +27,29 @@ public sealed class UserNotificationService : IUserNotificationService, IUserNot
         _db.Set<UserNotification>().Add(notification);
         await _db.SaveChangesAsync(cancellationToken);
 
-        try
+        // Only attempt live dispatch and mark delivered when a real push channel exists.
+        // NullNotificationDispatcher (Api with Realtime:Enabled=false, or Worker host) always
+        // succeeds silently — letting it mark delivered stops the Worker retry job from
+        // re-attempting when the user was never actually pushed.
+        if (_dispatcher.IsRealtime)
         {
-            await _dispatcher.DispatchAsync(
-                userId,
-                new LiveNotificationPayload(
-                    notification.Id,
-                    notification.Title,
-                    notification.Body,
-                    notification.LinkUrl,
-                    notification.CreatedAtUtc),
-                cancellationToken);
-            notification.MarkLiveDelivered(DateTime.UtcNow);
-        }
-        catch
-        {
-            // Worker job retries undelivered notifications.
+            try
+            {
+                await _dispatcher.DispatchAsync(
+                    userId,
+                    new LiveNotificationPayload(
+                        notification.Id,
+                        notification.Title,
+                        notification.Body,
+                        notification.LinkUrl,
+                        notification.CreatedAtUtc),
+                    cancellationToken);
+                notification.MarkLiveDelivered(DateTime.UtcNow);
+            }
+            catch
+            {
+                // Worker job retries undelivered notifications.
+            }
         }
 
         return notification.Id;

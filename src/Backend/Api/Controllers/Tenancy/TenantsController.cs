@@ -1,5 +1,6 @@
 using Api.Authorization;
 using Api.Controllers.Base;
+using Api.Filters;
 using Api.Models;
 using Api.Models.Tenancy;
 using Application.Modules.Tenancy;
@@ -67,6 +68,7 @@ public sealed class TenantsController : ApiControllerBase
     }
 
     [HttpPost("{tenantId:guid}/members")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<TenantMemberResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> InviteMember(
         Guid tenantId,
@@ -91,6 +93,7 @@ public sealed class TenantsController : ApiControllerBase
     }
 
     [HttpPost("{tenantId:guid}/domains")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<TenantDomainResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> AddDomain(
         Guid tenantId,
@@ -104,6 +107,7 @@ public sealed class TenantsController : ApiControllerBase
     }
 
     [HttpPost("{tenantId:guid}/domains/{domainId:guid}/verify")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<TenantDomainResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> VerifyDomain(Guid tenantId, Guid domainId, CancellationToken cancellationToken)
     {
@@ -114,6 +118,7 @@ public sealed class TenantsController : ApiControllerBase
     }
 
     [HttpDelete("{tenantId:guid}/domains/{domainId:guid}")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RemoveDomain(Guid tenantId, Guid domainId, CancellationToken cancellationToken)
     {
@@ -133,6 +138,7 @@ public sealed class TenantsController : ApiControllerBase
     }
 
     [HttpPut("{tenantId:guid}/sso")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<TenantSsoSettingsResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpsertSso(
         Guid tenantId,

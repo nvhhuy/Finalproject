@@ -46,9 +46,9 @@ export function createUserFormSchemas(t: TFunction) {
 
 /** First Zod error message or generic invalid input. */
 export function firstZodError(
-  result: z.SafeParseReturnType<unknown, unknown>,
+  result: z.ZodSafeParseResult<unknown>,
   t: TFunction,
 ): string | null {
   if (result.success) return null
-  return result.error.errors[0]?.message ?? t('validation.invalidInput')
+  return result.error.issues[0]?.message ?? t('validation.invalidInput')
 }

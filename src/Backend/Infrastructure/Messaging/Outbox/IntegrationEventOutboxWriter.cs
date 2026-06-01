@@ -9,7 +9,7 @@ namespace Infrastructure.Messaging.Outbox;
 public sealed class IntegrationEventOutboxWriter : IIntegrationEventOutboxWriter
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
-        { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     private readonly ICorrelationContext _correlation;
 

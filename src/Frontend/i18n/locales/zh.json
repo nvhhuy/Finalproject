@@ -200,7 +200,8 @@
     "reopen": "重新打开",
     "closedHint": "工单已关闭。重新打开后可继续回复。",
     "attachments": "附件",
-    "attachmentsMessage": "补充附件"
+    "attachmentsMessage": "补充附件",
+    "search": "查询"
   },
   "pricing": {
     "title": "套餐与定价",

@@ -200,7 +200,8 @@
     "reopen": "Reopen ticket",
     "closedHint": "This ticket is closed. Reopen it to send another reply.",
     "attachments": "Attachments",
-    "attachmentsMessage": "Additional attachments"
+    "attachmentsMessage": "Additional attachments",
+    "search": "Search"
   },
   "pricing": {
     "title": "Plans & pricing",

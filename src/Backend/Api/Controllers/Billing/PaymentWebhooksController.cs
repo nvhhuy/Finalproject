@@ -5,9 +5,11 @@ using Api.Models;
 using Api.Models.Billing;
 using Application.Modules.Billing;
 using Asp.Versioning;
+using Infrastructure.Modules.Billing;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Shared.Errors.General;
 
 namespace Api.Controllers.Billing;
@@ -18,23 +20,41 @@ namespace Api.Controllers.Billing;
 [Route("api/v{version:apiVersion}/webhooks/vnpay")]
 public sealed class VnPayWebhooksController : ApiControllerBase
 {
-    public VnPayWebhooksController(ISender sender) : base(sender)
+    private readonly VnPayWebhookOptions _options;
+
+    public VnPayWebhooksController(ISender sender, IOptions<VnPayWebhookOptions> options) : base(sender)
     {
+        _options = options.Value;
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<PaymentWebhookReceiptResponse>), StatusCodes.Status200OK)]
     public Task<IActionResult> Receive(CancellationToken cancellationToken)
     {
-        return ReceiveAsync("vnpay", cancellationToken);
+        return ReceiveAsync("vnpay", "X-VNPay-Signature", _options.RequireSignature, _options.WebhookSecret, cancellationToken);
     }
 
-    private async Task<IActionResult> ReceiveAsync(string provider, CancellationToken cancellationToken)
+    private async Task<IActionResult> ReceiveAsync(
+        string provider,
+        string signatureHeader,
+        bool requireSignature,
+        string? secret,
+        CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
         var payload = await reader.ReadToEndAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(payload))
             return BadRequestValidationApi(new ValidationError("body", "Empty webhook payload."));
+
+        if (requireSignature)
+        {
+            if (!Request.Headers.TryGetValue(signatureHeader, out var sigValues))
+                return BadRequestValidationApi(new ValidationError(signatureHeader,
+                    $"Header is required when {provider} webhook secret is configured."));
+
+            if (!HmacWebhookSignatureVerifier.TryVerify(payload, sigValues.ToString(), secret!))
+                return FailApi(new ForbiddenError($"Invalid {provider} webhook signature."));
+        }
 
         string? eventId = null;
         string? eventType = null;
@@ -76,23 +96,41 @@ public sealed class VnPayWebhooksController : ApiControllerBase
 [Route("api/v{version:apiVersion}/webhooks/payos")]
 public sealed class PayOsWebhooksController : ApiControllerBase
 {
-    public PayOsWebhooksController(ISender sender) : base(sender)
+    private readonly PayOsWebhookOptions _options;
+
+    public PayOsWebhooksController(ISender sender, IOptions<PayOsWebhookOptions> options) : base(sender)
     {
+        _options = options.Value;
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<PaymentWebhookReceiptResponse>), StatusCodes.Status200OK)]
     public Task<IActionResult> Receive(CancellationToken cancellationToken)
     {
-        return ReceiveAsync("payos", cancellationToken);
+        return ReceiveAsync("payos", "X-PayOS-Signature", _options.RequireSignature, _options.WebhookSecret, cancellationToken);
     }
 
-    private async Task<IActionResult> ReceiveAsync(string provider, CancellationToken cancellationToken)
+    private async Task<IActionResult> ReceiveAsync(
+        string provider,
+        string signatureHeader,
+        bool requireSignature,
+        string? secret,
+        CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
         var payload = await reader.ReadToEndAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(payload))
             return BadRequestValidationApi(new ValidationError("body", "Empty webhook payload."));
+
+        if (requireSignature)
+        {
+            if (!Request.Headers.TryGetValue(signatureHeader, out var sigValues))
+                return BadRequestValidationApi(new ValidationError(signatureHeader,
+                    $"Header is required when {provider} webhook secret is configured."));
+
+            if (!HmacWebhookSignatureVerifier.TryVerify(payload, sigValues.ToString(), secret!))
+                return FailApi(new ForbiddenError($"Invalid {provider} webhook signature."));
+        }
 
         string? eventId = null;
         string? eventType = null;

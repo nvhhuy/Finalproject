@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,21 +16,16 @@ function formatPrice(cents: number, currency: string) {
 
 export default function PricingPage() {
   const { t } = useTranslation();
-  const [plans, setPlans] = useState<PlanDto[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void (async () => {
+  const { data: plans = [], isLoading, error } = useQuery<PlanDto[], Error>({
+    queryKey: ["public-plans"],
+    queryFn: async () => {
       const res = await billingApi.listPublicPlans();
-      if (!res.success || !res.data) {
-        setError(res.error?.message ?? t("errors.requestFailed"));
-      } else {
-        setPlans(res.data.filter((p) => p.isActive).sort((a, b) => a.sortOrder - b.sortOrder));
-      }
-      setLoading(false);
-    })();
-  }, [t]);
+      if (!res.success || !res.data) throw new Error(res.error?.message ?? t("errors.requestFailed"));
+      return res.data.filter((p) => p.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   return (
     <div className="mesh-bg min-h-screen min-h-[100dvh]">
@@ -41,33 +36,33 @@ export default function PricingPage() {
           <p className="mt-3 text-[var(--color-muted)]">{t("pricing.subtitle")}</p>
         </div>
 
-        {error ? <Alert className="mt-6" variant="error">{error}</Alert> : null}
-        {loading ? <PricingCardsSkeleton /> : null}
+        {error ? <Alert className="mt-6" variant="error">{error.message}</Alert> : null}
+        {isLoading ? <PricingCardsSkeleton /> : null}
 
-        {!loading ? (
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map((plan) => (
-            <Card key={plan.id} className="flex flex-col">
-              <CardHeader>
-                <CardTitle>{plan.name}</CardTitle>
-                <p className="text-2xl font-semibold">{formatPrice(plan.priceMonthlyCents, plan.currency)}</p>
-                <p className="text-sm text-[var(--color-muted)]">/ {t("pricing.month")}</p>
-              </CardHeader>
-              <CardBody className="flex flex-1 flex-col gap-3">
-                {plan.description ? <p className="text-sm text-[var(--color-muted)]">{plan.description}</p> : null}
-                <ul className="space-y-1 text-sm">
-                  <li>{t("pricing.maxUsers", { count: plan.limits.maxUsers })}</li>
-                  <li>{t("pricing.trialDays", { count: plan.trialDays })}</li>
-                </ul>
-                <div className="mt-auto pt-2">
-                  <Link href={`/app/subscribe?plan=${encodeURIComponent(plan.code)}`}>
-                    <Button className="w-full">{t("pricing.choosePlan")}</Button>
-                  </Link>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
+        {!isLoading ? (
+          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <Card key={plan.id} className="flex flex-col">
+                <CardHeader>
+                  <CardTitle>{plan.name}</CardTitle>
+                  <p className="text-2xl font-semibold">{formatPrice(plan.priceMonthlyCents, plan.currency)}</p>
+                  <p className="text-sm text-[var(--color-muted)]">/ {t("pricing.month")}</p>
+                </CardHeader>
+                <CardBody className="flex flex-1 flex-col gap-3">
+                  {plan.description ? <p className="text-sm text-[var(--color-muted)]">{plan.description}</p> : null}
+                  <ul className="space-y-1 text-sm">
+                    <li>{t("pricing.maxUsers", { count: plan.limits.maxUsers })}</li>
+                    <li>{t("pricing.trialDays", { count: plan.trialDays })}</li>
+                  </ul>
+                  <div className="mt-auto pt-2">
+                    <Link href={`/app/subscribe?plan=${encodeURIComponent(plan.code)}`}>
+                      <Button className="w-full">{t("pricing.choosePlan")}</Button>
+                    </Link>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
         ) : null}
       </div>
     </div>

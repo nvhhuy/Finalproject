@@ -1,5 +1,6 @@
 using Application.Contracts.Email;
 using Application.Contracts.Messaging;
+using Infrastructure.Email;
 
 namespace Worker.Email;
 
@@ -28,7 +29,13 @@ public sealed class EmailSendConsumerService : QueueConsumerBackgroundService<Em
         _logger.LogInformation("Email worker sending to {To} (event {EventId})", message.To, message.EventId);
 
         using var scope = _scopeFactory.CreateScope();
-        var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
+
+        // Resolve SmtpEmailSender directly to bypass OutboxQueuingEmailSender, which is registered
+        // as IEmailSender on Api when Email:QueueViaOutbox=true. Using IEmailSender here would cause
+        // the consumer to re-queue the message instead of delivering it via SMTP.
+        var sender = (IEmailSender?)scope.ServiceProvider.GetService<SmtpEmailSender>()
+                     ?? scope.ServiceProvider.GetRequiredService<IEmailSender>();
+
         await sender.SendAsync(message.To, message.Subject, message.HtmlBody, cancellationToken);
     }
 }

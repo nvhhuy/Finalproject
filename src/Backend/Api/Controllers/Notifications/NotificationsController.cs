@@ -1,4 +1,5 @@
 using Api.Controllers.Base;
+using Api.Filters;
 using Api.Models;
 using Application.Modules.Notifications.Commands;
 using Application.Modules.Notifications.Queries;
@@ -33,6 +34,7 @@ public sealed class NotificationsController : ApiControllerBase
     }
 
     [HttpPost("{id:guid}/read")]
+    [Transactional]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> MarkRead(Guid id, CancellationToken cancellationToken = default)
     {

@@ -13,6 +13,8 @@ public sealed class SignalRNotificationDispatcher : INotificationDispatcher
         _hub = hub;
     }
 
+    public bool IsRealtime => true;
+
     public Task DispatchAsync(Guid userId, LiveNotificationPayload payload,
         CancellationToken cancellationToken = default)
     {

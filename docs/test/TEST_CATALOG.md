@@ -85,6 +85,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | `Application.Tests` | `MarkNotificationReadCommandHandlerTests` |
 | `Infrastructure.Tests` | `InMemoryObjectStorageTests`, `SystemDatabaseBackupImportTests` (invalid dump / key prefix) |
 | `Infrastructure.Tests` | `SystemSettingsBackupParseTests` (settings JSON formats) |
+| `Infrastructure.Tests` | `HmacWebhookSignatureVerifierTests` — valid sig, uppercase, whitespace tolerance, wrong secret, tampered payload, garbage sig, null/empty guard, determinism, distinct-payload isolation (14 cases) |
 
 ---
 

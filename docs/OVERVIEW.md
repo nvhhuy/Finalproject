@@ -2,7 +2,7 @@
 
 Single entry point for understanding this monorepo: what it contains, how pieces connect, and **what “production-ready” actually means here**.
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-06-01
 
 ---
 
@@ -79,7 +79,7 @@ Detailed deploy topology: [`deploy/ARCHITECTURE.md`](./deploy/ARCHITECTURE.md).
 | Clean layered backend (DDD-ish) | Yes | Api thin; Application handlers; Infrastructure adapters; Worker separate |
 | Security-conscious API defaults | Yes | HSTS, security headers, JWT, admin policy, rate limits, `AllowedHosts` fail-fast outside Development |
 | Reliable async pipeline | Yes (when configured) | Transactional outbox, RabbitMQ, idempotent consumers |
-| Ready for massive realtime / push | **No** | SignalR is scaffold; notification fan-out not product-complete |
+| Ready for massive realtime / push | **Partial** | SignalR hub + `SignalRNotificationDispatcher` implemented; enable `Realtime:Enabled=true` + Redis backplane for multi-replica scale |
 | Ready for large-scale search | **No** | Admin user search is SQL; product search not implemented |
 | Secure if you only `docker compose up` local | **No** | `local/` uses dev credentials by design — **local only** |
 
@@ -104,6 +104,8 @@ These are implemented in the API host (see `src/Backend/Api/Program.cs` and rela
 | **Concurrency** | Optimistic `RowVersion` → HTTP 409 on conflict |
 | **Data Protection** | Encrypts 2FA secrets at rest; **requires persistent key ring in production** — [`backend/DATA_PROTECTION.md`](./backend/DATA_PROTECTION.md) |
 | **Rate limiting** | Auth and media endpoints |
+| **Webhook signatures** | Stripe, VNPay, PayOS HMAC-SHA256 verified on receipt; gated on secret presence |
+| **Transactional mutations** | Billing, Tenancy, and Notification mark-read endpoints wrapped in `[Transactional]` |
 
 **Operator responsibilities (not automatic):**
 
@@ -113,6 +115,7 @@ These are implemented in the API host (see `src/Backend/Api/Program.cs` and rela
 - Disable or protect Swagger in production (`Swagger:ExposeInProduction`)
 - Change or disable dev admin seed in production (`Seed:Admin`)
 - Enable RabbitMQ + Redis when you need media pipeline / distributed cache / SignalR backplane
+- Set `SMTP__*`, `Stripe__WebhookSecret`, `VnPay__WebhookSecret`, `PayOs__WebhookSecret` in production env (see `deploy/env/**/app.env.example`)
 
 Deploy rules: [`deploy/README.md`](./deploy/README.md), checklist: [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md).
 
@@ -181,8 +184,9 @@ Override via `Seed:Admin` in configuration. **Change or disable before any share
 Tracked in detail in [`backend/PRODUCTION_READINESS_REPORT.md`](./backend/PRODUCTION_READINESS_REPORT.md) and [`backend/EXTENSIBILITY_AND_GAPS.md`](./backend/EXTENSIBILITY_AND_GAPS.md). Highlights:
 
 - Product full-text search (OpenSearch/Elasticsearch) — feasible via outbox, not built
-- Realtime notifications (SignalR) — placeholder only
-- Email — sent inline, not outboxed for scale/retry
+- Realtime notifications (SignalR) — **implemented**; `Realtime:Enabled=true` + Redis backplane required for multi-instance scale; Worker cron only delivers when a real dispatcher is present (`IsRealtime` guard)
+- Email — **outboxed via `OutboxQueuingEmailSender` → RabbitMQ → `EmailSendConsumerService`**; SMTP credentials required in production
+- Payment webhooks (VNPay/PayOS) — HMAC-SHA256 signature verification implemented; validate against provider sandbox before live traffic
 - Multi-tenant feature flags and settings — reserved for future
 - High-traffic: load-test outbox publisher, consider persistent Quartz store for multi-pod Worker
 

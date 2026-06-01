@@ -103,6 +103,8 @@ public static class DependencyInjection
         services.Configure<DatabaseBackupOptions>(configuration.GetSection(DatabaseBackupOptions.SectionName));
         services.Configure<IdempotencyOptions>(configuration.GetSection(IdempotencyOptions.SectionName));
         services.Configure<StripeWebhookOptions>(configuration.GetSection(StripeWebhookOptions.SectionName));
+        services.Configure<VnPayWebhookOptions>(configuration.GetSection(VnPayWebhookOptions.SectionName));
+        services.Configure<PayOsWebhookOptions>(configuration.GetSection(PayOsWebhookOptions.SectionName));
         services.Configure<FeatureFlagOptions>(configuration.GetSection(FeatureFlagOptions.SectionName));
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped<IFeatureFlagService, FeatureFlagService>();

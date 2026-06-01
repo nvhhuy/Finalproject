@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardDescription, CardTitle } from "@/components/ui/card";
@@ -16,46 +16,37 @@ import { getActiveTenantId } from "@/lib/tenancy/tenant-context";
 export default function DashboardPage() {
   const { t } = useTranslation();
   const auth = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [balance, setBalance] = useState<number | null>(null);
-  const [openTickets, setOpenTickets] = useState<number | null>(null);
-  const [planName, setPlanName] = useState<string | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    const [balRes, ticketsRes, tenantsRes] = await Promise.all([
-      walletApi.getBalance(),
-      supportApi.list(1, 1, undefined, "Open"),
-      billingApi.listMyTenants(),
-    ]);
-    if (balRes.success && balRes.data) setBalance(balRes.data.balanceCredits);
-    if (ticketsRes.success && ticketsRes.data) setOpenTickets(ticketsRes.data.totalCount);
+  const balanceQuery = useQuery({
+    queryKey: ["wallet", "balance"],
+    queryFn: async () => {
+      const res = await walletApi.getBalance();
+      if (!res.success || !res.data) return null;
+      return res.data.balanceCredits;
+    },
+  });
 
-    const tenantId = getActiveTenantId() ?? tenantsRes.data?.[0]?.id;
-    if (tenantId) {
+  const ticketsQuery = useQuery({
+    queryKey: ["support", "open-count"],
+    queryFn: async () => {
+      const res = await supportApi.list(1, 1, undefined, "Open");
+      if (!res.success || !res.data) return 0;
+      return res.data.totalCount;
+    },
+  });
+
+  const planQuery = useQuery({
+    queryKey: ["billing", "active-plan"],
+    queryFn: async () => {
+      const tenantsRes = await billingApi.listMyTenants();
+      const tenantId = getActiveTenantId() ?? tenantsRes.data?.[0]?.id;
+      if (!tenantId) return null;
       const ent = await billingApi.getTenantEntitlements(tenantId);
-      if (ent.success && ent.data) setPlanName(ent.data.subscription.planName);
-    }
-    setLoading(false);
-  };
+      return ent.success && ent.data ? ent.data.subscription.planName : null;
+    },
+  });
 
-  // Initial load
-  useEffect(() => {
-    void loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Refresh cards when user returns to this tab/window
-  const hasMounted = useRef(false);
-  useEffect(() => {
-    if (!hasMounted.current) { hasMounted.current = true; return; }
-    function onVisibility() {
-      if (document.visibilityState === "visible") void loadData();
-    }
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const loading = balanceQuery.isLoading || ticketsQuery.isLoading || planQuery.isLoading;
 
   const quickLinks = [
     { href: "/app/profile", label: t("dashboard.quickProfile") },
@@ -96,7 +87,7 @@ export default function DashboardPage() {
             <Card>
               <CardBody>
                 <CardTitle>{t("wallet.balance")}</CardTitle>
-                <p className="mt-2 text-2xl font-semibold">{balance ?? 0}</p>
+                <p className="mt-2 text-2xl font-semibold">{balanceQuery.data ?? 0}</p>
                 <Link href="/app/wallet" className="mt-2 inline-block text-sm text-[var(--color-primary)]">
                   {t("dashboard.viewWallet")} →
                 </Link>
@@ -106,10 +97,10 @@ export default function DashboardPage() {
               <CardBody>
                 <CardTitle>{t("dashboard.orgSummary")}</CardTitle>
                 <p className="mt-2 text-sm text-[var(--color-muted)]">
-                  {planName ? t("dashboard.activePlan", { plan: planName }) : t("dashboard.noTenant")}
+                  {planQuery.data ? t("dashboard.activePlan", { plan: planQuery.data }) : t("dashboard.noTenant")}
                 </p>
                 <p className="mt-1 text-sm text-[var(--color-muted)]">
-                  {t("dashboard.openTickets", { count: openTickets ?? 0 })}
+                  {t("dashboard.openTickets", { count: ticketsQuery.data ?? 0 })}
                 </p>
                 <Link href="/app/tenant" className="mt-2 inline-block text-sm text-[var(--color-primary)]">
                   {t("dashboard.viewTenant")} →

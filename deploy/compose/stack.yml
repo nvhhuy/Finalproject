@@ -36,7 +36,18 @@ x-api-env: &api-env
   Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
   Messaging__RabbitMq__UserName: ${RABBITMQ_USER:-guest}
   Messaging__RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+  Messaging__Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}
   Email__QueueViaOutbox: ${EMAIL_QUEUE_VIA_OUTBOX:-true}
+  Smtp__Enabled: ${SMTP_ENABLED:-false}
+  Smtp__Host: ${SMTP_HOST:-localhost}
+  Smtp__Port: ${SMTP_PORT:-587}
+  Smtp__UseSsl: ${SMTP_USE_SSL:-true}
+  Smtp__FromAddress: ${SMTP_FROM_ADDRESS:-noreply@localhost}
+  Smtp__FromDisplayName: ${SMTP_FROM_DISPLAY_NAME:-BaseProject}
+  Smtp__UserName: ${SMTP_USERNAME:-}
+  Smtp__Password: ${SMTP_PASSWORD:-}
+  VnPay__WebhookSecret: ${VNPAY_WEBHOOK_SECRET:-}
+  PayOs__WebhookSecret: ${PAYOS_WEBHOOK_SECRET:-}
   Realtime__Enabled: ${REALTIME_ENABLED:-true}
   Realtime__UseRedisBackplane: ${REALTIME_USE_REDIS_BACKPLANE:-true}
   Tenancy__SubdomainBaseHost: ${TENANT_SUBDOMAIN_BASE_HOST:-${APP_HOST}}
@@ -61,6 +72,14 @@ services:
     networks:
       - app
       - proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     labels:
       <<: *traefik-api-labels
       traefik.http.routers.api-app.rule: Host(`${APP_HOST}`) && PathPrefix(`/api`)
@@ -93,6 +112,14 @@ services:
     depends_on:
       api:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
   frontend:
     image: ${IMAGE_REGISTRY:-baseproject}/frontend:${IMAGE_TAG:-latest}
@@ -111,6 +138,14 @@ services:
     depends_on:
       api:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
     labels:
       traefik.enable: "true"
       traefik.docker.network: proxy
@@ -133,6 +168,14 @@ services:
     restart: unless-stopped
     networks:
       - proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 64M
+        reservations:
+          cpus: '0.05'
+          memory: 16M
     labels:
       traefik.enable: "true"
       traefik.docker.network: proxy

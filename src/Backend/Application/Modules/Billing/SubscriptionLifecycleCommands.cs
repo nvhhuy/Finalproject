@@ -166,7 +166,19 @@ public sealed class ChangeTenantSubscriptionPlanCommandHandler
             "manual",
             cancellationToken);
 
-        return await LoadSummaryAsync(subscription, cancellationToken);
+        // Build the summary from already-loaded in-memory entities so that the correct
+        // post-change state is returned even when the action is wrapped in a [Transactional]
+        // outer transaction (read context cannot see uncommitted writes from write context).
+        return new SubscriptionSummaryDto(
+            subscription.Id,
+            subscription.TenantId.Value,
+            plan.Id,
+            plan.Code,
+            plan.Name,
+            subscription.Status.ToString(),
+            subscription.CurrentPeriodStartUtc,
+            subscription.CurrentPeriodEndUtc,
+            subscription.AllowsWriteAccess);
     }
 
     private async Task<bool> IsTenantOwnerAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken)
@@ -174,31 +186,6 @@ public sealed class ChangeTenantSubscriptionPlanCommandHandler
         var ownerId = UserId.Create(userId);
         return await _db.Tenants.AsNoTracking()
             .AnyAsync(t => t.Id == TenantId.Create(tenantId) && t.OwnerUserId == ownerId, cancellationToken);
-    }
-
-    private async Task<Result<SubscriptionSummaryDto, Error>> LoadSummaryAsync(
-        Subscription subscription,
-        CancellationToken cancellationToken)
-    {
-        var row = await (
-                from s in _db.Subscriptions.AsNoTracking()
-                join p in _db.Plans.AsNoTracking() on s.PlanId equals p.Id
-                where s.Id == subscription.Id
-                select new SubscriptionSummaryDto(
-                    s.Id,
-                    s.TenantId.Value,
-                    s.PlanId,
-                    p.Code,
-                    p.Name,
-                    s.Status.ToString(),
-                    s.CurrentPeriodStartUtc,
-                    s.CurrentPeriodEndUtc,
-                    s.AllowsWriteAccess))
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (row is null)
-            return new NotFoundError("Subscription summary was not found.");
-        return row;
     }
 }
 

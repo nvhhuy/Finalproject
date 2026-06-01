@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,46 +12,46 @@ import { mediaApi, type MediaAssetDto } from "@/lib/features/media/media-api";
 import { formatBytes, formatDateTimeOrDash } from "@/lib/shared";
 import { cn } from "@/lib/ui/cn";
 
+const MEDIA_ASSET_KEY = (id: string) => ["media-asset", id] as const;
+
+const TERMINAL_STATUSES = new Set(["Ready", "Failed"]);
+
 export default function MediaLabPage() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
-  const [asset, setAsset] = useState<MediaAssetDto | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [assetId, setAssetId] = useState<string | null>(null);
 
-  async function run() {
-    if (!file) return;
-    setError(null);
-    setUploading(true);
-    try {
-      const init = await mediaApi.initiate(file);
-      const ok = await mediaApi.putToPresignedUrl(init.uploadUrl, file, file.type || "application/octet-stream");
+  const { data: asset } = useQuery<MediaAssetDto>({
+    queryKey: assetId ? MEDIA_ASSET_KEY(assetId) : ["media-asset-none"],
+    queryFn: () => mediaApi.get(assetId!),
+    enabled: !!assetId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status && TERMINAL_STATUSES.has(String(status)) ? false : 2000;
+    },
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (uploadFile: File) => {
+      const init = await mediaApi.initiate(uploadFile);
+      const ok = await mediaApi.putToPresignedUrl(init.uploadUrl, uploadFile, uploadFile.type || "application/octet-stream");
       if (!ok) throw new Error(t("errors.requestFailed"));
-      const completed = await mediaApi.complete(init.mediaAssetId);
-      setAsset(completed);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("errors.requestFailed"));
-    } finally {
-      setUploading(false);
-    }
-  }
+      return mediaApi.complete(init.mediaAssetId);
+    },
+    onSuccess: (completed) => {
+      setAssetId(completed.id);
+      queryClient.setQueryData(MEDIA_ASSET_KEY(completed.id), completed);
+    },
+  });
 
-  useEffect(() => {
-    if (!asset?.id) return;
-    let cancelled = false;
-    const interval = setInterval(async () => {
-      try {
-        const fresh = await mediaApi.get(asset.id);
-        if (!cancelled) setAsset(fresh);
-      } catch {
-        /* ignore poll errors */
-      }
-    }, 2000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [asset?.id]);
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, rowVersion }: { id: string; rowVersion: number }) =>
+      mediaApi.delete(id, rowVersion),
+    onSuccess: () => {
+      setAssetId(null);
+    },
+  });
 
   return (
     <PageContent>
@@ -73,22 +74,28 @@ export default function MediaLabPage() {
             <input type="file" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={run} disabled={!file} loading={uploading}>
+            <Button
+              onClick={() => file && uploadMutation.mutate(file)}
+              disabled={!file}
+              loading={uploadMutation.isPending}
+            >
               {t("media.runUpload")}
             </Button>
             {asset ? (
               <Button
                 variant="danger"
-                onClick={async () => {
-                  await mediaApi.delete(asset.id, asset.rowVersion);
-                  setAsset(null);
-                }}
+                loading={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate({ id: asset.id, rowVersion: asset.rowVersion })}
               >
                 {t("media.delete")}
               </Button>
             ) : null}
           </div>
-          {error ? <Alert variant="error">{error}</Alert> : null}
+          {uploadMutation.error ? (
+            <Alert variant="error">
+              {uploadMutation.error instanceof Error ? uploadMutation.error.message : t("errors.requestFailed")}
+            </Alert>
+          ) : null}
         </CardBody>
       </Card>
 
