@@ -3,6 +3,7 @@ using Application.Contracts.Notifications;
 using Application.Modules.Notifications;
 using Domains.Notifications.Events;
 using Domains.UserAggregate;
+using Infrastructure.Messaging;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -15,17 +16,20 @@ public sealed class MemberNotificationBroadcastScheduler : IMemberNotificationBr
     private readonly IIntegrationEventOutboxWriter _outbox;
     private readonly IMemberNotificationBroadcastProcessor _processor;
     private readonly MemberNotificationBroadcastOptions _options;
+    private readonly bool _messageBusEnabled;
 
     public MemberNotificationBroadcastScheduler(
         ApplicationDbContext db,
         IIntegrationEventOutboxWriter outbox,
         IMemberNotificationBroadcastProcessor processor,
-        IOptions<MemberNotificationBroadcastOptions> options)
+        IOptions<MemberNotificationBroadcastOptions> options,
+        IOptions<RabbitMqOptions> rabbitMq)
     {
         _db = db;
         _outbox = outbox;
         _processor = processor;
         _options = options.Value;
+        _messageBusEnabled = rabbitMq.Value.Enabled;
     }
 
     public async Task<int> BroadcastToAllMembersAsync(
@@ -41,7 +45,7 @@ public sealed class MemberNotificationBroadcastScheduler : IMemberNotificationBr
         var integrationEvent = new MemberNotificationBroadcastRequestedIntegrationEvent(title, body, linkUrl);
         await _outbox.EnqueueAsync(integrationEvent, cancellationToken);
 
-        if (_options.ProcessInlineInIntegrationTests)
+        if (ShouldProcessInline())
         {
             await _processor.ProcessAsync(
                 new MemberNotificationBroadcastPayload(
@@ -54,6 +58,9 @@ public sealed class MemberNotificationBroadcastScheduler : IMemberNotificationBr
 
         return recipientCount;
     }
+
+    private bool ShouldProcessInline() =>
+        _options.ProcessInlineInIntegrationTests || !_messageBusEnabled;
 
     internal static async Task<int> CountActiveMembersAsync(
         ApplicationDbContext db,

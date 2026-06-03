@@ -43,4 +43,15 @@ public sealed class UsersController : ApiControllerBase
             cancellationToken);
         return MatchApiEmpty(result);
     }
+
+    [HttpPut("profile/avatar")]
+    [Transactional]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SetAvatar([FromBody] SetAvatarRequest body, CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(
+            new SetMyAvatarCommand(CurrentUserId, body.MediaAssetId, body.RowVersion),
+            cancellationToken);
+        return MatchApiEmpty(result);
+    }
 }

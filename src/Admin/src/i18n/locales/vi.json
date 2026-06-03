@@ -24,6 +24,12 @@
   "nav": {
     "brandTitle": "Trung tâm quản lý",
     "brandSubtitle": "Bảng điều khiển Admin",
+    "group": {
+      "overview": "Tổng quan",
+      "users": "Người dùng & liên lạc",
+      "billing": "Thanh toán",
+      "platform": "Nền tảng"
+    },
     "dashboard": "Tổng quan",
     "users": "Người dùng",
     "notifications": "Thông báo chung",
@@ -36,7 +42,9 @@
     "creditPackages": "Gói credit",
     "tenants": "Tenant",
     "invoices": "Hóa đơn",
-    "signOut": "Đăng xuất"
+    "signOut": "Đăng xuất",
+    "expandGroup": "Mở rộng nhóm",
+    "collapseGroup": "Thu gọn nhóm"
   },
   "login": {
     "title": "Đăng nhập Admin",
@@ -86,9 +94,17 @@
   },
   "dashboard": {
     "title": "Tổng quan",
-    "description": "Tổng quan người dùng nền tảng và đăng ký gần đây.",
+    "description": "Sức khỏe nền tảng — người dùng, tenant, hỗ trợ và đăng ký.",
     "metricsError": "Không tải được số liệu. API có đang chạy không?",
+    "kpiTitle": "Chỉ số chính",
+    "kpiHint": "Bấm thẻ để mở mục quản trị tương ứng.",
     "activeUsers": "Người dùng hoạt động",
+    "lockedUsers": "Tài khoản bị khóa",
+    "registrationsToday": "Đăng ký hôm nay",
+    "registrationsLast7Days": "Đăng ký (7 ngày)",
+    "totalTenants": "Tenant",
+    "openSupportTickets": "Ticket hỗ trợ đang mở",
+    "unreadContactMessages": "Tin liên hệ chưa đọc",
     "registrationsTitle": "Đăng ký (14 ngày qua)",
     "loadingChart": "Đang tải biểu đồ…",
     "noRegistrationData": "Chưa có dữ liệu đăng ký."
@@ -371,7 +387,7 @@
   "broadcastNotifications": {
     "title": "Thông báo chung",
     "description": "Gửi thông báo trong ứng dụng tới toàn bộ thành viên đang hoạt động.",
-    "hint": "Thành viên sẽ thấy trong chuông thông báo. Nếu đang online sẽ nhận ngay; nếu không sẽ thấy khi mở lại ứng dụng.",
+    "hint": "Chỉ gửi tới tài khoản Member đang hoạt động (không gửi Admin). Khi RabbitMQ tắt (mặc định API local), gửi xong là nhận ngay. Khi bật RabbitMQ cần Worker chạy để fan-out từ outbox. Kiểm tra bằng đăng nhập Frontend bằng user Member và mở /app/notifications.",
     "formTitle": "Soạn thông báo",
     "titleLabel": "Tiêu đề",
     "titlePlaceholder": "Bảo trì hệ thống tối nay",

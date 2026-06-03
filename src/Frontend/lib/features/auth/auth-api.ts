@@ -210,4 +210,13 @@ export const authApi = {
       body: { code },
     });
   },
+
+  async disableTwoFactor(code: string) {
+    return await apiRequest<unknown>({
+      method: "POST",
+      path: "/api/v1/auth/2fa/disable",
+      auth: true,
+      body: { code },
+    });
+  },
 };

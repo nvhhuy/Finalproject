@@ -24,6 +24,12 @@
   "nav": {
     "brandTitle": "Management Center",
     "brandSubtitle": "Admin Console",
+    "group": {
+      "overview": "Overview",
+      "users": "Users & comms",
+      "billing": "Billing",
+      "platform": "Platform"
+    },
     "dashboard": "Dashboard",
     "users": "Users",
     "notifications": "Announcements",
@@ -36,7 +42,9 @@
     "creditPackages": "Credit packages",
     "tenants": "Tenants",
     "invoices": "Invoices",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "expandGroup": "Expand section",
+    "collapseGroup": "Collapse section"
   },
   "login": {
     "title": "Admin sign in",
@@ -86,9 +94,17 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "description": "Overview of platform users and recent sign-ups.",
+    "description": "Platform health at a glance — users, tenants, support, and sign-ups.",
     "metricsError": "Failed to load metrics. Is the API running?",
+    "kpiTitle": "Key metrics",
+    "kpiHint": "Click a card to open the related admin section.",
     "activeUsers": "Active users",
+    "lockedUsers": "Locked accounts",
+    "registrationsToday": "Sign-ups today",
+    "registrationsLast7Days": "Sign-ups (7 days)",
+    "totalTenants": "Tenants",
+    "openSupportTickets": "Open support tickets",
+    "unreadContactMessages": "Unread contact messages",
     "registrationsTitle": "Registrations (last 14 days)",
     "loadingChart": "Loading chart…",
     "noRegistrationData": "No registration data yet."
@@ -371,7 +387,7 @@
   "broadcastNotifications": {
     "title": "Member announcements",
     "description": "Send an in-app notification to every active member account.",
-    "hint": "Members see this in their notification bell. Live push is delivered when they are online; otherwise it appears the next time they open the app.",
+    "hint": "Delivered only to active accounts with the Member role (not Admin). With RabbitMQ disabled (default local API), delivery is immediate after send. With RabbitMQ enabled, the Worker must be running to fan out from the outbox. Test by signing into the Frontend as a member user and opening /app/notifications.",
     "formTitle": "Compose announcement",
     "titleLabel": "Title",
     "titlePlaceholder": "Scheduled maintenance tonight",

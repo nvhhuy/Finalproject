@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
@@ -15,6 +16,10 @@ export default function NotificationsPage() {
   return (
     <PageContent>
       <PageHeader title={t("notifications.pageTitle")} description={t("notifications.pageDescription")} />
+      <Alert variant="info" className="mb-4">
+        {t("notifications.whereToFind")}
+      </Alert>
+      <p className="mb-4 text-sm text-[var(--color-muted)]">{t("notifications.bellHint")}</p>
       <Card>
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>{t("notifications.title")}</CardTitle>
@@ -29,7 +34,10 @@ export default function NotificationsPage() {
         </CardHeader>
         <CardBody className="space-y-2">
           {notifications.length === 0 ? (
-            <p className="text-sm text-[var(--color-muted)]">{t("notifications.empty")}</p>
+            <div className="space-y-2 text-sm text-[var(--color-muted)]">
+              <p>{t("notifications.empty")}</p>
+              <p>{t("notifications.broadcastDevHint")}</p>
+            </div>
           ) : (
             notifications.map((n) => (
               <div

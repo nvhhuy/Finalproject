@@ -8,4 +8,10 @@ export { formatDate, formatDateTime, formatRelativeTime, formatBytes, formatCoun
 export { dash, formatDateOrDash, formatDateTimeOrDash, formatEmpty } from "@/lib/shared/display";
 export { calcTotalPages, clampPage } from "@/lib/shared/pagination";
 export { createAuthSchemas, firstZodError } from "@/lib/shared/validation";
-export { ApiClientError, isConcurrencyError } from "@/lib/errors";
+export {
+  ApiClientError,
+  formatValidationErrors,
+  getApiErrorMessageFromPayload,
+  getNetworkErrorMessage,
+  isConcurrencyError,
+} from "@/lib/errors";

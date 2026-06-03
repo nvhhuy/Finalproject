@@ -38,6 +38,10 @@ public sealed class AdminIntegrationTests
             await metricsResponse.ReadApiAsync<AdminDashboardMetricsDto>();
         Assert.NotNull(metrics?.Data);
         Assert.True(metrics.Data.TotalActiveUsers >= 1);
+        Assert.True(metrics.Data.RegistrationsLast14Days.Count >= 14);
+        Assert.True(metrics.Data.TotalTenants >= 0);
+        Assert.True(metrics.Data.OpenSupportTickets >= 0);
+        Assert.True(metrics.Data.UnreadContactMessages >= 0);
     }
 
     [SkippableFact]

@@ -1,5 +1,6 @@
 using Application.Contracts.Notifications;
 using Application.Modules.Notifications;
+using Moq;
 using Domains.UserAggregate;
 using Infrastructure.Modules.Notifications;
 using Infrastructure.Tests.Support;
@@ -69,10 +70,17 @@ public sealed class MemberNotificationBroadcastProcessorTests
 
     private static MemberNotificationBroadcastProcessor CreateProcessor(
         Infrastructure.Persistence.ApplicationDbContext db,
-        int batchSize = 500) =>
-        new(
+        int batchSize = 500)
+    {
+        var delivery = new Mock<INotificationDeliveryProcessor>();
+        delivery
+            .Setup(d => d.TryDeliverAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        return new(
             db,
-            Options.Create(new MemberNotificationBroadcastOptions { InsertBatchSize = batchSize }));
+            Options.Create(new MemberNotificationBroadcastOptions { InsertBatchSize = batchSize }),
+            delivery.Object);
+    }
 
     private static User NewMemberUser() =>
         User.CreateNew("A", "B", $"u{Guid.NewGuid():N}"[..12], $"{Guid.NewGuid():N}@example.com", "hash:placeholder");

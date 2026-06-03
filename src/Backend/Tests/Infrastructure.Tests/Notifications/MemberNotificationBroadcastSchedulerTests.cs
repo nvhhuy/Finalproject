@@ -1,6 +1,7 @@
 using Application.Contracts.Messaging;
 using Application.Modules.Notifications;
 using Domains.Notifications.Events;
+using Infrastructure.Messaging;
 using Infrastructure.Modules.Notifications;
 using Infrastructure.Tests.Support;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,8 @@ public sealed class MemberNotificationBroadcastSchedulerTests
             db,
             outbox.Object,
             processor.Object,
-            Options.Create(new MemberNotificationBroadcastOptions()));
+            Options.Create(new MemberNotificationBroadcastOptions()),
+            Options.Create(new RabbitMqOptions { Enabled = true }));
 
         var count = await scheduler.BroadcastToAllMembersAsync("Hi", "There", "/app");
 
@@ -63,7 +65,39 @@ public sealed class MemberNotificationBroadcastSchedulerTests
             db,
             outbox.Object,
             processor.Object,
-            Options.Create(new MemberNotificationBroadcastOptions { ProcessInlineInIntegrationTests = true }));
+            Options.Create(new MemberNotificationBroadcastOptions { ProcessInlineInIntegrationTests = true }),
+            Options.Create(new RabbitMqOptions { Enabled = true }));
+
+        await scheduler.BroadcastToAllMembersAsync("Hi", "There", null);
+
+        processor.Verify(
+            p => p.ProcessAsync(It.IsAny<Application.Contracts.Notifications.MemberNotificationBroadcastPayload>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Broadcast_runs_inline_processor_when_message_bus_disabled()
+    {
+        using var db = TestDbContextFactory.Create(out _, out _);
+        db.Users.Add(NewMemberUser());
+        await db.SaveChangesAsync();
+
+        var outbox = new Mock<IIntegrationEventOutboxWriter>();
+        outbox.Setup(o => o.EnqueueAsync(It.IsAny<Domains.Common.Interfaces.IIntegrationEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var processor = new Mock<Application.Contracts.Notifications.IMemberNotificationBroadcastProcessor>();
+        processor.Setup(p => p.ProcessAsync(It.IsAny<Application.Contracts.Notifications.MemberNotificationBroadcastPayload>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var scheduler = new MemberNotificationBroadcastScheduler(
+            db,
+            outbox.Object,
+            processor.Object,
+            Options.Create(new MemberNotificationBroadcastOptions()),
+            Options.Create(new RabbitMqOptions { Enabled = false }));
 
         await scheduler.BroadcastToAllMembersAsync("Hi", "There", null);
 

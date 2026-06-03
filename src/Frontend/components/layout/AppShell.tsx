@@ -12,12 +12,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const navItems = [
     { href: "/app", label: t("nav.dashboard") },
-    { href: "/app/profile", label: t("nav.profile") },
-    { href: "/app/settings", label: t("nav.settings") },
-    { href: "/app/security/2fa", label: t("nav.twoFa") },
     { href: "/app/media", label: t("nav.mediaLab") },
-    { href: "/app/support", label: t("nav.support") },
-    { href: "/app/notifications", label: t("nav.notifications") },
     { href: "/app/wallet", label: t("nav.wallet") },
     { href: "/app/subscribe", label: t("nav.subscribe") },
     { href: "/app/tenant", label: t("nav.tenant") },
@@ -25,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mesh-bg flex min-h-screen min-h-[100dvh] flex-col">
-      <header className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
+      <header className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 shadow-sm backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-4 sm:px-6">
           <AppBrand href="/app" className="shrink-0 text-base sm:text-lg" />
 

@@ -134,6 +134,7 @@ function LoginForm() {
               <Suspense fallback={<Skeleton className="h-10 w-full rounded-lg" />}>
                 <LazyGoogleSignInButton />
               </Suspense>
+              <p className="text-xs text-[var(--color-muted)]">{t("login.googleExistingEmailHint")}</p>
               <div className="flex flex-wrap justify-between gap-2 text-sm text-[var(--color-muted)]">
                 <span>
                   {t("login.needAccount")}{" "}

@@ -50,9 +50,11 @@
     "openMenu": "Mở menu tài khoản",
     "account": "Tài khoản",
     "profile": "Cài đặt hồ sơ",
+    "accountSettings": "Cài đặt tài khoản",
     "security": "Bảo mật & 2FA",
     "appearance": "Giao diện",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "app": "Ứng dụng"
   },
   "landing": {
     "tag": "Frontend nền",
@@ -76,7 +78,18 @@
     "needAccount": "Chưa có tài khoản?",
     "forgotPassword": "Quên mật khẩu?",
     "signInFailed": "Đăng nhập thất bại",
-    "apiUnreachable": "Không kết nối được API. Chạy backend: cd src/Backend/Api && dotnet run --launch-profile https"
+    "apiUnreachable": "Không kết nối được API. Chạy backend: cd src/Backend/Api && dotnet run --launch-profile https",
+    "googleExistingEmailHint": "Đã đăng ký bằng email/mật khẩu? Đăng nhập Google với cùng email để liên kết tài khoản."
+  },
+  "account": {
+    "title": "Cài đặt tài khoản",
+    "subtitle": "Hồ sơ, bảo mật và tùy chọn ứng dụng tại một nơi.",
+    "securityHint": "Bảo vệ tài khoản bằng ứng dụng xác thực. Có thể tắt 2FA bằng mã hợp lệ.",
+    "tabs": {
+      "profile": "Hồ sơ",
+      "security": "Bảo mật",
+      "preferences": "Ứng dụng"
+    }
   },
   "awaitingVerification": {
     "title": "Xác minh email",
@@ -96,7 +109,8 @@
     "backToLogin": "Về đăng nhập",
     "success": "Đăng ký thành công. Kiểm tra email nếu cần xác minh.",
     "resendHint": "Chưa nhận được email?",
-    "resend": "Gửi lại email xác minh"
+    "resend": "Gửi lại email xác minh",
+    "confirmPassword": "Xác nhận mật khẩu"
   },
   "forgotPassword": {
     "title": "Quên mật khẩu",
@@ -189,7 +203,11 @@
     "confirm": "Xác nhận",
     "enabledMsg": "Đã bật 2FA.",
     "beginFailed": "Bắt đầu 2FA thất bại",
-    "confirmFailed": "Xác nhận 2FA thất bại"
+    "confirmFailed": "Xác nhận 2FA thất bại",
+    "disable": "Tắt 2FA",
+    "disableCode": "Mã xác thực để tắt",
+    "disabledMsg": "Đã tắt xác thực hai yếu tố.",
+    "disableFailed": "Không thể tắt 2FA"
   },
   "media": {
     "title": "Media Lab",
@@ -215,7 +233,10 @@
     "today": "Hôm nay",
     "open": "Mở",
     "pageTitle": "Tất cả thông báo",
-    "pageDescription": "Tin nhắn trong app từ hỗ trợ, thanh toán và hệ thống."
+    "pageDescription": "Tin nhắn trong app từ hỗ trợ, thanh toán và hệ thống.",
+    "whereToFind": "Thông báo chung hiện ở đây và ở chuông góc dưới-phải màn hình.",
+    "bellHint": "Dùng chuông để xem nhanh; trang này là toàn bộ lịch sử.",
+    "broadcastDevHint": "Broadcast từ Admin cần Worker xử lý hàng đợi (RabbitMQ + Worker phải chạy local). Tải lại trang hoặc mở chuông sau vài giây."
   },
   "support": {
     "title": "Trung tâm hỗ trợ",
@@ -225,6 +246,28 @@
     "subject": "Tiêu đề",
     "descriptionInput": "Mô tả chi tiết vấn đề của bạn...",
     "category": "Danh mục",
+    "priority": "Độ ưu tiên",
+    "filterStatus": "Lọc theo trạng thái",
+    "categories": {
+      "account": "Tài khoản & đăng nhập",
+      "billing": "Thanh toán & gói",
+      "technical": "Lỗi kỹ thuật",
+      "feature": "Đề xuất tính năng",
+      "other": "Khác"
+    },
+    "priorities": {
+      "Low": "Thấp",
+      "Normal": "Bình thường",
+      "High": "Cao",
+      "Urgent": "Khẩn"
+    },
+    "statuses": {
+      "Open": "Đang mở",
+      "PendingSupport": "Chờ hỗ trợ",
+      "PendingUser": "Chờ bạn",
+      "Resolved": "Đã xử lý",
+      "Closed": "Đã đóng"
+    },
     "create": "Tạo ticket",
     "searchPlaceholder": "Tìm ticket...",
     "allStatuses": "Tất cả trạng thái",
@@ -358,12 +401,24 @@
   },
   "errors": {
     "requestFailed": "Yêu cầu thất bại",
+    "emailAlreadyInUse": "Email này đã được đăng ký. Hãy đăng nhập hoặc dùng email khác.",
+    "userNameAlreadyTaken": "Tên đăng nhập này đã có người dùng. Chọn tên khác.",
+    "registrationDisabled": "Hiện không cho phép đăng ký công khai.",
+    "turnstileFailed": "Xác minh người thật thất bại. Tải lại trang và thử lại.",
     "concurrencyConflict": "Dữ liệu đã thay đổi. Tải lại và thử lại.",
     "passwordMismatch": "Mật khẩu không khớp",
-    "passwordMin": "Mật khẩu tối thiểu 8 ký tự"
+    "passwordMin": "Mật khẩu tối thiểu 8 ký tự",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng.",
+    "invalidAuthenticatorCode": "Mã xác thực không hợp lệ.",
+    "twoFactorNotEnabled": "Chưa bật xác thực hai yếu tố."
   },
   "validation": {
     "invalidEmail": "Email không hợp lệ",
-    "required": "Bắt buộc"
+    "required": "Trường này là bắt buộc",
+    "userNameRequired": "Cần nhập tên đăng nhập",
+    "firstNameRequired": "Cần nhập tên",
+    "lastNameRequired": "Cần nhập họ",
+    "emailRequired": "Cần nhập email",
+    "passwordComplexity": "Mật khẩu cần chữ hoa, chữ thường, số và ký tự đặc biệt."
   }
 }

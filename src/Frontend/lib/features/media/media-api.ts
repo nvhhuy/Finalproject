@@ -100,3 +100,24 @@ export const mediaApi = {
   },
 };
 
+/** Poll until variants exist or processing finishes (avatar / thumbnails). */
+export async function waitForMediaRenderable(
+  mediaAssetId: string,
+  maxAttempts = 30,
+  intervalMs = 1000,
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const asset = await mediaApi.get(mediaAssetId);
+    const url = mediaApi.bestRenderableUrl(asset);
+    if (url) return { asset, url };
+    const status = String(asset.status).toLowerCase();
+    if (status === "failed" || status === "4") {
+      throw new Error(asset.errorMessage ?? "Media processing failed");
+    }
+    if (attempt < maxAttempts - 1) {
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+  }
+  throw new Error("Media is still processing. Try again in a moment.");
+}
+

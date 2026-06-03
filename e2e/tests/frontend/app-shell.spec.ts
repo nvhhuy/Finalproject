@@ -8,8 +8,8 @@ test.describe('Frontend — authenticated app shell', () => {
     await page.goto('/app');
     await waitForFrontendAppShell(page);
     await expect(page.getByText(/workspace|dashboard/i).first()).toBeVisible();
-    await page.getByRole('link', { name: /profile/i }).first().click();
-    await expect(page).toHaveURL(/\/app\/profile/);
+    await page.getByRole('link', { name: /profile|account/i }).first().click();
+    await expect(page).toHaveURL(/\/app\/account/);
     await expect(page.locator('#firstName').first()).toBeVisible();
   });
 

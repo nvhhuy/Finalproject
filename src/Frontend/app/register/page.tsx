@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TurnstileWidget } from "@/components/ui/TurnstileWidget";
 import { authApi } from "@/lib/features/auth/auth-api";
+import { getApiErrorMessageFromPayload, getNetworkErrorMessage } from "@/lib/errors";
 
 export default function RegisterPage() {
   const { t } = useTranslation();
@@ -19,6 +20,7 @@ export default function RegisterPage() {
     email: "",
     userName: "",
     password: "",
+    confirmPassword: "",
     firstName: "",
     lastName: "",
   });
@@ -31,13 +33,26 @@ export default function RegisterPage() {
     setLoading(true);
     setMessage(null);
     setIsSuccess(false);
+    if (form.password !== form.confirmPassword) {
+      setMessage(t("errors.passwordMismatch"));
+      setLoading(false);
+      return;
+    }
+    if (form.password.length < 8) {
+      setMessage(t("errors.passwordMin"));
+      setLoading(false);
+      return;
+    }
     try {
       const res = await authApi.register({ ...form, turnstileToken });
       if (res.success) {
         router.push(`/awaiting-verification?email=${encodeURIComponent(form.email)}`);
         return;
       }
-      setMessage(res.error?.message ?? t("errors.requestFailed"));
+      setMessage(getApiErrorMessageFromPayload(res.error));
+      setTurnstileToken(null);
+    } catch (e) {
+      setMessage(getNetworkErrorMessage(e));
       setTurnstileToken(null);
     } finally {
       setLoading(false);
@@ -48,9 +63,14 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const res = await authApi.resendVerification(form.email, turnstileToken);
-      setMessage(res.success ? t("profile.resendSent") : res.error?.message ?? t("errors.requestFailed"));
+      setMessage(
+        res.success ? t("profile.resendSent") : getApiErrorMessageFromPayload(res.error),
+      );
       setIsSuccess(res.success);
       if (!res.success) setTurnstileToken(null);
+    } catch (e) {
+      setMessage(getNetworkErrorMessage(e));
+      setTurnstileToken(null);
     } finally {
       setLoading(false);
     }
@@ -75,6 +95,17 @@ export default function RegisterPage() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               type="password"
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>
+            <Input
+              id="confirmPassword"
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              type="password"
+              autoComplete="new-password"
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -99,8 +130,8 @@ export default function RegisterPage() {
             {t("register.backToLogin")}
           </Button>
           {message ? (
-            <Alert variant={isSuccess ? "success" : "info"}>
-              <p>{message}</p>
+            <Alert variant={isSuccess ? "success" : "error"}>
+              <p className="whitespace-pre-wrap">{message}</p>
               {isSuccess ? (
                 <p className="mt-2">
                   {t("register.resendHint")}{" "}

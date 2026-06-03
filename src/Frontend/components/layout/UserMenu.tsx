@@ -7,6 +7,8 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useNotifications } from "@/lib/features/notifications/notifications-context";
+import { AvatarImage } from "@/components/media/avatar-image";
 import { cn } from "@/lib/ui/cn";
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -29,7 +31,9 @@ function ChevronIcon({ open }: { open: boolean }) {
 export function UserMenu() {
   const { t } = useTranslation();
   const auth = useAuth();
+  const { unreadCount } = useNotifications();
   const [open, setOpen] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const initials =
@@ -60,13 +64,20 @@ export function UserMenu() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (auth.user?.avatarMediaAssetId || auth.user?.avatarUrl) setAvatarVersion((v) => v + 1);
+  }, [auth.user?.avatarMediaAssetId, auth.user?.avatarUrl]);
+
+  const showAvatarSlot = Boolean(auth.user?.avatarMediaAssetId || auth.user?.avatarUrl);
+
   return (
     <div ref={rootRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        title={auth.user?.userName}
         className={cn(
-          "flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-1 pl-1 pr-2.5 shadow-sm transition",
+          "relative flex min-w-0 max-w-[11rem] items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-1 pl-1 pr-2.5 shadow-sm transition sm:max-w-[14rem]",
           "hover:border-[var(--color-border-strong)]",
           open && "border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/25",
         )}
@@ -74,10 +85,27 @@ export function UserMenu() {
         aria-haspopup="menu"
         aria-label={t("userMenu.openMenu")}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-white">
-          {initials}
+        <span className="relative shrink-0">
+          <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-white">
+              {initials}
+            </span>
+            {showAvatarSlot ? (
+              <AvatarImage
+                mediaAssetId={auth.user?.avatarMediaAssetId}
+                fallbackUrl={auth.user?.avatarUrl}
+                cacheKey={avatarVersion}
+                className="absolute inset-0 h-8 w-8 rounded-full object-cover ring-1 ring-[var(--color-border)]"
+              />
+            ) : null}
+          </span>
+          {unreadCount > 0 ? (
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-[var(--color-surface)] bg-[var(--color-primary)] px-0.5 text-[10px] font-bold leading-none text-white">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          ) : null}
         </span>
-        <span className="hidden max-w-[6rem] truncate text-sm font-medium text-[var(--color-foreground)] md:inline lg:max-w-[8rem]">
+        <span className="hidden min-w-0 truncate text-sm font-medium text-[var(--color-foreground)] md:inline">
           {auth.user?.userName}
         </span>
         <ChevronIcon open={open} />
@@ -96,11 +124,23 @@ export function UserMenu() {
 
           <div className="px-2 py-2">
             <p className="menu-section-label">{t("userMenu.account")}</p>
-            <MenuLink href="/app/profile" onClick={() => setOpen(false)}>
-              {t("userMenu.profile")}
+            <MenuLink href="/app/account" onClick={() => setOpen(false)}>
+              {t("userMenu.accountSettings")}
             </MenuLink>
-            <MenuLink href="/app/security/2fa" onClick={() => setOpen(false)}>
-              {t("userMenu.security")}
+          </div>
+
+          <div className="px-2 py-2">
+            <p className="menu-section-label">{t("userMenu.app")}</p>
+            <MenuLink href="/app/support" onClick={() => setOpen(false)}>
+              {t("nav.support")}
+            </MenuLink>
+            <MenuLink href="/app/notifications" onClick={() => setOpen(false)} className="flex items-center justify-between gap-2">
+              <span>{t("nav.notifications")}</span>
+              {unreadCount > 0 ? (
+                <span className="rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
             </MenuLink>
           </div>
 
@@ -140,17 +180,22 @@ function MenuLink({
   href,
   children,
   onClick,
+  className,
 }: {
   href: string;
   children: React.ReactNode;
   onClick?: () => void;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
       role="menuitem"
       onClick={onClick}
-      className="block rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)] transition hover:bg-[var(--color-surface-muted)]"
+      className={cn(
+        "block rounded-lg px-3 py-2 text-sm text-[var(--color-foreground)] transition hover:bg-[var(--color-surface-muted)]",
+        className,
+      )}
     >
       {children}
     </Link>

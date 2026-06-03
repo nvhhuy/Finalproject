@@ -50,9 +50,11 @@
     "openMenu": "Open account menu",
     "account": "Account",
     "profile": "Profile settings",
+    "accountSettings": "Account settings",
     "security": "Security & 2FA",
     "appearance": "Appearance",
-    "language": "Language"
+    "language": "Language",
+    "app": "App"
   },
   "landing": {
     "tag": "Base Frontend",
@@ -76,7 +78,18 @@
     "needAccount": "Need an account?",
     "forgotPassword": "Forgot password?",
     "signInFailed": "Sign-in failed",
-    "apiUnreachable": "Cannot reach API. Start backend: cd src/Backend/Api && dotnet run --launch-profile https"
+    "apiUnreachable": "Cannot reach API. Start backend: cd src/Backend/Api && dotnet run --launch-profile https",
+    "googleExistingEmailHint": "Already registered with email and password? Sign in with Google using the same email to link your account."
+  },
+  "account": {
+    "title": "Account settings",
+    "subtitle": "Profile, security, and app preferences in one place.",
+    "securityHint": "Protect your account with an authenticator app. You can turn 2FA off with a valid code.",
+    "tabs": {
+      "profile": "Profile",
+      "security": "Security",
+      "preferences": "App preferences"
+    }
   },
   "awaitingVerification": {
     "title": "Verify your email",
@@ -96,7 +109,8 @@
     "backToLogin": "Back to login",
     "success": "Registered. Check your email if verification is required.",
     "resendHint": "Did not receive the email?",
-    "resend": "Resend verification"
+    "resend": "Resend verification",
+    "confirmPassword": "Confirm password"
   },
   "forgotPassword": {
     "title": "Forgot password",
@@ -189,7 +203,11 @@
     "confirm": "Confirm",
     "enabledMsg": "2FA enabled.",
     "beginFailed": "Begin 2FA failed",
-    "confirmFailed": "Confirm 2FA failed"
+    "confirmFailed": "Confirm 2FA failed",
+    "disable": "Disable 2FA",
+    "disableCode": "Authenticator code to disable",
+    "disabledMsg": "Two-factor authentication has been disabled.",
+    "disableFailed": "Could not disable 2FA"
   },
   "media": {
     "title": "Media Lab",
@@ -215,7 +233,10 @@
     "today": "Today",
     "open": "Open",
     "pageTitle": "All notifications",
-    "pageDescription": "In-app messages from support, billing, and system events."
+    "pageDescription": "In-app messages from support, billing, and system events.",
+    "whereToFind": "Announcements and alerts appear here and in the bell at the bottom-right of the app.",
+    "bellHint": "Tip: use the bell for quick previews; this page shows your full history.",
+    "broadcastDevHint": "Admin broadcasts are delivered after the Worker processes the queue (RabbitMQ + Worker must be running locally). Refresh this page or open the bell after a few seconds."
   },
   "support": {
     "title": "Support center",
@@ -225,6 +246,28 @@
     "subject": "Subject",
     "descriptionInput": "Describe your issue in detail...",
     "category": "Category",
+    "priority": "Priority",
+    "filterStatus": "Filter by status",
+    "categories": {
+      "account": "Account & login",
+      "billing": "Billing & subscription",
+      "technical": "Technical issue",
+      "feature": "Feature request",
+      "other": "Other"
+    },
+    "priorities": {
+      "Low": "Low",
+      "Normal": "Normal",
+      "High": "High",
+      "Urgent": "Urgent"
+    },
+    "statuses": {
+      "Open": "Open",
+      "PendingSupport": "Waiting on support",
+      "PendingUser": "Waiting on you",
+      "Resolved": "Resolved",
+      "Closed": "Closed"
+    },
     "create": "Create ticket",
     "searchPlaceholder": "Search tickets...",
     "allStatuses": "All statuses",
@@ -358,12 +401,24 @@
   },
   "errors": {
     "requestFailed": "Request failed",
+    "emailAlreadyInUse": "This email is already registered. Sign in or use a different email.",
+    "userNameAlreadyTaken": "This username is already taken. Choose another username.",
+    "registrationDisabled": "Public registration is currently disabled.",
+    "turnstileFailed": "Human verification failed. Refresh the page and try again.",
     "concurrencyConflict": "This record was changed elsewhere. Refresh and try again.",
     "passwordMismatch": "Passwords do not match",
-    "passwordMin": "Password must be at least 8 characters"
+    "passwordMin": "Password must be at least 8 characters",
+    "invalidCredentials": "Invalid email or password.",
+    "invalidAuthenticatorCode": "Invalid authenticator code.",
+    "twoFactorNotEnabled": "Two-factor authentication is not enabled."
   },
   "validation": {
     "invalidEmail": "Enter a valid email",
-    "required": "Required"
+    "required": "This field is required",
+    "userNameRequired": "Username is required",
+    "firstNameRequired": "First name is required",
+    "lastNameRequired": "Last name is required",
+    "emailRequired": "Email is required",
+    "passwordComplexity": "Password must include upper and lower case letters, a digit, and a special character."
   }
 }

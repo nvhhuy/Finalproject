@@ -76,9 +76,10 @@ export default function ContactPage() {
 
   return (
     <div className="mesh-bg min-h-screen min-h-[100dvh]">
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <PublicHeader />
-        <h1 className="mt-10 text-3xl font-semibold">{t("contact.title")}</h1>
+        <div className="mx-auto mt-10 max-w-2xl">
+        <h1 className="text-3xl font-semibold">{t("contact.title")}</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">{t("contact.body")}</p>
 
         <Card className="mt-6">
@@ -164,6 +165,7 @@ export default function ContactPage() {
             )}
           </CardBody>
         </Card>
+        </div>
       </div>
     </div>
   );

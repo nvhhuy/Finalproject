@@ -3,6 +3,7 @@ import { getApiBaseUrl } from "./config";
 import { loadTokens, saveTokens } from "@/lib/auth/tokens";
 import { IDEMPOTENCY_HEADER, newIdempotencyKey } from "./idempotency";
 import { tenantHeaders } from "@/lib/tenancy/tenant-context";
+import i18n from "@/i18n/config";
 
 export const TURNSTILE_HEADER = "X-Turnstile-Token";
 
@@ -53,6 +54,7 @@ export async function apiRequest<T>(options: RequestOptions): Promise<ApiRespons
 
   const headers: Record<string, string> = {
     Accept: "application/json",
+    "Accept-Language": i18n.language || "en",
     ...(options.body ? { "Content-Type": "application/json" } : {}),
     ...(options.headers ?? {}),
   };
@@ -114,6 +116,7 @@ export async function apiRaw<T>(
   const tokens = init.auth ? loadTokens() : null;
   const headers: Record<string, string> = {
     Accept: "application/json",
+    "Accept-Language": i18n.language || "en",
     "Content-Type": "application/json",
     ...(init.headers as Record<string, string> | undefined),
   };

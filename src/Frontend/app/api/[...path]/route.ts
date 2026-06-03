@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { forwardToUpstream } from "@/lib/server/upstream-proxy";
+import { proxyUpstreamResponse } from "@/lib/server/proxy-response";
 
 const apiTarget = (process.env.API_PROXY_TARGET ?? "https://localhost:7124").replace(/\/$/, "");
 
@@ -23,10 +24,7 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
     }
   }
 
-  return new NextResponse(new Uint8Array(upstream.body), {
-    status: upstream.statusCode,
-    headers: responseHeaders,
-  });
+  return proxyUpstreamResponse(upstream.body, upstream.statusCode, responseHeaders);
 }
 
 export const GET = proxy;

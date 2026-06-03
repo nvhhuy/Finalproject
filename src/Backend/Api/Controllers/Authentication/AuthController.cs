@@ -184,6 +184,17 @@ public sealed class AuthController : ApiControllerBase
         return MatchApiEmpty(result);
     }
 
+    [HttpPost("2fa/disable")]
+    [Authorize]
+    [Transactional]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> DisableTwoFactor([FromBody] ConfirmTwoFactorRequest body,
+        CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new DisableTwoFactorCommand(CurrentUserId, body.Code), cancellationToken);
+        return MatchApiEmpty(result);
+    }
+
     private IActionResult MapAuthResult(Result<AuthenticationResponse, Error> result)
     {
         if (result.IsFailure)

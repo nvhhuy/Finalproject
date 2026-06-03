@@ -35,6 +35,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(e => e.EmailVerifiedAtUtc).HasColumnType("timestamp with time zone");
         builder.Property(e => e.RegisteredAtUtc).HasColumnType("timestamp with time zone");
+        builder.Property(e => e.AvatarMediaAssetId);
         // The non-normalized columns no longer carry uniqueness; the case-insensitive
         // NormalizedEmail / NormalizedUserName indexes below are the enforcement boundary.
         // Plain Email / UserName get plain indexes (non-unique) to still serve LIKE-prefix

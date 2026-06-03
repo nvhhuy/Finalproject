@@ -58,6 +58,9 @@ public class User : AggregateRoot<UserId>
     /// <summary>Account creation time (used for admin metrics).</summary>
     public DateTime? RegisteredAtUtc { get; private set; }
 
+    /// <summary>Profile avatar from the media pipeline (<see cref="MediaAggregate.MediaAsset" />).</summary>
+    public Guid? AvatarMediaAssetId { get; private set; }
+
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
     public ICollection<ExternalUserLogin> ExternalLogins { get; private set; } = new List<ExternalUserLogin>();
 
@@ -269,5 +272,10 @@ public class User : AggregateRoot<UserId>
     {
         TwoFactorEnabled = false;
         TwoFactorSecret = null;
+    }
+
+    public void SetAvatarMediaAsset(Guid? mediaAssetId)
+    {
+        AvatarMediaAssetId = mediaAssetId;
     }
 }

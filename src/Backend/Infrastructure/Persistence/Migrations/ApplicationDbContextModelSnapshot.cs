@@ -1002,6 +1002,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("AccountClosedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("AvatarMediaAssetId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 

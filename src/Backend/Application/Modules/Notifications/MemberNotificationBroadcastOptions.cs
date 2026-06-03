@@ -9,7 +9,8 @@ public sealed class MemberNotificationBroadcastOptions
 
     /// <summary>
     ///     When true (integration tests), fan-out runs inline after the outbox row is written so
-    ///     assertions do not depend on RabbitMQ or a running Worker.
+    ///     assertions do not depend on RabbitMQ or a running Worker. Local Development also fans out
+    ///     inline automatically when <c>Messaging:RabbitMq:Enabled</c> is false.
     /// </summary>
     public bool ProcessInlineInIntegrationTests { get; init; }
 }

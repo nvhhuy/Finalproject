@@ -9,6 +9,8 @@ export type UserProfileDto = {
   role: string;
   twoFactorEnabled: boolean;
   emailVerifiedAtUtc?: string | null;
+  avatarMediaAssetId?: string | null;
+  avatarUrl?: string | null;
   rowVersion: number;
 };
 
@@ -20,6 +22,14 @@ export const userApi = {
     return await apiRequest<unknown>({
       method: "PUT",
       path: "/api/v1/users/profile",
+      auth: true,
+      body: input,
+    });
+  },
+  async setMyAvatar(input: { mediaAssetId: string; rowVersion: number }) {
+    return await apiRequest<unknown>({
+      method: "PUT",
+      path: "/api/v1/users/profile/avatar",
       auth: true,
       body: input,
     });

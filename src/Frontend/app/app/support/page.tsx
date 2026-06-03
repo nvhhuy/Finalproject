@@ -11,7 +11,13 @@ import { Input } from "@/components/ui/input";
 import { PageContent, PageHeader } from "@/components/ui/page-header";
 import { SupportSkeleton } from "@/components/ui/skeleton";
 import { formatDateTimeOrDash } from "@/lib/shared";
+import { getApiErrorMessageFromPayload } from "@/lib/errors";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
+import { formSelectClass, formTextareaClass } from "@/lib/ui/form-styles";
+import {
+  SUPPORT_CATEGORY_VALUES,
+  type SupportCategory,
+} from "@/lib/features/support/support-categories";
 import { uploadSupportAttachment } from "@/lib/features/support/support-attachments";
 import {
   supportApi,
@@ -32,7 +38,7 @@ export default function SupportPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState<SupportCategory>("account");
   const [priority, setPriority] = useState<SupportTicketPriority>("Normal");
   const [reply, setReply] = useState("");
   const [createFiles, setCreateFiles] = useState<File[]>([]);
@@ -81,7 +87,7 @@ export default function SupportPage() {
       const res = await supportApi.create({
         subject: subject.trim(),
         description: description.trim(),
-        category: category.trim() || undefined,
+        category,
         priority,
       });
       if (!res.success || !res.data) throw new Error(res.error?.message ?? t("errors.requestFailed"));
@@ -95,7 +101,7 @@ export default function SupportPage() {
       setMutationError(null);
       setSubject("");
       setDescription("");
-      setCategory("");
+      setCategory("account");
       setPriority("Normal");
       setCreateFiles([]);
       void invalidate();
@@ -164,24 +170,46 @@ export default function SupportPage() {
           <CardBody className="space-y-3">
             <Input placeholder={t("support.subject")} value={subject} onChange={(e) => setSubject(e.target.value)} />
             <textarea
-              className="min-h-24 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+              className={formTextareaClass}
               placeholder={t("support.descriptionInput")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Input placeholder={t("support.category")} value={category} onChange={(e) => setCategory(e.target.value)} />
-              <select
-                className="h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as SupportTicketPriority)}
-              >
-                {PRIORITY_OPTIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <div className="grid gap-1.5">
+                <label htmlFor="ticket-category" className="text-xs font-medium text-[var(--color-muted)]">
+                  {t("support.category")}
+                </label>
+                <select
+                  id="ticket-category"
+                  className={formSelectClass}
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as SupportCategory)}
+                >
+                  {SUPPORT_CATEGORY_VALUES.map((c) => (
+                    <option key={c} value={c}>
+                      {t(`support.categories.${c}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-1.5">
+                <label htmlFor="ticket-priority" className="text-xs font-medium text-[var(--color-muted)]">
+                  {t("support.priority")}
+                </label>
+                <select
+                  id="ticket-priority"
+                  className={formSelectClass}
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as SupportTicketPriority)}
+                >
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {t(`support.priorities.${p}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <label className="block text-sm">
               <span className="text-[var(--color-muted)]">{t("support.attachments")}</span>
@@ -211,14 +239,15 @@ export default function SupportPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
               <select
-                className="h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm"
+                className={formSelectClass}
                 value={status}
                 onChange={(e) => setStatus(e.target.value as SupportTicketStatus | "")}
+                aria-label={t("support.filterStatus")}
               >
                 <option value="">{t("support.allStatuses")}</option>
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
-                    {s}
+                    {t(`support.statuses.${s}`)}
                   </option>
                 ))}
               </select>
@@ -281,7 +310,11 @@ export default function SupportPage() {
                         <div>
                           <p className="text-sm font-semibold">{selected.subject}</p>
                           <p className="text-xs text-[var(--color-muted)]">
-                            {selected.ticketNumber} · {formatDateTimeOrDash(selected.updatedAtUtc)}
+                            {selected.ticketNumber}
+                            {selected.category
+                              ? ` · ${t(`support.categories.${selected.category as SupportCategory}`, { defaultValue: selected.category })}`
+                              : ""}{" "}
+                            · {formatDateTimeOrDash(selected.updatedAtUtc)}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">

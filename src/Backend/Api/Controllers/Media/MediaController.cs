@@ -87,6 +87,20 @@ public sealed class MediaController : ApiControllerBase
         return MatchApi(result);
     }
 
+    /// <summary>
+    ///     Streams image bytes through the API so browsers can render avatars without direct MinIO/S3 access.
+    /// </summary>
+    [HttpGet("{id:guid}/content")]
+    [EnableRateLimiting("media-upload")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> GetContent([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new StreamMediaAssetQuery(id, CurrentUserId), cancellationToken);
+        return MatchApi(result, payload => File(payload.Stream, payload.ContentType));
+    }
+
     [HttpDelete("{id:guid}")]
     [Transactional]
     [EnableRateLimiting("media-upload")]

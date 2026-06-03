@@ -12,14 +12,17 @@ namespace Infrastructure.Modules.Notifications;
 public sealed class MemberNotificationBroadcastProcessor : IMemberNotificationBroadcastProcessor
 {
     private readonly ApplicationDbContext _db;
+    private readonly INotificationDeliveryProcessor _delivery;
     private readonly MemberNotificationBroadcastOptions _options;
 
     public MemberNotificationBroadcastProcessor(
         ApplicationDbContext db,
-        IOptions<MemberNotificationBroadcastOptions> options)
+        IOptions<MemberNotificationBroadcastOptions> options,
+        INotificationDeliveryProcessor delivery)
     {
         _db = db;
         _options = options.Value;
+        _delivery = delivery;
     }
 
     public async Task<int> ProcessAsync(
@@ -32,6 +35,7 @@ public sealed class MemberNotificationBroadcastProcessor : IMemberNotificationBr
         var linkUrl = string.IsNullOrWhiteSpace(payload.LinkUrl) ? null : payload.LinkUrl.Trim();
         var inserted = 0;
         var offset = 0;
+        var deliverAfterSave = new List<UserNotification>();
 
         while (true)
         {
@@ -53,23 +57,38 @@ public sealed class MemberNotificationBroadcastProcessor : IMemberNotificationBr
                 if (skip is not null && skip.Contains(userId))
                     continue;
 
-                _db.UserNotifications.Add(new UserNotification(
+                var row = new UserNotification(
                     userId,
                     title,
                     body,
                     linkUrl,
-                    payload.EventId));
+                    payload.EventId);
+                _db.UserNotifications.Add(row);
+                deliverAfterSave.Add(row);
                 inserted++;
             }
 
             if (_db.ChangeTracker.HasChanges())
             {
                 await _db.SaveChangesAsync(cancellationToken);
+                await TryDeliverLiveAsync(deliverAfterSave, cancellationToken);
+                deliverAfterSave.Clear();
                 _db.ChangeTracker.Clear();
             }
         }
 
         return inserted;
+    }
+
+    private async Task TryDeliverLiveAsync(
+        IReadOnlyList<UserNotification> rows,
+        CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0)
+            return;
+
+        foreach (var row in rows)
+            await _delivery.TryDeliverAsync(row.Id, cancellationToken);
     }
 
     private async Task<List<UserId>> LoadMemberIdBatchAsync(

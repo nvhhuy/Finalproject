@@ -164,6 +164,12 @@ export interface DailyRegistrationDto {
 
 export interface AdminDashboardMetricsDto {
   totalActiveUsers: number
+  lockedUsers: number
+  registrationsToday: number
+  registrationsLast7Days: number
+  totalTenants: number
+  openSupportTickets: number
+  unreadContactMessages: number
   registrationsLast14Days: DailyRegistrationDto[]
 }
 

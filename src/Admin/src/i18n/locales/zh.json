@@ -24,6 +24,12 @@
   "nav": {
     "brandTitle": "管理中心",
     "brandSubtitle": "管理控制台",
+    "group": {
+      "overview": "概览",
+      "users": "用户与通讯",
+      "billing": "计费",
+      "platform": "平台"
+    },
     "dashboard": "仪表盘",
     "users": "用户",
     "notifications": "全员通知",
@@ -36,7 +42,9 @@
     "creditPackages": "积分套餐",
     "tenants": "租户",
     "invoices": "发票",
-    "signOut": "退出登录"
+    "signOut": "退出登录",
+    "expandGroup": "展开分组",
+    "collapseGroup": "收起分组"
   },
   "login": {
     "title": "管理员登录",
@@ -86,9 +94,17 @@
   },
   "dashboard": {
     "title": "仪表盘",
-    "description": "平台用户概览与近期注册情况。",
+    "description": "平台概览 — 用户、租户、支持与注册。",
     "metricsError": "无法加载指标。API 是否在运行？",
+    "kpiTitle": "关键指标",
+    "kpiHint": "点击卡片打开对应管理页面。",
     "activeUsers": "活跃用户",
+    "lockedUsers": "已锁定账户",
+    "registrationsToday": "今日注册",
+    "registrationsLast7Days": "近 7 日注册",
+    "totalTenants": "租户",
+    "openSupportTickets": "待处理支持工单",
+    "unreadContactMessages": "未读联系消息",
     "registrationsTitle": "注册（近 14 天）",
     "loadingChart": "正在加载图表…",
     "noRegistrationData": "暂无注册数据。"
@@ -371,7 +387,7 @@
   "broadcastNotifications": {
     "title": "全员公告",
     "description": "向所有活跃成员发送应用内通知。",
-    "hint": "成员会在通知铃中看到。在线时实时推送；否则下次打开应用时可见。",
+    "hint": "仅发送给活跃的 Member 角色账户（不含 Admin）。RabbitMQ 关闭时（本地 API 默认）发送后立即送达。启用 RabbitMQ 时需 Worker 从 outbox 分发。请用 Member 用户登录前端并打开 /app/notifications 验证。",
     "formTitle": "编辑公告",
     "titleLabel": "标题",
     "titlePlaceholder": "今晚系统维护",

@@ -73,12 +73,10 @@ export default function DashboardPage() {
     unreadQuery.isLoading;
 
   const quickLinks = [
-    { href: "/app/profile", label: t("dashboard.quickProfile") },
-    { href: "/app/settings", label: t("nav.settings") },
-    { href: "/app/security/2fa", label: t("dashboard.quick2fa") },
+    { href: "/app/account?tab=profile", label: t("dashboard.quickProfile") },
+    { href: "/app/account?tab=preferences", label: t("nav.settings") },
+    { href: "/app/account?tab=security", label: t("dashboard.quick2fa") },
     { href: "/app/media", label: t("dashboard.quickMedia") },
-    { href: "/app/support", label: t("nav.support") },
-    { href: "/app/notifications", label: t("nav.notifications") },
   ];
 
   return (

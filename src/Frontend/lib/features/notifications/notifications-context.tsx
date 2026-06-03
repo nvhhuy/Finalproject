@@ -120,9 +120,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       }
 
       // Realtime unavailable — poll REST so the bell still updates.
+      void refreshList();
       pollTimer = setInterval(() => {
         void refreshList();
-      }, 60_000);
+      }, 10_000);
     }
 
     void boot();

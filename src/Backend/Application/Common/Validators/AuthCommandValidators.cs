@@ -105,6 +105,24 @@ public sealed class ConfirmTwoFactorSetupCommandValidator : AbstractValidator<Co
     }
 }
 
+public sealed class DisableTwoFactorCommandValidator : AbstractValidator<DisableTwoFactorCommand>
+{
+    public DisableTwoFactorCommandValidator()
+    {
+        RuleFor(c => c.UserId).NotEmpty();
+        RuleFor(c => c.Code).NotEmpty().MinimumLength(6).MaximumLength(16);
+    }
+}
+
+public sealed class SetMyAvatarCommandValidator : AbstractValidator<SetMyAvatarCommand>
+{
+    public SetMyAvatarCommandValidator()
+    {
+        RuleFor(c => c.UserId).NotEmpty();
+        RuleFor(c => c.MediaAssetId).NotEmpty();
+    }
+}
+
 public sealed class SetBooleanAppSettingCommandValidator : AbstractValidator<SetBooleanAppSettingCommand>
 {
     public SetBooleanAppSettingCommandValidator()

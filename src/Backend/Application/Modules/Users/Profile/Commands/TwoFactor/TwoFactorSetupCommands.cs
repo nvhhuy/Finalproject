@@ -72,3 +72,35 @@ public sealed class
         return true;
     }
 }
+
+public sealed record DisableTwoFactorCommand(Guid UserId, string Code) : IRequest<Result<bool, Error>>;
+
+public sealed class DisableTwoFactorCommandHandler : IRequestHandler<DisableTwoFactorCommand, Result<bool, Error>>
+{
+    private readonly IUnitOfWork _uow;
+    private readonly IUserWriteRepository _users;
+
+    public DisableTwoFactorCommandHandler(IUserWriteRepository users, IUnitOfWork uow)
+    {
+        _users = users;
+        _uow = uow;
+    }
+
+    public async Task<Result<bool, Error>> Handle(DisableTwoFactorCommand request, CancellationToken cancellationToken)
+    {
+        var user = await _users.GetByIdForUpdateAsync(request.UserId, cancellationToken);
+        if (user is null)
+            return new InvalidCredentialsError("User was not found.");
+
+        if (!user.TwoFactorEnabled || string.IsNullOrEmpty(user.TwoFactorSecret))
+            return new ValidationError("code", "Two-factor authentication is not enabled.");
+
+        var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
+        if (!totp.VerifyTotp(request.Code, out _, new VerificationWindow(1, 1)))
+            return new InvalidCredentialsError("Invalid authenticator code.");
+
+        user.DisableTwoFactor();
+        await _uow.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+}

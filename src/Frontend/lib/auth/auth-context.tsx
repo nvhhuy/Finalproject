@@ -13,6 +13,8 @@ export type AuthUser = {
   firstName: string;
   lastName: string;
   emailVerified: boolean;
+  avatarMediaAssetId?: string | null;
+  avatarUrl?: string | null;
 };
 
 export type LoginResult =
@@ -47,6 +49,8 @@ function userFromProfile(p: UserProfileDto): AuthUser {
     firstName: p.firstName,
     lastName: p.lastName,
     emailVerified: Boolean(p.emailVerifiedAtUtc),
+    avatarMediaAssetId: p.avatarMediaAssetId ?? null,
+    avatarUrl: p.avatarUrl ?? null,
   };
 }
 
