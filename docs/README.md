@@ -4,6 +4,8 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 
 **Start here:** [`OVERVIEW.md`](./OVERVIEW.md) — architecture, production/security posture (honest assessment), local vs deploy, and reading order.
 
+**Tiếng Việt — feature nào chạy được & cách dùng:** [`FEATURES_READY_AND_USAGE_VI.md`](./FEATURES_READY_AND_USAGE_VI.md)
+
 ---
 
 ## Quick entry points

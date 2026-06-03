@@ -4,6 +4,8 @@ Full-stack monorepo: .NET 8 API + Worker, Next.js frontend, React admin console,
 
 **Documentation hub:** [`docs/OVERVIEW.md`](./docs/OVERVIEW.md) — architecture, honest production/security assessment, and onboarding paths.
 
+**Feature status & usage (VI):** [`docs/FEATURES_READY_AND_USAGE_VI.md`](./docs/FEATURES_READY_AND_USAGE_VI.md)
+
 ---
 
 ## Repository layout
