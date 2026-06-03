@@ -1,6 +1,7 @@
 using Application.Contracts.Tenancy;
 using Domains.Common;
 using Domains.MediaAggregate;
+using Domains.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -24,6 +25,7 @@ internal static class TenantQueryFilterConfigurator
             modelBuilder.Entity<MediaAsset>()
                 .HasQueryFilter(e =>
                     tenantContext.BypassTenantIsolation
-                    || (tenantContext.TenantId != null && e.TenantId == tenantContext.TenantId));
+                    || (tenantContext.TenantId != null && e.TenantId == tenantContext.TenantId)
+                    || (tenantContext.TenantId == null && e.TenantId == SystemTenants.DefaultTenantId));
     }
 }

@@ -2,9 +2,11 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Api.IntegrationTests.Support;
 using Api.Models;
+using Api.Tenancy;
 using Application.Contracts.Storage;
 using Application.Modules.Media.Commands;
 using Application.Modules.Media.Dtos;
+using Domains.Tenancy;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.IntegrationTests;
@@ -31,6 +33,7 @@ public sealed class MediaIntegrationTests
         var app = IntegrationTestApp.FromFixture(_fixture);
         var (auth, _) = await app.RegisterVerifyAndLoginAsync();
         using var userClient = app.Client.WithBearer(auth.AccessToken);
+        userClient.DefaultRequestHeaders.Add(TenantHttpHeaders.TenantId, SystemTenants.DefaultTenantId.ToString());
 
         var initiateResponse = await userClient.PostAsJsonAsync(
             "/api/v1/media/uploads",
