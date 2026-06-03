@@ -4,6 +4,7 @@ Scripts and CLIs live **outside** `src/Backend/` and `src/Frontend/` source tree
 
 | Path | Purpose |
 |------|---------|
+| [`ci/run-ci-local.sh`](./ci/run-ci-local.sh) | Run the same checks as GitHub Actions locally (no CI minutes). See [`ci/README.md`](./ci/README.md). |
 | [`backend/migrate.sh`](./backend/migrate.sh) | Apply EF Core migrations to the **write** database (`ApplicationDbContext`). Run from dev machine or CI. |
 | `frontend/` | Reserve for npm/node one-off scripts (codegen, lint fixes, etc.). |
 

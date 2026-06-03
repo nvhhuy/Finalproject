@@ -59,9 +59,12 @@ API integration + Playwright: [`docs/test/ONBOARDING.md`](./docs/test/ONBOARDING
 
 **CI:** GitHub Actions [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs backend tests + Playwright on PRs and `main`.
 
-**Node:** use `nvm use` (see [`.nvmrc`](./.nvmrc)) before Playwright — requires Node 20+.
+**CI locally (no GitHub minutes):** [`./tools/ci/run-ci-local.sh`](./tools/ci/run-ci-local.sh) — see [`tools/ci/README.md`](./tools/ci/README.md).
+
+**Node:** use `nvm use` (see [`.nvmrc`](./.nvmrc)) before Playwright — requires Node 20+ (CI uses 24).
 
 ```bash
+./tools/ci/run-ci-local.sh              # full CI mirror
 ./tools/e2e/run-api-integration.sh
 ./tools/e2e/run-playwright.sh
 ```

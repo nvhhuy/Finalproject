@@ -88,6 +88,18 @@ First run may take **2–5 minutes**: Playwright starts API → Frontend → Adm
 dotnet test src/Backend --filter "FullyQualifiedName!~Api.IntegrationTests"
 ```
 
+### 6. Run full CI locally (no GitHub Actions minutes)
+
+Mirrors [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — admin/frontend lint+build, backend integration, media, Playwright:
+
+```bash
+nvm use   # Node 24 per .nvmrc
+./tools/ci/run-ci-local.sh
+./tools/ci/run-ci-local.sh backend media   # subset
+```
+
+Details: [`tools/ci/README.md`](../../tools/ci/README.md).
+
 ---
 
 ## Default credentials and ports
