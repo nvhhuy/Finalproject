@@ -40,6 +40,9 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             // MinIO/dev endpoints use plain HTTP; without this the SDK signs https:// URLs and PUTs fail with SSL errors.
             if (_options.ServiceUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
                 config.UseHttp = true;
+
+            // Custom endpoints (MinIO, local CI) need a real SigV4 region. "auto" is valid for R2 only.
+            config.AuthenticationRegion = ResolveSigningRegion(_options.ServiceUrl, _options.Region);
         }
         else
             config.RegionEndpoint = RegionEndpoint.GetBySystemName(_options.Region);
@@ -219,5 +222,18 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             return string.Concat("http://", url.AsSpan("https://".Length));
 
         return url;
+    }
+
+    private static string ResolveSigningRegion(string serviceUrl, string configuredRegion)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredRegion)
+            && !string.Equals(configuredRegion, "auto", StringComparison.OrdinalIgnoreCase))
+            return configuredRegion;
+
+        if (serviceUrl.Contains("r2.cloudflarestorage.com", StringComparison.OrdinalIgnoreCase))
+            return "auto";
+
+        // MinIO and other dev/CI S3-compatible endpoints expect a concrete region (usually us-east-1).
+        return "us-east-1";
     }
 }

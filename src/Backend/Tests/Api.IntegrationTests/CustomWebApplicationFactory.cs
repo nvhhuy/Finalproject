@@ -41,9 +41,16 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
         // This prevents both IDistributedCache and SignalR from trying to connect to Redis.
         builder.UseSetting("Redis:ConnectionString", "");
         builder.UseSetting("Realtime:UseRedisBackplane", "false");
+        var useRealObjectStorage =
+            string.Equals(
+                Environment.GetEnvironmentVariable("INTEGRATION_MEDIA_ENABLED"),
+                "true",
+                StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ObjectStorage__ServiceUrl"));
+
         builder.ConfigureAppConfiguration((_, config) =>
         {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
+            var settings = new Dictionary<string, string?>
             {
                 ["PasswordReset:PublicAppBaseUrl"] = "http://localhost:3000",
                 ["Seed:Admin:Enabled"] = "true",
@@ -63,7 +70,12 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["Realtime:UseRedisBackplane"] = "false",
                 ["WebPush:Enabled"] = "false",
                 ["Notifications:Broadcast:ProcessInlineInIntegrationTests"] = "true"
-            });
+            };
+
+            if (useRealObjectStorage)
+                ApplyObjectStorageFromEnvironment(settings);
+
+            config.AddInMemoryCollection(settings);
         });
         builder.ConfigureServices(services =>
         {
@@ -73,13 +85,6 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailSender>();
             services.RemoveAll<IWelcomeEmailSender>();
             services.RemoveAll<IObjectStorage>();
-
-            var useRealObjectStorage =
-                string.Equals(
-                    Environment.GetEnvironmentVariable("INTEGRATION_MEDIA_ENABLED"),
-                    "true",
-                    StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ObjectStorage__ServiceUrl"));
 
             // Swap out Redis distributed cache — AddCaching already ran in Program.cs
             // so we must replace the registration here in ConfigureServices.
@@ -122,5 +127,26 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
         await DbSeeder.SeedDefaultPlansIfMissingAsync(db, scope.ServiceProvider);
         await DbSeeder.EnsureDefaultPlanLimitsAsync(db, scope.ServiceProvider);
         await DbSeeder.SeedDefaultCreditPackagesIfMissingAsync(db, scope.ServiceProvider);
+    }
+
+    private static void ApplyObjectStorageFromEnvironment(IDictionary<string, string?> settings)
+    {
+        static void SetEnv(string envName, string configKey, IDictionary<string, string?> target)
+        {
+            var value = Environment.GetEnvironmentVariable(envName);
+            if (!string.IsNullOrWhiteSpace(value))
+                target[configKey] = value;
+        }
+
+        SetEnv("ObjectStorage__ServiceUrl", "ObjectStorage:ServiceUrl", settings);
+        SetEnv("ObjectStorage__AccessKey", "ObjectStorage:AccessKey", settings);
+        SetEnv("ObjectStorage__SecretKey", "ObjectStorage:SecretKey", settings);
+        SetEnv("ObjectStorage__Bucket", "ObjectStorage:Bucket", settings);
+        SetEnv("ObjectStorage__ForcePathStyle", "ObjectStorage:ForcePathStyle", settings);
+        SetEnv("ObjectStorage__Region", "ObjectStorage:Region", settings);
+
+        // Development defaults to "auto" (R2); MinIO/CI needs a concrete SigV4 region.
+        if (!settings.ContainsKey("ObjectStorage:Region"))
+            settings["ObjectStorage:Region"] = "us-east-1";
     }
 }

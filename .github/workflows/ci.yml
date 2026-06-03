@@ -203,6 +203,7 @@ jobs:
           ObjectStorage__SecretKey: minio123
           ObjectStorage__Bucket: media
           ObjectStorage__ForcePathStyle: 'true'
+          ObjectStorage__Region: us-east-1
         run: |
           createdb -h localhost -U postgres baseproject_media_integration 2>/dev/null || true
           dotnet test src/Backend/Tests/Api.IntegrationTests/Api.IntegrationTests.csproj \

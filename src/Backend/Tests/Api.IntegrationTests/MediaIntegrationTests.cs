@@ -2,8 +2,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Api.IntegrationTests.Support;
 using Api.Models;
+using Application.Contracts.Storage;
 using Application.Modules.Media.Commands;
 using Application.Modules.Media.Dtos;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.IntegrationTests;
 
@@ -66,15 +68,30 @@ public sealed class MediaIntegrationTests
         var putResponse = await storage.SendAsync(put);
         if (!putResponse.IsSuccessStatusCode)
         {
-            Skip.If(true, $"Presigned PUT failed ({putResponse.StatusCode}); check MinIO configuration.");
+            var putBody = await putResponse.Content.ReadAsStringAsync();
+            Skip.If(true,
+                $"Presigned PUT failed ({putResponse.StatusCode}): {putBody}; check MinIO configuration.");
             return;
+        }
+
+        using (var scope = _fixture.Factory.Services.CreateScope())
+        {
+            var objectStorage = scope.ServiceProvider.GetRequiredService<IObjectStorage>();
+            var exists = await objectStorage.ExistsAsync(initiated.Data.StorageKey, CancellationToken.None);
+            Assert.True(
+                exists,
+                $"Uploaded object not visible at storage key '{initiated.Data.StorageKey}' before complete.");
         }
 
         using var complete =
             new HttpRequestMessage(HttpMethod.Post, $"/api/v1/media/{initiated.Data.MediaAssetId}/complete")
                 .WithIdempotencyKey();
         var completeResponse = await userClient.SendAsync(complete);
-        completeResponse.EnsureSuccessStatusCode();
+        if (!completeResponse.IsSuccessStatusCode)
+        {
+            var completeBody = await completeResponse.Content.ReadAsStringAsync();
+            Assert.Fail($"Complete media upload failed ({completeResponse.StatusCode}): {completeBody}");
+        }
 
         var getResponse = await userClient.GetAsync($"/api/v1/media/{initiated.Data.MediaAssetId}");
         var asset = await getResponse.ReadApiAsync<MediaAssetDto>();
