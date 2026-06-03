@@ -73,6 +73,13 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IWelcomeEmailSender>();
             services.RemoveAll<IObjectStorage>();
 
+            var useRealObjectStorage =
+                string.Equals(
+                    Environment.GetEnvironmentVariable("INTEGRATION_MEDIA_ENABLED"),
+                    "true",
+                    StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ObjectStorage__ServiceUrl"));
+
             // Swap out Redis distributed cache — AddCaching already ran in Program.cs
             // so we must replace the registration here in ConfigureServices.
             services.RemoveAll<IDistributedCache>();
@@ -86,7 +93,10 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddSingleton<IEmailSender>(EmailSink);
             services.AddSingleton<IWelcomeEmailSender, NullWelcomeEmailSender>();
-            services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
+            if (useRealObjectStorage)
+                services.AddSingleton<IObjectStorage, S3CompatibleObjectStorage>();
+            else
+                services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
 
             services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(_connectionString));
             services.AddDbContext<ApplicationReadDbContext>(o => o.UseNpgsql(_connectionString));

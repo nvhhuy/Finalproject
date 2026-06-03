@@ -6,7 +6,6 @@ using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Transactions;
 using Application.Common.Email;
-using Application.Contracts.Email;
 using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
 using Microsoft.AspNetCore.Identity;

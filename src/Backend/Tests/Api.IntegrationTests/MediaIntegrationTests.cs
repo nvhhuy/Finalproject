@@ -57,7 +57,7 @@ public sealed class MediaIntegrationTests
             0x42, 0x60, 0x82
         ];
 
-        using HttpClient storage = new();
+        using HttpClient storage = new() { Timeout = TimeSpan.FromSeconds(30) };
         using var put = new HttpRequestMessage(HttpMethod.Put, initiated.Data!.UploadUrl)
         {
             Content = new ByteArrayContent(pngBytes)

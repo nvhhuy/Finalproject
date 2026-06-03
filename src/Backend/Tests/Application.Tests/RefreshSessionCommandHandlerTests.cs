@@ -80,6 +80,7 @@ public sealed class RefreshSessionCommandHandlerTests
         var userId = UserId.CreateNew();
         var token = RefreshToken.Issue(userId, TokenHash, DateTime.UtcNow.AddDays(7), DateTime.UtcNow, "1.2.3.4");
         var user = User.CreateNew("F", "L", "u1", "u1@example.com", "hash");
+        user.MarkEmailVerified(DateTime.UtcNow);
 
         var write = new Mock<IUserWriteRepository>();
         write.Setup(w => w.GetRefreshTokenByHashForUpdateAsync(TokenHash, It.IsAny<CancellationToken>()))
