@@ -17,6 +17,34 @@ export const notificationsApi = {
       query: { page, pageSize },
     });
   },
+  async unreadCount() {
+    return await apiRequest<number>({
+      path: "/api/v1/notifications/unread-count",
+      auth: true,
+    });
+  },
+  async vapidPublicKey() {
+    return await apiRequest<string | null>({
+      path: "/api/v1/notifications/push/vapid-public-key",
+      auth: true,
+    });
+  },
+  async subscribePush(body: { endpoint: string; keys: { p256dh: string; auth: string } }) {
+    return await apiRequest<boolean>({
+      method: "POST",
+      path: "/api/v1/notifications/push/subscribe",
+      auth: true,
+      body,
+    });
+  },
+  async unsubscribePush(endpoint: string) {
+    return await apiRequest<boolean>({
+      method: "DELETE",
+      path: "/api/v1/notifications/push/subscribe",
+      auth: true,
+      body: { endpoint },
+    });
+  },
   async markRead(id: string) {
     return await apiRequest<boolean>({
       method: "POST",

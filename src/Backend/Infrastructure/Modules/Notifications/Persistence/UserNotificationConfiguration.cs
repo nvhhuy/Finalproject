@@ -17,5 +17,9 @@ internal sealed class UserNotificationConfiguration : IEntityTypeConfiguration<U
         builder.HasIndex(x => new { x.UserId, x.ReadAtUtc });
         builder.Property(x => x.LiveDeliveredAtUtc);
         builder.HasIndex(x => new { x.LiveDeliveredAtUtc, x.CreatedAtUtc });
+        builder.Property(x => x.BroadcastEventId);
+        builder.HasIndex(x => new { x.BroadcastEventId, x.UserId })
+            .IsUnique()
+            .HasFilter("\"BroadcastEventId\" IS NOT NULL");
     }
 }

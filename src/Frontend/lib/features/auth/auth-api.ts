@@ -28,6 +28,7 @@ function mapOk(dto: AuthResponseDto): { user: AuthUser; tokens: AuthTokens } {
     email: dto.email,
     firstName: dto.firstName,
     lastName: dto.lastName,
+    emailVerified: true,
   };
   const tokens: AuthTokens = {
     accessToken: dto.accessToken,
@@ -69,6 +70,13 @@ export const authApi = {
     }
 
     if (!envelope.success) {
+      if (envelope.error?.code === "EmailNotVerified") {
+        return {
+          kind: "email_not_verified",
+          email,
+          message: envelope.error.message ?? "Please verify your email before signing in.",
+        };
+      }
       return { kind: "error", message: envelope.error?.message ?? "Login failed" };
     }
 

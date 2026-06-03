@@ -20,6 +20,16 @@ export const metadata: Metadata = {
     template: `%s · ${APP_NAME}`,
   },
   description: "Reusable frontend base aligned with the .NET backend.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: APP_NAME,
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

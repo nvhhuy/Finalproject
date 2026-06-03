@@ -8,6 +8,7 @@ export type UserProfileDto = {
   lastName: string;
   role: string;
   twoFactorEnabled: boolean;
+  emailVerifiedAtUtc?: string | null;
   rowVersion: number;
 };
 

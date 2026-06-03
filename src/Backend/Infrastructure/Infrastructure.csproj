@@ -9,6 +9,7 @@
     <ItemGroup>
         <PackageReference Include="AWSSDK.S3" Version="3.7.413.1"/>
         <PackageReference Include="Cronos" Version="0.8.4"/>
+        <PackageReference Include="WebPush" Version="1.0.12"/>
         <PackageReference Include="MailKit" Version="4.16.0"/>
         <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="8.0.11"/>
         <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.1"/>
@@ -22,6 +23,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.11"/>
         <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1"/>
         <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1"/>
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11"/>
@@ -37,6 +39,10 @@
     <ItemGroup>
         <InternalsVisibleTo Include="Infrastructure.Tests"/>
         <InternalsVisibleTo Include="Worker.Tests"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Email\Templates\**\*.html" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

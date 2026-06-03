@@ -34,8 +34,7 @@ export default function RegisterPage() {
     try {
       const res = await authApi.register({ ...form, turnstileToken });
       if (res.success) {
-        setMessage(res.data?.message ?? t("register.success"));
-        setIsSuccess(true);
+        router.push(`/awaiting-verification?email=${encodeURIComponent(form.email)}`);
         return;
       }
       setMessage(res.error?.message ?? t("errors.requestFailed"));

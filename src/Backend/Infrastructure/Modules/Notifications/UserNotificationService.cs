@@ -9,11 +9,16 @@ public sealed class UserNotificationService : IUserNotificationService, IUserNot
 {
     private readonly ApplicationDbContext _db;
     private readonly INotificationDispatcher _dispatcher;
+    private readonly IWebPushNotificationSender _webPush;
 
-    public UserNotificationService(ApplicationDbContext db, INotificationDispatcher dispatcher)
+    public UserNotificationService(
+        ApplicationDbContext db,
+        INotificationDispatcher dispatcher,
+        IWebPushNotificationSender webPush)
     {
         _db = db;
         _dispatcher = dispatcher;
+        _webPush = webPush;
     }
 
     public async Task<Guid> CreateAndDispatchAsync(
@@ -31,26 +36,43 @@ public sealed class UserNotificationService : IUserNotificationService, IUserNot
         // NullNotificationDispatcher (Api with Realtime:Enabled=false, or Worker host) always
         // succeeds silently — letting it mark delivered stops the Worker retry job from
         // re-attempting when the user was never actually pushed.
+        var payload = new LiveNotificationPayload(
+            notification.Id,
+            notification.Title,
+            notification.Body,
+            notification.LinkUrl,
+            notification.CreatedAtUtc);
+
+        var liveDelivered = false;
+
         if (_dispatcher.IsRealtime)
         {
             try
             {
-                await _dispatcher.DispatchAsync(
-                    userId,
-                    new LiveNotificationPayload(
-                        notification.Id,
-                        notification.Title,
-                        notification.Body,
-                        notification.LinkUrl,
-                        notification.CreatedAtUtc),
-                    cancellationToken);
-                notification.MarkLiveDelivered(DateTime.UtcNow);
+                await _dispatcher.DispatchAsync(userId, payload, cancellationToken);
+                liveDelivered = true;
             }
             catch
             {
                 // Worker job retries undelivered notifications.
             }
         }
+
+        if (_webPush.IsEnabled)
+        {
+            try
+            {
+                if (await _webPush.SendToUserAsync(userId, payload, cancellationToken))
+                    liveDelivered = true;
+            }
+            catch
+            {
+                // Best-effort; cron retries undelivered rows.
+            }
+        }
+
+        if (liveDelivered)
+            notification.MarkLiveDelivered(DateTime.UtcNow);
 
         return notification.Id;
     }

@@ -9,12 +9,19 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
   useEffect(() => {
     if (!auth.hydrated) return;
-    if (!auth.isAuthenticated) {
+    if (!auth.tokens?.accessToken) {
       router.replace(`/login?next=${encodeURIComponent(pathname ?? "/app")}`);
+      return;
     }
-  }, [auth.hydrated, auth.isAuthenticated, pathname, router]);
+    if (!auth.isAuthenticated) {
+      const email = auth.user?.email ?? "";
+      const q = email ? `?email=${encodeURIComponent(email)}` : "";
+      router.replace(`/awaiting-verification${q}`);
+    }
+  }, [auth.hydrated, auth.isAuthenticated, auth.tokens?.accessToken, auth.user?.email, pathname, router]);
 
   if (!auth.hydrated) {
     return <AppShellSkeleton />;

@@ -17,4 +17,8 @@
         <ProjectReference Include="..\Observability\Observability.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Content Include="..\Infrastructure\Email\Templates\**\*.html" Link="Email\Templates\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
 </Project>

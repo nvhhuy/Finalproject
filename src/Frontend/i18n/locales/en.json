@@ -35,6 +35,7 @@
     "subscribe": "Subscribe",
     "tenant": "Organization",
     "notifications": "Notifications",
+    "settings": "Settings",
     "pricing": "Pricing",
     "about": "About",
     "contact": "Contact"
@@ -76,6 +77,14 @@
     "forgotPassword": "Forgot password?",
     "signInFailed": "Sign-in failed",
     "apiUnreachable": "Cannot reach API. Start backend: cd src/Backend/Api && dotnet run --launch-profile https"
+  },
+  "awaitingVerification": {
+    "title": "Verify your email",
+    "subtitle": "You need to confirm your email before using the app.",
+    "sentTo": "We sent a link to {{email}}.",
+    "hint": "Open the link in the email, then sign in. The app stays locked until verification is complete.",
+    "backToLogin": "Back to sign in",
+    "noEmail": "Enter your email on the registration or sign-in page first."
   },
   "register": {
     "title": "Create account",
@@ -125,7 +134,33 @@
     "orgSummary": "Organization",
     "activePlan": "Plan: {{plan}}",
     "noTenant": "No organization yet — subscribe to create one.",
-    "openTickets": "Open support tickets: {{count}}"
+    "openTickets": "Open support tickets: {{count}}",
+    "notificationsTitle": "Notifications",
+    "unreadLabel": "Unread",
+    "viewNotifications": "View all",
+    "recentNotifications": "Recent notifications",
+    "unreadBadge": "Unread"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Install the app and manage push notifications.",
+    "installTitle": "Install app",
+    "installHint": "Add this site to your home screen for faster access (PWA).",
+    "installButton": "Install app",
+    "installManual": "Use your browser menu: Install app or Add to Home Screen.",
+    "alreadyInstalled": "You are using the installed app.",
+    "installIosTitle": "iPhone / iPad (Safari)",
+    "installIosStep1": "Tap Share, then Add to Home Screen.",
+    "installIosStep2": "Open the app from your home screen.",
+    "pushTitle": "Push notifications",
+    "pushHint": "Get alerts when you receive in-app notifications (requires permission).",
+    "pushEnable": "Enable push",
+    "pushDisable": "Disable push",
+    "pushEnabled": "Push notifications enabled.",
+    "pushDisabled": "Push notifications disabled.",
+    "pushDenied": "Permission denied. Enable notifications in browser settings.",
+    "pushUnavailable": "Push is not available. Check WebPush settings on the server.",
+    "pushError": "Could not update push subscription."
   },
   "profile": {
     "title": "Profile",

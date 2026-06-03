@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { AuthTokens } from "./tokens";
 import { loadTokens, saveTokens } from "./tokens";
 import { authApi } from "@/lib/features/auth/auth-api";
-import { userApi } from "@/lib/features/users/user-api";
+import { userApi, type UserProfileDto } from "@/lib/features/users/user-api";
 
 export type AuthUser = {
   userId: string;
@@ -12,11 +12,13 @@ export type AuthUser = {
   email: string;
   firstName: string;
   lastName: string;
+  emailVerified: boolean;
 };
 
 export type LoginResult =
   | { kind: "ok"; user: AuthUser; tokens: AuthTokens }
   | { kind: "2fa_required"; pendingLoginId: string; message?: string | null }
+  | { kind: "email_not_verified"; email: string; message: string }
   | { kind: "error"; message: string };
 
 type AuthState = {
@@ -37,19 +39,14 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function userFromProfile(p: {
-  id: string;
-  userName: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-}): AuthUser {
+function userFromProfile(p: UserProfileDto): AuthUser {
   return {
     userId: p.id,
     userName: p.userName,
     email: p.email,
     firstName: p.firstName,
     lastName: p.lastName,
+    emailVerified: Boolean(p.emailVerifiedAtUtc),
   };
 }
 
@@ -89,10 +86,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const res = await userApi.getMyProfile();
         if (!cancelled) {
           if (res.success && res.data) {
-            setState({ user: userFromProfile(res.data), tokens, hydrated: true });
+            const user = userFromProfile(res.data);
+            if (!user.emailVerified) {
+              saveTokens(null);
+              setState({ user: null, tokens: null, hydrated: true });
+              return;
+            }
+            setState({ user, tokens, hydrated: true });
+          } else if (res.error?.code === "EmailNotVerified") {
+            saveTokens(null);
+            setState({ user: null, tokens: null, hydrated: true });
           } else {
             const refreshed = await authApi.refresh(tokens.refreshToken);
             if (refreshed.kind === "ok") {
+              if (!refreshed.user.emailVerified) {
+                saveTokens(null);
+                setState({ user: null, tokens: null, hydrated: true });
+                return;
+              }
               setState({ user: refreshed.user, tokens: refreshed.tokens, hydrated: true });
             } else {
               saveTokens(null);
@@ -144,7 +155,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextValue = useMemo(
     () => ({
       ...state,
-      isAuthenticated: state.hydrated && Boolean(state.tokens?.accessToken),
+      isAuthenticated:
+        state.hydrated &&
+        Boolean(state.tokens?.accessToken) &&
+        Boolean(state.user?.emailVerified),
       login,
       completeTwoFactor,
       refresh,

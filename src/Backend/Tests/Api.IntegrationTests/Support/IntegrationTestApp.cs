@@ -94,8 +94,17 @@ public sealed class IntegrationTestApp
 
     public Task<(string TokenId, string Token)> RequireEmailTokensAsync(string expectedEmail)
     {
-        Assert.Equal(expectedEmail, EmailSink.LastTo);
-        (string tokenId, string token)? parsed = EmailBodyParser.TryParseTokenPair(EmailSink.LastBody);
+        var mail = EmailSink.FindLast(s =>
+            s.Contains("Confirm", StringComparison.OrdinalIgnoreCase)
+            || s.Contains("Password reset", StringComparison.OrdinalIgnoreCase)
+            || s.Contains("verification", StringComparison.OrdinalIgnoreCase));
+
+        if (mail is null && EmailSink.LastTo is not null && EmailSink.LastBody is not null)
+            mail = (EmailSink.LastTo, EmailSink.LastSubject ?? "", EmailSink.LastBody);
+
+        Assert.NotNull(mail);
+        Assert.Equal(expectedEmail, mail.Value.To);
+        (string tokenId, string token)? parsed = EmailBodyParser.TryParseTokenPair(mail.Value.Body);
         Assert.NotNull(parsed);
         return Task.FromResult(parsed.Value);
     }

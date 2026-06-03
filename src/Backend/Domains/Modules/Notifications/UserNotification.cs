@@ -7,18 +7,20 @@ public sealed class UserNotification
     {
     }
 
-    public UserNotification(Guid userId, string title, string body, string? linkUrl = null)
+    public UserNotification(Guid userId, string title, string body, string? linkUrl = null, Guid? broadcastEventId = null)
     {
         Id = Guid.NewGuid();
         UserId = userId;
         Title = title;
         Body = body;
         LinkUrl = linkUrl;
+        BroadcastEventId = broadcastEventId;
         CreatedAtUtc = DateTime.UtcNow;
     }
 
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
+    public Guid? BroadcastEventId { get; private set; }
     public string Title { get; private set; } = null!;
     public string Body { get; private set; } = null!;
     public string? LinkUrl { get; private set; }

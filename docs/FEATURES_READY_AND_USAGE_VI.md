@@ -1,6 +1,6 @@
 # Đánh giá feature & hướng dẫn sử dụng (tiếng Việt)
 
-**Cập nhật:** 2026-06-03  
+**Cập nhật:** 2026-06-03 (base polish: HTML email, PWA, Web Push, dashboard)  
 **Phạm vi:** Toàn bộ monorepo (`src/Backend`, `src/Frontend`, `src/Admin`) — **nền tảng SaaS base**, chưa phải sản phẩm Klassi/EduConnect (lớp học, điểm danh, …).
 
 Tài liệu chi tiết tiếng Anh (endpoint đầy đủ): [`backend/FEATURE_CATALOG.md`](./backend/FEATURE_CATALOG.md), [`frontend/FEATURE_CATALOG.md`](./frontend/FEATURE_CATALOG.md), [`admin/FEATURE_CATALOG.md`](./admin/FEATURE_CATALOG.md).
@@ -218,7 +218,8 @@ Kết quả kiểm tra 2026-06-03: **Domains 59**, **Application 104**, **Infras
 | In-app list + mark read | **Chạy được** |
 | Admin broadcast | **Chạy được** |
 | SignalR push | **Một phần** — bật `Realtime:Enabled`; scale multi-pod cần Redis backplane |
-| Push mobile / email marketing | **Chưa có** |
+| Web Push (trình duyệt) | ✅ | Bật `WebPush:Enabled` + VAPID keys; user bật tại `/app/settings` |
+| Push mobile native | **Chưa có** |
 | Email transactional | **Sẵn sàng** — outbox → Rabbit → Worker SMTP; production cần SMTP thật |
 
 ---

@@ -5,6 +5,8 @@ using Application.Contracts.Email;
 using Application.Contracts.Modules.Users.Persistence.Read;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Transactions;
+using Application.Common.Email;
+using Application.Contracts.Email;
 using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
 using Microsoft.AspNetCore.Identity;
@@ -24,19 +26,25 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
 {
     private readonly ICacheService _cache;
     private readonly IEmailSender _emailSender;
+    private readonly IEmailTemplateRenderer _templates;
     private readonly PasswordResetEmailOptions _resetEmail;
+    private readonly EmailBrandingOptions _branding;
     private readonly IUserReadRepository _users;
 
     public ForgotPasswordCommandHandler(
         IUserReadRepository users,
         ICacheService cache,
         IEmailSender emailSender,
-        IOptions<PasswordResetEmailOptions> resetEmailOptions)
+        IEmailTemplateRenderer templates,
+        IOptions<PasswordResetEmailOptions> resetEmailOptions,
+        IOptions<EmailBrandingOptions> brandingOptions)
     {
         _users = users;
         _cache = cache;
         _emailSender = emailSender;
+        _templates = templates;
         _resetEmail = resetEmailOptions.Value;
+        _branding = brandingOptions.Value;
     }
 
     public async Task<Result<bool, Error>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
@@ -56,27 +64,27 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
         await _cache.SetAsync(cacheKey, new PasswordResetTokenPayload(user.Id.Value, tokenHash), ttl,
             cancellationToken);
 
+        var appName = string.IsNullOrWhiteSpace(_branding.AppName) ? "App" : _branding.AppName.Trim();
         var baseUrl = (_resetEmail.PublicAppBaseUrl ?? "").Trim().TrimEnd('/');
-        string instructions;
+        string actionUrl;
+        string? fallbackHtml = null;
+
         if (!string.IsNullOrEmpty(baseUrl))
         {
             var query = $"tokenId={Uri.EscapeDataString(tokenId)}&token={Uri.EscapeDataString(token)}";
-            instructions =
-                $"Open this link to choose a new password (valid for {ttlMinutes} minutes):{Environment.NewLine}" +
-                $"{baseUrl}/reset-password?{query}";
+            actionUrl = $"{baseUrl}/reset-password?{query}";
         }
         else
         {
-            instructions =
-                $"Use the password reset screen in the app with these values (valid for {ttlMinutes} minutes):{Environment.NewLine}" +
-                $"Token ID: {tokenId}{Environment.NewLine}" +
-                $"Token: {token}";
+            actionUrl = "#";
+            var fallback =
+                $"Use the reset screen. Token ID: {tokenId} Token: {token} (valid {ttlMinutes} min)";
+            fallbackHtml = EmailTemplateTokenBuilder.FallbackParagraph(fallback);
         }
 
-        var body =
-            "We received a request to reset your password." +
-            $"{Environment.NewLine}{Environment.NewLine}{instructions}" +
-            $"{Environment.NewLine}{Environment.NewLine}If you did not request this, you can ignore this message.";
+        var tokens = EmailTemplateTokenBuilder.ForPasswordReset(
+            appName, actionUrl, ttlMinutes, user.FirstName, fallbackHtml);
+        var body = _templates.Render(EmailTemplateNames.PasswordReset, tokens);
         await _emailSender.SendAsync(user.Email, "Password reset request", body, cancellationToken);
         return true;
     }

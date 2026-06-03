@@ -27,6 +27,6 @@ internal static partial class EmailBodyParser
     [GeneratedRegex(@"Token:\s*(\S+)", RegexOptions.IgnoreCase)]
     private static partial Regex TokenLine();
 
-    [GeneratedRegex(@"tokenId=([^&\s]+)[^&]*&token=([^&\s]+)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"tokenId=([^&\s""']+)[^&]*(?:&|&amp;)token=([^&\s""']+)", RegexOptions.IgnoreCase)]
     private static partial Regex QueryString();
 }

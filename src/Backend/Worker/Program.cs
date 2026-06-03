@@ -47,6 +47,7 @@ builder.Services.AddSingleton<ICronJob, NotificationDeliveryJob>();
 builder.Services.AddWorkerScheduling(builder.Configuration);
 builder.Services.AddHostedService<MediaProcessingConsumerService>();
 builder.Services.AddHostedService<EmailSendConsumerService>();
+builder.Services.AddHostedService<MemberNotificationBroadcastConsumerService>();
 
 var workerSection = builder.Configuration.GetSection(WorkerSchedulingOptions.SectionName);
 if (workerSection.GetValue("EnableSamples", false))

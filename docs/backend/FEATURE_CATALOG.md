@@ -35,6 +35,7 @@ List of **features already included in the base** — usable immediately after l
 | 2FA — confirm enable | Ready | `POST /api/v1/auth/2fa/confirm` |
 | 2FA — complete login | Ready | `POST /api/v1/auth/login/2fa` |
 | Block public registration | Ready | App setting `allow_public_register` (admin API) |
+| Block app API until email verified | Ready | Login/refresh return `EmailNotVerified`; `[Authorize]` fallback policy requires verified email (admins/impersonation exempt) |
 | Failed login lockout | Ready | Cache-based tracker; no separate endpoint |
 | JWT access token | Ready | Claims: `sub`, `role`, `two_factor` (PII trimmed) |
 | Auth rate limit | Ready | `auth` policy on `AuthController` |
@@ -197,13 +198,17 @@ Run worker: `dotnet run --project src/Backend/Worker`
 
 ---
 
-## 10. Realtime (SignalR)
+## 10. Realtime (SignalR + Web Push)
 
 | Feature | Notes |
 |---------|-------|
 | Hub notifications | `Realtime:Enabled` — maps `/hubs/notifications` |
 | JWT via query | `?access_token=` for WebSocket (redacted in logs) |
 | Redis backplane | Optional scale-out |
+| Web Push (VAPID) | `WebPush:Enabled` + keys; `POST/DELETE /api/v1/notifications/push/subscribe`; `GET .../push/vapid-public-key` |
+| Unread count | `GET /api/v1/notifications/unread-count` |
+
+**Transactional email (HTML):** file templates under `Infrastructure/Email/Templates/` with `[[token]]` placeholders + `IEmailTemplateRenderer` (`EmailBranding:AppName`, `EmailTemplates:TemplatesDirectory`).
 
 ---
 

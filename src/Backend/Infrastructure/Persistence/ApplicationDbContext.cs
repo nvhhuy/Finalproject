@@ -44,6 +44,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
     public DbSet<SupportTicketMessage> SupportTicketMessages => Set<SupportTicketMessage>();
     public DbSet<SupportTicketAttachment> SupportTicketAttachments => Set<SupportTicketAttachment>();

@@ -95,6 +95,9 @@ public sealed class
         if (user is null)
             return new InvalidCredentialsError("User no longer exists.");
 
+        if (user.EmailVerifiedAtUtc is null)
+            return new EmailNotVerifiedError();
+
         var pair = await _tokens.IssueAsync(user, request.RemoteIpAddress, cancellationToken);
         if (pair.IsFailure)
             return pair.Error;

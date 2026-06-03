@@ -8,19 +8,21 @@ public sealed class NotificationDeliveryProcessor : INotificationDeliveryProcess
 {
     private readonly ApplicationDbContext _db;
     private readonly INotificationDispatcher _dispatcher;
+    private readonly IWebPushNotificationSender _webPush;
 
-    public NotificationDeliveryProcessor(ApplicationDbContext db, INotificationDispatcher dispatcher)
+    public NotificationDeliveryProcessor(
+        ApplicationDbContext db,
+        INotificationDispatcher dispatcher,
+        IWebPushNotificationSender webPush)
     {
         _db = db;
         _dispatcher = dispatcher;
+        _webPush = webPush;
     }
 
     public async Task<bool> TryDeliverAsync(Guid notificationId, CancellationToken cancellationToken = default)
     {
-        // Guard: never mark as live-delivered if the host has no real push dispatcher.
-        // NullNotificationDispatcher (Worker) always succeeds silently — if we let it mark delivered,
-        // users would never receive the realtime push but retries would stop.
-        if (!_dispatcher.IsRealtime)
+        if (!_dispatcher.IsRealtime && !_webPush.IsEnabled)
             return false;
 
         var row = await _db.UserNotifications
@@ -28,24 +30,46 @@ public sealed class NotificationDeliveryProcessor : INotificationDeliveryProcess
         if (row is null || row.LiveDeliveredAtUtc is not null)
             return false;
 
-        try
+        var payload = new LiveNotificationPayload(
+            row.Id,
+            row.Title,
+            row.Body,
+            row.LinkUrl,
+            row.CreatedAtUtc);
+
+        var delivered = false;
+
+        if (_dispatcher.IsRealtime)
         {
-            await _dispatcher.DispatchAsync(
-                row.UserId,
-                new LiveNotificationPayload(
-                    row.Id,
-                    row.Title,
-                    row.Body,
-                    row.LinkUrl,
-                    row.CreatedAtUtc),
-                cancellationToken);
-            row.MarkLiveDelivered(DateTime.UtcNow);
-            await _db.SaveChangesAsync(cancellationToken);
-            return true;
+            try
+            {
+                await _dispatcher.DispatchAsync(row.UserId, payload, cancellationToken);
+                delivered = true;
+            }
+            catch
+            {
+                // fall through to web push
+            }
         }
-        catch
+
+        if (_webPush.IsEnabled)
         {
+            try
+            {
+                if (await _webPush.SendToUserAsync(row.UserId, payload, cancellationToken))
+                    delivered = true;
+            }
+            catch
+            {
+                // retry on next cron tick
+            }
+        }
+
+        if (!delivered)
             return false;
-        }
+
+        row.MarkLiveDelivered(DateTime.UtcNow);
+        await _db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

@@ -37,7 +37,8 @@
     "about": "关于",
     "contact": "联系",
     "tenant": "组织",
-    "notifications": "通知"
+    "notifications": "通知",
+    "settings": "设置"
   },
   "authLayout": {
     "tagline": "面向终端用户的认证、资料、双因素与媒体流程，已对接 .NET 后端。"
@@ -76,6 +77,14 @@
     "forgotPassword": "忘记密码？",
     "signInFailed": "登录失败",
     "apiUnreachable": "无法连接 API。请启动后端：cd src/Backend/Api && dotnet run --launch-profile https"
+  },
+  "awaitingVerification": {
+    "title": "验证邮箱",
+    "subtitle": "使用应用前需要先确认邮箱。",
+    "sentTo": "我们已向 {{email}} 发送链接。",
+    "hint": "请打开邮件中的链接，然后登录。验证完成前无法进入应用。",
+    "backToLogin": "返回登录",
+    "noEmail": "请先在注册或登录页填写邮箱。"
   },
   "register": {
     "title": "创建账号",
@@ -125,7 +134,33 @@
     "orgSummary": "组织",
     "activePlan": "套餐：{{plan}}",
     "noTenant": "尚无组织 — 请先订阅创建。",
-    "openTickets": "进行中的支持工单：{{count}}"
+    "openTickets": "进行中的支持工单：{{count}}",
+    "notificationsTitle": "通知",
+    "unreadLabel": "未读",
+    "viewNotifications": "查看全部",
+    "recentNotifications": "最近通知",
+    "unreadBadge": "未读"
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "安装应用并管理推送通知。",
+    "installTitle": "安装应用",
+    "installHint": "添加到主屏幕以便快速访问（PWA）。",
+    "installButton": "安装应用",
+    "installManual": "使用浏览器菜单：安装应用或添加到主屏幕。",
+    "alreadyInstalled": "您正在使用已安装的应用。",
+    "installIosTitle": "iPhone / iPad (Safari)",
+    "installIosStep1": "点分享，然后添加到主屏幕。",
+    "installIosStep2": "从主屏幕图标打开应用。",
+    "pushTitle": "推送通知",
+    "pushHint": "收到应用内通知时提醒（需授权）。",
+    "pushEnable": "启用推送",
+    "pushDisable": "关闭推送",
+    "pushEnabled": "已启用推送通知。",
+    "pushDisabled": "已关闭推送通知。",
+    "pushDenied": "权限被拒绝。请在浏览器设置中启用通知。",
+    "pushUnavailable": "推送不可用。请检查服务器 WebPush 配置。",
+    "pushError": "无法更新推送订阅。"
   },
   "profile": {
     "title": "个人资料",

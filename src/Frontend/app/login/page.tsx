@@ -44,6 +44,10 @@ function LoginForm() {
         setPendingLoginId(result.pendingLoginId);
         return;
       }
+      if (result.kind === "email_not_verified") {
+        router.push(`/awaiting-verification?email=${encodeURIComponent(email)}`);
+        return;
+      }
       if (result.kind === "error") {
         setError(result.message);
         setTurnstileToken(null);

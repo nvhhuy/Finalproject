@@ -32,6 +32,7 @@ Catalog of **existing** Frontend base features — routes, behavior, and backend
 | `/app/media` | Media lab (upload flow) | ✓ |
 | `/app/support` | Support tickets (create, reply, close, reopen, attachments) | ✓ |
 | `/app/notifications` | Full notification list | ✓ |
+| `/app/settings` | PWA install + Web Push enable/disable | ✓ |
 | `/app/wallet` | Personal credits (packages, demo top-up, metered debit) | ✓ |
 | `/app/subscribe` | MVP tenant + subscription checkout | ✓ |
 | `/app/tenant` | Org usage, billing actions (plan switch/cancel), domains, SSO, invite members | ✓ |
@@ -48,7 +49,8 @@ Guard: `RequireAuth` in `app/app/layout.tsx`.
 |------------|-----|-----|
 | Email + password login | `/login` | `POST /api/v1/auth/login` |
 | 2FA challenge | Second step | HTTP **202** + `POST /auth/login/2fa` |
-| Register | `/register` | `POST /auth/register` (idempotent) |
+| Register | `/register` | `POST /auth/register` (idempotent) → redirects to `/awaiting-verification` (no app access) |
+| Awaiting verification | `/awaiting-verification` | Resend link; blocks `/app` until verified |
 | Refresh session | Auto in `http.ts` | `POST /auth/refresh` |
 | Forgot password | `/forgot-password` | `POST /auth/forgot-password` |
 | Reset password | `/reset-password` | `POST /auth/reset-password` |
@@ -99,6 +101,8 @@ Guard: `RequireAuth` in `app/app/layout.tsx`.
 |------------|-----|-----|
 | In-app list + mark read | Bell widget + `/app/notifications` | `GET /notifications`, `POST /notifications/{id}/read` |
 | Realtime push | SignalR (dev: `/hubs` proxy + long polling) | `/hubs/notifications` |
+| Web Push | Settings page + service worker `/sw.js` | `POST/DELETE .../push/subscribe`, VAPID key API |
+| PWA install | Settings + `manifest.webmanifest` | Browser install prompt / iOS steps |
 
 ---
 

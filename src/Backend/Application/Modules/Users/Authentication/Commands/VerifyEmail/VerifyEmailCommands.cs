@@ -1,4 +1,5 @@
 using Application.Contracts.Caching;
+using Application.Contracts.Email;
 using Application.Contracts.Modules.Users.Persistence.Write;
 using Application.Contracts.Transactions;
 using Shared.Security;
@@ -14,12 +15,18 @@ public sealed class VerifyEmailCommandHandler : IRequestHandler<VerifyEmailComma
     private readonly ICacheService _cache;
     private readonly IUnitOfWork _uow;
     private readonly IUserWriteRepository _users;
+    private readonly IWelcomeEmailSender _welcomeEmail;
 
-    public VerifyEmailCommandHandler(IUserWriteRepository users, ICacheService cache, IUnitOfWork uow)
+    public VerifyEmailCommandHandler(
+        IUserWriteRepository users,
+        ICacheService cache,
+        IUnitOfWork uow,
+        IWelcomeEmailSender welcomeEmail)
     {
         _users = users;
         _cache = cache;
         _uow = uow;
+        _welcomeEmail = welcomeEmail;
     }
 
     public async Task<Result<bool, Error>> Handle(VerifyEmailCommand request, CancellationToken cancellationToken)
@@ -44,6 +51,19 @@ public sealed class VerifyEmailCommandHandler : IRequestHandler<VerifyEmailComma
         await _uow.SaveChangesAsync(cancellationToken);
         await _users.InvalidateUserCacheAsync(user.Id.Value, user.Email, user.UserName, cancellationToken);
         await _cache.RemoveAsync(cacheKey, cancellationToken);
+
+        var displayName = string.IsNullOrWhiteSpace(user.FirstName)
+            ? user.UserName
+            : $"{user.FirstName} {user.LastName}".Trim();
+        try
+        {
+            await _welcomeEmail.SendWelcomeEmailAsync(user.Email, displayName, cancellationToken);
+        }
+        catch
+        {
+            // Verification already succeeded; welcome email is best-effort.
+        }
+
         return true;
     }
 }

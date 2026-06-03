@@ -25,6 +25,7 @@ using Application.Contracts.Support;
 using Application.Contracts.Tenancy;
 using Application.Contracts.Transactions;
 using Application.Contracts.Wallet;
+using Application.Modules.Notifications;
 using Application.Modules.Users.Authentication.Options;
 using Domains.UserAggregate;
 using Infrastructure.Administration;
@@ -112,7 +113,10 @@ public static class DependencyInjection
         services.AddScoped<UserNotificationService>();
         services.AddScoped<IUserNotificationService>(sp => sp.GetRequiredService<UserNotificationService>());
         services.AddScoped<IUserNotificationWriter>(sp => sp.GetRequiredService<UserNotificationService>());
-        services.AddScoped<IMemberNotificationBroadcaster, MemberNotificationBroadcaster>();
+        services.Configure<MemberNotificationBroadcastOptions>(
+            configuration.GetSection(MemberNotificationBroadcastOptions.SectionName));
+        services.AddScoped<IMemberNotificationBroadcaster, MemberNotificationBroadcastScheduler>();
+        services.AddScoped<IMemberNotificationBroadcastProcessor, MemberNotificationBroadcastProcessor>();
         services.AddAuthenticationServices(configuration);
 
         // Media pipeline DI lives in Application.AddApplication; here we just bind the options block.
@@ -229,6 +233,10 @@ public static class DependencyInjection
         services.AddHttpClient<ITurnstileService, TurnstileService>();
 
         services.Configure<PasswordResetEmailOptions>(configuration.GetSection(PasswordResetEmailOptions.SectionName));
+        services.Configure<EmailBrandingOptions>(configuration.GetSection(EmailBrandingOptions.SectionName));
+        services.Configure<EmailTemplateOptions>(configuration.GetSection(EmailTemplateOptions.SectionName));
+        services.AddSingleton<IEmailTemplateRenderer, FileEmailTemplateRenderer>();
+        services.Configure<WebPushOptions>(configuration.GetSection(WebPushOptions.SectionName));
         services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
         services.AddScoped<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
 
@@ -249,6 +257,14 @@ public static class DependencyInjection
             services.AddSingleton<IEmailSender, NullEmailSender>();
 
         services.AddSingleton<IEmailVerificationSender, EmailVerificationSender>();
+        services.AddSingleton<IWelcomeEmailSender, WelcomeEmailSender>();
+        services.AddScoped<IPushSubscriptionService, PushSubscriptionService>();
+
+        var webPushEnabled = configuration.GetValue($"{WebPushOptions.SectionName}:Enabled", false);
+        if (webPushEnabled)
+            services.AddScoped<IWebPushNotificationSender, WebPushNotificationSender>();
+        else
+            services.AddSingleton<IWebPushNotificationSender, NullWebPushNotificationSender>();
 
         // Object storage (R2 / S3 / MinIO compatible) — singleton because the AWS SDK client is thread-safe.
         services.Configure<ObjectStorageOptions>(configuration.GetSection(ObjectStorageOptions.SectionName));

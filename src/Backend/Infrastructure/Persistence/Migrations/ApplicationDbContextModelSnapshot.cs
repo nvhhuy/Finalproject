@@ -475,6 +475,47 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("MediaAssets", (string)null);
                 });
 
+            modelBuilder.Entity("Domains.Notifications.PushSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Auth")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("P256dh")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Endpoint")
+                        .IsUnique();
+
+                    b.ToTable("PushSubscriptions", (string)null);
+                });
+
             modelBuilder.Entity("Domains.Notifications.UserNotification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -485,6 +526,9 @@ namespace Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
+
+                    b.Property<Guid?>("BroadcastEventId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -508,6 +552,10 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BroadcastEventId", "UserId")
+                        .IsUnique()
+                        .HasFilter("\"BroadcastEventId\" IS NOT NULL");
 
                     b.HasIndex("LiveDeliveredAtUtc", "CreatedAtUtc");
 

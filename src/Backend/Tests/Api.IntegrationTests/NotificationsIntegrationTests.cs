@@ -3,6 +3,9 @@ using System.Net.Http.Json;
 using Api.IntegrationTests.Support;
 using Api.Models.Admin;
 using Application.Modules.Notifications.Queries;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.IntegrationTests;
 
@@ -35,7 +38,12 @@ public sealed class NotificationsIntegrationTests
         }.WithIdempotencyKey();
 
         var broadcastResponse = await adminClient.SendAsync(broadcast);
-        broadcastResponse.EnsureSuccessStatusCode();
+        if (!broadcastResponse.IsSuccessStatusCode)
+        {
+            var errorBody = await broadcastResponse.Content.ReadAsStringAsync();
+            Assert.Fail($"Broadcast failed {(int)broadcastResponse.StatusCode}: {errorBody}");
+        }
+
         var broadcastPayload =
             await broadcastResponse.ReadApiAsync<BroadcastMemberNotificationResponse>();
         Assert.NotNull(broadcastPayload?.Data);
@@ -62,6 +70,35 @@ public sealed class NotificationsIntegrationTests
         var readRow = listAfter?.Data?.FirstOrDefault(n => n.Id == notification.Id);
         Assert.NotNull(readRow);
         Assert.NotNull(readRow.ReadAtUtc);
+    }
+
+    [SkippableFact]
+    public async Task Admin_broadcast_enqueues_outbox_event()
+    {
+        Skip.IfNot(_fixture.Postgres.IsAvailable, PostgresFixture.SkipReason);
+        var app = IntegrationTestApp.FromFixture(_fixture);
+
+        await app.RegisterVerifyAndLoginAsync();
+        var adminAuth = await app.LoginAdminAsync();
+
+        using var adminClient = app.Client.WithBearer(adminAuth.AccessToken);
+        using var broadcast = new HttpRequestMessage(HttpMethod.Post, "/api/v1/admin/notifications/broadcast")
+        {
+            Content = JsonContent.Create(new BroadcastMemberNotificationRequest("Outbox", "Queued fan-out", null))
+        }.WithIdempotencyKey();
+
+        var broadcastResponse = await adminClient.SendAsync(broadcast);
+        broadcastResponse.EnsureSuccessStatusCode();
+
+        using var scope = _fixture.Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var row = await db.OutboxMessages.AsNoTracking()
+            .Where(m => m.RoutingKey == "notifications.broadcast.requested.v1")
+            .OrderByDescending(m => m.OccurredOnUtc)
+            .FirstOrDefaultAsync();
+
+        Assert.NotNull(row);
+        Assert.Contains("Outbox", row!.PayloadJson, StringComparison.OrdinalIgnoreCase);
     }
 
     [SkippableFact]

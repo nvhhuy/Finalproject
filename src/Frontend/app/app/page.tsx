@@ -9,12 +9,14 @@ import { PageContent, PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/auth-context";
 import { billingApi } from "@/lib/features/billing/billing-api";
+import { notificationsApi } from "@/lib/features/notifications/notifications-api";
 import { supportApi } from "@/lib/features/support/support-api";
 import { walletApi } from "@/lib/features/wallet/wallet-api";
+import { formatRelativeTime } from "@/lib/shared";
 import { getActiveTenantId } from "@/lib/tenancy/tenant-context";
 
 export default function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const auth = useAuth();
 
   const balanceQuery = useQuery({
@@ -35,6 +37,24 @@ export default function DashboardPage() {
     },
   });
 
+  const unreadQuery = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: async () => {
+      const res = await notificationsApi.unreadCount();
+      if (!res.success || res.data === undefined) return 0;
+      return res.data;
+    },
+  });
+
+  const recentNotificationsQuery = useQuery({
+    queryKey: ["notifications", "recent"],
+    queryFn: async () => {
+      const res = await notificationsApi.list(1, 5);
+      if (!res.success || !res.data) return [];
+      return res.data;
+    },
+  });
+
   const planQuery = useQuery({
     queryKey: ["billing", "active-plan"],
     queryFn: async () => {
@@ -46,10 +66,15 @@ export default function DashboardPage() {
     },
   });
 
-  const loading = balanceQuery.isLoading || ticketsQuery.isLoading || planQuery.isLoading;
+  const loading =
+    balanceQuery.isLoading ||
+    ticketsQuery.isLoading ||
+    planQuery.isLoading ||
+    unreadQuery.isLoading;
 
   const quickLinks = [
     { href: "/app/profile", label: t("dashboard.quickProfile") },
+    { href: "/app/settings", label: t("nav.settings") },
     { href: "/app/security/2fa", label: t("dashboard.quick2fa") },
     { href: "/app/media", label: t("dashboard.quickMedia") },
     { href: "/app/support", label: t("nav.support") },
@@ -81,6 +106,7 @@ export default function DashboardPage() {
           <>
             <CardSkeleton lines={2} />
             <CardSkeleton lines={2} />
+            <CardSkeleton lines={2} />
           </>
         ) : (
           <>
@@ -107,9 +133,42 @@ export default function DashboardPage() {
                 </Link>
               </CardBody>
             </Card>
+            <Card>
+              <CardBody>
+                <CardTitle>{t("dashboard.notificationsTitle")}</CardTitle>
+                <p className="mt-2 text-2xl font-semibold">{unreadQuery.data ?? 0}</p>
+                <p className="text-sm text-[var(--color-muted)]">{t("dashboard.unreadLabel")}</p>
+                <Link
+                  href="/app/notifications"
+                  className="mt-2 inline-block text-sm text-[var(--color-primary)]"
+                >
+                  {t("dashboard.viewNotifications")} →
+                </Link>
+              </CardBody>
+            </Card>
           </>
         )}
       </div>
+
+      {!recentNotificationsQuery.isLoading && (recentNotificationsQuery.data?.length ?? 0) > 0 ? (
+        <Card className="mt-4">
+          <CardBody>
+            <CardTitle>{t("dashboard.recentNotifications")}</CardTitle>
+            <ul className="mt-3 space-y-3">
+              {recentNotificationsQuery.data?.map((n) => (
+                <li key={n.id} className="border-b border-[var(--color-border)] pb-3 last:border-0 last:pb-0">
+                  <p className="font-medium text-[var(--color-foreground)]">{n.title}</p>
+                  <p className="text-sm text-[var(--color-muted)] line-clamp-2">{n.body}</p>
+                  <p className="mt-1 text-xs text-[var(--color-muted)]">
+                    {formatRelativeTime(n.createdAtUtc)}
+                    {!n.readAtUtc ? ` · ${t("dashboard.unreadBadge")}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      ) : null}
 
       <Card className="mt-4">
         <CardBody>

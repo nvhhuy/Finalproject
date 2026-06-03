@@ -15,6 +15,7 @@ using Infrastructure.HealthChecks;
 using Infrastructure.Modules.Billing;
 using Infrastructure.Modules.Notifications;
 using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -57,10 +58,18 @@ public static class DependencyInjection
                 options.SubstituteApiVersionInUrl = true;
             });
 
+        services.AddScoped<IAuthorizationHandler, EmailVerifiedAuthorizationHandler>();
+
         services.AddAuthorization(options =>
         {
             options.AddPolicy(AuthorizationPolicies.AdminOnly, policy =>
                 policy.RequireRole(UserRoles.Admin));
+
+            // Every [Authorize] endpoint (except AdminOnly / AllowAnonymous) requires verified email.
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .AddRequirements(new EmailVerifiedRequirement())
+                .Build();
         });
 
         services.AddMemoryCache();

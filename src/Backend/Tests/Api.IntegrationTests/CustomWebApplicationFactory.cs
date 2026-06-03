@@ -1,5 +1,6 @@
 using Api.IntegrationTests.Support;
 using Application.Contracts.Email;
+using Infrastructure.Email;
 using Application.Contracts.Notifications;
 using Application.Contracts.Persistence;
 using Application.Contracts.Storage;
@@ -43,7 +44,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["PasswordReset:PublicAppBaseUrl"] = "",
+                ["PasswordReset:PublicAppBaseUrl"] = "http://localhost:3000",
                 ["Seed:Admin:Enabled"] = "true",
                 ["Seed:Admin:Email"] = IntegrationTestApp.AdminEmail,
                 ["Seed:Admin:UserName"] = "admin",
@@ -58,7 +59,9 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 // Force in-memory distributed cache so tests are self-contained
                 // and don't require a live Redis instance.
                 ["Redis:ConnectionString"] = "",
-                ["Realtime:UseRedisBackplane"] = "false"
+                ["Realtime:UseRedisBackplane"] = "false",
+                ["WebPush:Enabled"] = "false",
+                ["Notifications:Broadcast:ProcessInlineInIntegrationTests"] = "true"
             });
         });
         builder.ConfigureServices(services =>
@@ -67,6 +70,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<ApplicationReadDbContext>();
             services.RemoveAll<IApplicationReadDbContext>();
             services.RemoveAll<IEmailSender>();
+            services.RemoveAll<IWelcomeEmailSender>();
             services.RemoveAll<IObjectStorage>();
 
             // Swap out Redis distributed cache — AddCaching already ran in Program.cs
@@ -81,6 +85,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton<INotificationDispatcher, NullNotificationDispatcher>();
 
             services.AddSingleton<IEmailSender>(EmailSink);
+            services.AddSingleton<IWelcomeEmailSender, NullWelcomeEmailSender>();
             services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
 
             services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(_connectionString));

@@ -13,6 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/app", label: t("nav.dashboard") },
     { href: "/app/profile", label: t("nav.profile") },
+    { href: "/app/settings", label: t("nav.settings") },
     { href: "/app/security/2fa", label: t("nav.twoFa") },
     { href: "/app/media", label: t("nav.mediaLab") },
     { href: "/app/support", label: t("nav.support") },

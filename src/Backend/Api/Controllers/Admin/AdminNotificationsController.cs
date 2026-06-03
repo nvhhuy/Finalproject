@@ -25,8 +25,9 @@ public sealed class AdminNotificationsController : ApiControllerBase
     private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
 
     /// <summary>
-    ///     Sends an in-app announcement to every active member account (role User, not locked or deleted).
-    ///     Live SignalR delivery is retried by the worker for any rows not pushed immediately.
+    ///     Queues an in-app announcement for every active member (role User, not locked or deleted).
+    ///     Fan-out runs asynchronously via outbox and worker; live SignalR/Web Push is retried by the worker.
+    ///     Response <c>recipientCount</c> is the number of members that will receive the message.
     /// </summary>
     [HttpPost("broadcast")]
     [RequiresIdempotencyKey(Scope = "admin.notifications.broadcast")]

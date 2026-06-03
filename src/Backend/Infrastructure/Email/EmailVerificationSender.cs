@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Application.Common.Email;
 using Application.Contracts.Caching;
 using Application.Contracts.Email;
 using Application.Modules.Users.Authentication;
@@ -13,16 +14,22 @@ public sealed class EmailVerificationSender : IEmailVerificationSender
 {
     private readonly ICacheService _cache;
     private readonly IEmailSender _emailSender;
+    private readonly IEmailTemplateRenderer _templates;
     private readonly PasswordResetEmailOptions _options;
+    private readonly EmailBrandingOptions _branding;
 
     public EmailVerificationSender(
         ICacheService cache,
         IEmailSender emailSender,
-        IOptions<PasswordResetEmailOptions> options)
+        IEmailTemplateRenderer templates,
+        IOptions<PasswordResetEmailOptions> options,
+        IOptions<EmailBrandingOptions> branding)
     {
         _cache = cache;
         _emailSender = emailSender;
+        _templates = templates;
         _options = options.Value;
+        _branding = branding.Value;
     }
 
     public async Task SendVerificationEmailAsync(Guid userId, string email,
@@ -46,26 +53,25 @@ public sealed class EmailVerificationSender : IEmailVerificationSender
 
     private string BuildBody(string tokenId, string token, int ttlMinutes)
     {
+        var appName = string.IsNullOrWhiteSpace(_branding.AppName) ? "App" : _branding.AppName.Trim();
         var baseUrl = (_options.PublicAppBaseUrl ?? "").Trim().TrimEnd('/');
-        string instructions;
+        string actionUrl;
+        string? fallbackHtml = null;
+
         if (!string.IsNullOrEmpty(baseUrl))
         {
             var query = $"tokenId={Uri.EscapeDataString(tokenId)}&token={Uri.EscapeDataString(token)}";
-            instructions =
-                $"Open this link to confirm your email (valid for {ttlMinutes} minutes):{Environment.NewLine}" +
-                $"{baseUrl}/verify-email?{query}";
+            actionUrl = $"{baseUrl}/verify-email?{query}";
         }
         else
         {
-            instructions =
-                $"Use the verify-email screen with these values (valid for {ttlMinutes} minutes):{Environment.NewLine}" +
-                $"Token ID: {tokenId}{Environment.NewLine}" +
-                $"Token: {token}";
+            actionUrl = "#";
+            var fallback =
+                $"Use the verify-email screen (valid for {ttlMinutes} minutes). Token ID: {tokenId} Token: {token}";
+            fallbackHtml = EmailTemplateTokenBuilder.FallbackParagraph(fallback);
         }
 
-        return
-            "Thanks for registering. Please confirm your email address." +
-            $"{Environment.NewLine}{Environment.NewLine}{instructions}" +
-            $"{Environment.NewLine}{Environment.NewLine}If you did not create an account, you can ignore this message.";
+        var tokens = EmailTemplateTokenBuilder.ForVerifyEmail(appName, actionUrl, ttlMinutes, fallbackHtml: fallbackHtml);
+        return _templates.Render(EmailTemplateNames.VerifyEmail, tokens);
     }
 }

@@ -37,7 +37,8 @@
     "about": "Giới thiệu",
     "contact": "Liên hệ",
     "tenant": "Tổ chức",
-    "notifications": "Thông báo"
+    "notifications": "Thông báo",
+    "settings": "Cài đặt"
   },
   "authLayout": {
     "tagline": "Auth, hồ sơ, 2FA và media sẵn sàng kết nối backend .NET của bạn."
@@ -76,6 +77,14 @@
     "forgotPassword": "Quên mật khẩu?",
     "signInFailed": "Đăng nhập thất bại",
     "apiUnreachable": "Không kết nối được API. Chạy backend: cd src/Backend/Api && dotnet run --launch-profile https"
+  },
+  "awaitingVerification": {
+    "title": "Xác minh email",
+    "subtitle": "Bạn cần xác nhận email trước khi dùng ứng dụng.",
+    "sentTo": "Chúng tôi đã gửi link tới {{email}}.",
+    "hint": "Mở link trong email, sau đó đăng nhập. Ứng dụng sẽ khóa cho đến khi xác minh xong.",
+    "backToLogin": "Quay lại đăng nhập",
+    "noEmail": "Nhập email ở trang đăng ký hoặc đăng nhập trước."
   },
   "register": {
     "title": "Tạo tài khoản",
@@ -125,7 +134,33 @@
     "orgSummary": "Tổ chức",
     "activePlan": "Gói: {{plan}}",
     "noTenant": "Chưa có tổ chức — đăng ký gói để tạo.",
-    "openTickets": "Ticket hỗ trợ đang mở: {{count}}"
+    "openTickets": "Ticket hỗ trợ đang mở: {{count}}",
+    "notificationsTitle": "Thông báo",
+    "unreadLabel": "Chưa đọc",
+    "viewNotifications": "Xem tất cả",
+    "recentNotifications": "Thông báo gần đây",
+    "unreadBadge": "Chưa đọc"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "subtitle": "Cài app và quản lý thông báo đẩy.",
+    "installTitle": "Cài ứng dụng",
+    "installHint": "Thêm trang vào màn hình chính để mở nhanh hơn (PWA).",
+    "installButton": "Cài ứng dụng",
+    "installManual": "Dùng menu trình duyệt: Cài ứng dụng hoặc Thêm vào Màn hình chính.",
+    "alreadyInstalled": "Bạn đang dùng bản đã cài.",
+    "installIosTitle": "iPhone / iPad (Safari)",
+    "installIosStep1": "Chạm Chia sẻ, rồi Thêm vào Màn hình chính.",
+    "installIosStep2": "Mở app từ biểu tượng trên màn hình chính.",
+    "pushTitle": "Thông báo đẩy",
+    "pushHint": "Nhận cảnh báo khi có thông báo trong app (cần quyền).",
+    "pushEnable": "Bật thông báo đẩy",
+    "pushDisable": "Tắt thông báo đẩy",
+    "pushEnabled": "Đã bật thông báo đẩy.",
+    "pushDisabled": "Đã tắt thông báo đẩy.",
+    "pushDenied": "Bị từ chối quyền. Bật thông báo trong cài đặt trình duyệt.",
+    "pushUnavailable": "Push không khả dụng. Kiểm tra WebPush trên server.",
+    "pushError": "Không cập nhật được đăng ký push."
   },
   "profile": {
     "title": "Hồ sơ",

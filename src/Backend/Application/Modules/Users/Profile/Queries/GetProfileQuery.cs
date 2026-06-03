@@ -13,6 +13,7 @@ public sealed record UserProfileDto(
     string LastName,
     string Role,
     bool TwoFactorEnabled,
+    DateTime? EmailVerifiedAtUtc,
     uint RowVersion);
 
 public sealed class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, Result<UserProfileDto, Error>>
