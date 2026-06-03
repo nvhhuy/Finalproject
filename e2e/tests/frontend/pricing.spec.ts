@@ -5,7 +5,12 @@ test.describe('Frontend — pricing & SaaS marketing', () => {
   test('pricing page loads plan cards from API', async ({ page }) => {
     await page.goto('/pricing');
     await expect(page.getByRole('heading', { name: /plan|pricing/i })).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole('link', { name: /get started|choose/i }).first()).toBeVisible({
+    await expect(
+      page
+        .getByRole('link', { name: /get started|choose|bắt đầu|开始使用/i })
+        .or(page.getByRole('button', { name: /get started|choose|bắt đầu|开始使用/i }))
+        .first(),
+    ).toBeVisible({
       timeout: 30_000,
     });
   });

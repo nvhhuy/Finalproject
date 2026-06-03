@@ -32,9 +32,10 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Must be set before host build so Serilog skips the Development OpenSearch sink (CI hang).
+        builder.UseSetting("IntegrationTesting:DisableRateLimiting", "true");
         builder.UseEnvironment("Development");
         builder.UseSetting("DataProtection:KeysDirectory", _dataProtectionKeysDirectory);
-        builder.UseSetting("IntegrationTesting:DisableRateLimiting", "true");
         // Disable Redis before Program.cs registers services — UseSetting runs before
         // ConfigureAppConfiguration and therefore before AddCaching / AddWebApi read the config.
         // This prevents both IDistributedCache and SignalR from trying to connect to Redis.

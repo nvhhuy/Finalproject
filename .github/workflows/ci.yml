@@ -121,6 +121,10 @@ jobs:
       - name: API integration tests
         timeout-minutes: 15
         env:
+          PGPASSWORD: postgres
+          PGHOST: localhost
+          PGUSER: postgres
+          IntegrationTesting__DisableRateLimiting: 'true'
           TEST_DATABASE_CONNECTION_STRING: >-
             Host=localhost;Port=5432;Database=baseproject_integration;
             Username=postgres;Password=postgres
@@ -186,6 +190,10 @@ jobs:
       - name: Media integration tests
         timeout-minutes: 15
         env:
+          PGPASSWORD: postgres
+          PGHOST: localhost
+          PGUSER: postgres
+          IntegrationTesting__DisableRateLimiting: 'true'
           INTEGRATION_MEDIA_ENABLED: 'true'
           TEST_DATABASE_CONNECTION_STRING: >-
             Host=localhost;Port=5432;Database=baseproject_media_integration;

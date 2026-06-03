@@ -29,7 +29,9 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
         {
             ForcePathStyle = _options.ForcePathStyle,
             // R2/MinIO require pre-signed v4; AWS supports it everywhere.
-            SignatureVersion = "4"
+            SignatureVersion = "4",
+            // Fail fast in CI/integration tests when object storage is unreachable (avoid 15m job timeouts).
+            Timeout = TimeSpan.FromSeconds(60)
         };
 
         if (!string.IsNullOrWhiteSpace(_options.ServiceUrl))

@@ -65,8 +65,10 @@ public static class DependencyInjection
             options.AddPolicy(AuthorizationPolicies.AdminOnly, policy =>
                 policy.RequireRole(UserRoles.Admin));
 
-            // Every [Authorize] endpoint (except AdminOnly / AllowAnonymous) requires verified email.
-            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+            // Applies to endpoints with [Authorize] (not AdminOnly / AllowAnonymous). Do not use
+            // FallbackPolicy here — that would require auth on public routes (contact, /public/*,
+            // health probes) and break anonymous access.
+            options.DefaultPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
                 .AddRequirements(new EmailVerifiedRequirement())
                 .Build();

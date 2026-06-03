@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { PublicHeader } from "@/components/layout/PublicHeader";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/ui/cn";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { PricingCardsSkeleton } from "@/components/ui/skeleton";
@@ -55,8 +55,13 @@ export default function PricingPage() {
                     <li>{t("pricing.trialDays", { count: plan.trialDays })}</li>
                   </ul>
                   <div className="mt-auto pt-2">
-                    <Link href={`/app/subscribe?plan=${encodeURIComponent(plan.code)}`}>
-                      <Button className="w-full">{t("pricing.choosePlan")}</Button>
+                    <Link
+                      href={`/app/subscribe?plan=${encodeURIComponent(plan.code)}`}
+                      className={cn(
+                        "inline-flex h-10 w-full items-center justify-center rounded-lg bg-[var(--color-primary)] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]",
+                      )}
+                    >
+                      {t("pricing.choosePlan")}
                     </Link>
                   </div>
                 </CardBody>
