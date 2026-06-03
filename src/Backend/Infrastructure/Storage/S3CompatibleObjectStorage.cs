@@ -35,7 +35,12 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
         };
 
         if (!string.IsNullOrWhiteSpace(_options.ServiceUrl))
+        {
             config.ServiceURL = _options.ServiceUrl;
+            // MinIO/dev endpoints use plain HTTP; without this the SDK signs https:// URLs and PUTs fail with SSL errors.
+            if (_options.ServiceUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                config.UseHttp = true;
+        }
         else
             config.RegionEndpoint = RegionEndpoint.GetBySystemName(_options.Region);
 
@@ -124,7 +129,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             Expires = DateTime.UtcNow.Add(expiration)
         };
 
-        return Task.FromResult(_client.GetPreSignedURL(request));
+        return Task.FromResult(NormalizePresignedUrlScheme(_client.GetPreSignedURL(request)));
     }
 
     public Task<string> GeneratePresignedUploadUrlAsync(
@@ -142,8 +147,7 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
             ContentType = contentType
         };
 
-        var url = _client.GetPreSignedURL(request);
-        return Task.FromResult(url);
+        return Task.FromResult(NormalizePresignedUrlScheme(_client.GetPreSignedURL(request)));
     }
 
     public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
@@ -198,5 +202,22 @@ public sealed class S3CompatibleObjectStorage : IObjectStorage, IDisposable
                     obj.LastModified.ToUniversalTime());
             continuationToken = response.IsTruncated ? response.NextContinuationToken : null;
         } while (continuationToken is not null);
+    }
+
+    /// <summary>
+    ///     Some SDK versions still emit https presigned URLs when <see cref="AmazonS3Config.UseHttp" /> is set.
+    ///     Rewrite to match the configured endpoint scheme so MinIO/HTTP dev stacks work in CI.
+    /// </summary>
+    private string NormalizePresignedUrlScheme(string url)
+    {
+        var endpoint = _options.ServiceUrl?.Trim();
+        if (string.IsNullOrEmpty(endpoint))
+            return url;
+
+        if (endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            return string.Concat("http://", url.AsSpan("https://".Length));
+
+        return url;
     }
 }
