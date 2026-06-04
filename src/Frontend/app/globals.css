@@ -2,54 +2,59 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Klassi brand v4.1 — emerald green (avoids lime #58CC02 that reads yellow/orange on some displays) */
 @theme inline {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --color-background: #f1f5f9;
+  --color-background: #f7fef9;
   --color-surface: #ffffff;
-  --color-surface-muted: #f8fafc;
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
-  --color-foreground: #0f172a;
-  --color-muted: #64748b;
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
-  --color-primary-soft: #eef2ff;
-  --color-accent-foreground: #4338ca;
-  --color-success: #059669;
-  --color-success-soft: #ecfdf5;
-  --color-success-text: #047857;
+  --color-surface-muted: #f0fdf4;
+  --color-border: #d8eadc;
+  --color-border-strong: #bbf7d0;
+  --color-foreground: #1a2e1a;
+  --color-muted: #5c6b5c;
+  --color-primary: #22c55e;
+  --color-primary-hover: #16a34a;
+  --color-primary-soft: #dcfce7;
+  --color-accent-foreground: #166534;
+  --color-market: #1cb0f6;
+  --color-market-soft: #e0f4fe;
+  --color-success: #16a34a;
+  --color-success-soft: #dcfce7;
+  --color-success-text: #15803d;
   --color-danger: #dc2626;
   --color-danger-soft: #fef2f2;
   --color-danger-text: #b91c1c;
-  --color-warning: #d97706;
-  --color-warning-soft: #fffbeb;
-  --color-warning-text: #b45309;
-  --shadow-card: 0 1px 3px rgb(15 23 42 / 0.06), 0 4px 16px rgb(15 23 42 / 0.04);
-  --shadow-elevated: 0 8px 30px rgb(15 23 42 / 0.1);
+  --color-warning: #ca8a04;
+  --color-warning-soft: #fefce8;
+  --color-warning-text: #a16207;
+  --shadow-card: 0 1px 3px rgb(26 46 26 / 0.06), 0 4px 16px rgb(26 46 26 / 0.04);
+  --shadow-elevated: 0 8px 30px rgb(26 46 26 / 0.08);
   --radius-card: 1rem;
 }
 
 html.dark {
-  --color-background: #0c1222;
-  --color-surface: #151d2e;
-  --color-surface-muted: #1c2738;
-  --color-border: #2a3548;
-  --color-border-strong: #3d4d66;
-  --color-foreground: #f1f5f9;
-  --color-muted: #94a3b8;
-  --color-primary: #818cf8;
-  --color-primary-hover: #a5b4fc;
-  --color-primary-soft: rgb(99 102 241 / 0.22);
-  --color-accent-foreground: #c7d2fe;
-  --color-success: #34d399;
-  --color-success-soft: rgb(16 185 129 / 0.18);
-  --color-success-text: #6ee7b7;
+  --color-background: #0f1a12;
+  --color-surface: #162419;
+  --color-surface-muted: #1e3024;
+  --color-border: #2a4030;
+  --color-border-strong: #3d5c45;
+  --color-foreground: #ecfdf5;
+  --color-muted: #9ca89c;
+  --color-primary: #4ade80;
+  --color-primary-hover: #22c55e;
+  --color-primary-soft: rgb(34 197 94 / 0.18);
+  --color-accent-foreground: #bbf7d0;
+  --color-market: #38bdf8;
+  --color-market-soft: rgb(28 176 246 / 0.15);
+  --color-success: #4ade80;
+  --color-success-soft: rgb(74 222 128 / 0.15);
+  --color-success-text: #86efac;
   --color-danger: #f87171;
   --color-danger-soft: rgb(248 113 113 / 0.15);
   --color-danger-text: #fca5a5;
-  --color-warning: #fbbf24;
-  --color-warning-soft: rgb(251 191 36 / 0.15);
-  --color-warning-text: #fcd34d;
+  --color-warning: #facc15;
+  --color-warning-soft: rgb(250 204 21 / 0.12);
+  --color-warning-text: #fde047;
   --shadow-card: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 20px rgb(0 0 0 / 0.25);
   --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.45);
 }
@@ -81,30 +86,29 @@ a {
 }
 
 .link {
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   font-weight: 500;
   transition: color 0.15s ease;
 }
 
 .link:hover {
-  color: var(--color-primary-hover);
+  color: var(--color-primary);
 }
 
 .mesh-bg {
   background:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgb(99 102 241 / 0.14), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(14 165 233 / 0.1), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgb(34 197 94 / 0.1), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(28 176 246 / 0.06), transparent 50%),
     var(--color-background);
 }
 
 html.dark .mesh-bg {
   background:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgb(99 102 241 / 0.1), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(56 189 248 / 0.06), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgb(74 222 128 / 0.1), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(56 189 248 / 0.05), transparent 50%),
     var(--color-background);
 }
 
-/* Nav & interactive states */
 .nav-link-active {
   background: var(--color-primary-soft);
   color: var(--color-accent-foreground);

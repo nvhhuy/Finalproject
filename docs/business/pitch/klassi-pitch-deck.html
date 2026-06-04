@@ -14,24 +14,54 @@
     color-adjust: exact !important;
   }
 
+  /* Klassi UI v4 — Duolingo-inspired green; synced with DESIGN_GUIDE + globals.css */
   :root {
-    --brand:     #6C47FF;
-    --brand-2:   #A78BFA;
-    --accent:    #F59E0B;
-    --dark:      #0F0F1A;
-    --dark-2:    #1A1A2E;
-    --dark-3:    #252540;
-    --light:     #F8F7FF;
-    --muted:     #9CA3AF;
-    --green:     #10B981;
-    --red:       #EF4444;
-    --blue:      #3B82F6;
+    --color-primary:       #58CC02;
+    --color-primary-hover: #46A302;
+    --color-primary-soft:  #E8F9E0;
+    --color-brand-muted:   #7DE82E;
+    --color-primary-rgb:   88, 204, 2;
+    --color-market:        #1CB0F6;
+    --color-market-soft:   #7DD3FC;
+    --color-market-rgb:    28, 176, 246;
+    --color-success:       #16A34A;
+    --color-success-soft:  #4ADE80;
+    --color-success-glow:  #86EFAC;
+    --color-background:    #F7FEF9;
+    --color-foreground:    #1A2E1A;
+    --color-muted:         #5C6B5C;
+    --color-surface:       #FFFFFF;
+    --color-border:        #D8EADC;
+    --pitch-dark:          #0F1A12;
+    --pitch-dark-2:        #162419;
+    --pitch-dark-3:        #1E3024;
+    --pitch-text:          #ECFDF5;
+    --pitch-text-muted:    #D1E7D1;
+    --pitch-muted:         #9CA89C;
+    --color-danger:        #EF4444;
+    /* pitch aliases */
+    --brand: var(--color-primary);
+    --brand-2: var(--color-brand-muted);
+    --brand-rgb: var(--color-primary-rgb);
+    --accent: var(--color-market);
+    --accent-soft: var(--color-market-soft);
+    --accent-rgb: var(--color-market-rgb);
+    --dark: var(--pitch-dark);
+    --dark-2: var(--pitch-dark-2);
+    --dark-3: var(--pitch-dark-3);
+    --light: var(--color-background);
+    --text: var(--pitch-text);
+    --text-muted: var(--pitch-text-muted);
+    --muted: var(--pitch-muted);
+    --green: var(--color-success-soft);
+    --green-text: var(--color-success-glow);
+    --green-solid: var(--color-success);
   }
 
   body {
     font-family: 'Inter', system-ui, sans-serif;
-    background: #111;
-    color: #fff;
+    background: var(--dark);
+    color: var(--text);
   }
 
   /* ── Print / PDF layout ── */
@@ -50,14 +80,14 @@
 
   @media print {
     @page { size: A4 landscape; margin: 0; }
-    html, body { background: #0F0F1A !important; }
+    html, body { background: var(--dark) !important; }
     .slide {
       page-break-after: always;
       break-after: page;
       width: 297mm;
       min-height: 167mm;
       margin: 0;
-      background: #0F0F1A !important;
+      background: var(--dark) !important;
     }
     /* hide decorative blobs — they render as white boxes in print */
     .blob { display: none !important; }
@@ -69,12 +99,12 @@
     position: absolute;
     border-radius: 50%;
     filter: blur(80px);
-    opacity: 0.18;
+    opacity: 0.12;
     pointer-events: none;
   }
-  .blob-purple { background: var(--brand); width: 320px; height: 320px; }
-  .blob-amber  { background: var(--accent); width: 220px; height: 220px; }
-  .blob-blue   { background: var(--blue); width: 260px; height: 260px; }
+  .blob-green { background: var(--brand); width: 320px; height: 320px; }
+  .blob-teal   { background: var(--color-success-soft); width: 240px; height: 240px; }
+  .blob-amber  { background: var(--accent); width: 200px; height: 200px; opacity: 0.08; }
 
   /* ── Slide number badge ── */
   .slide-num {
@@ -126,13 +156,13 @@
   p, li {
     font-size: 14px;
     line-height: 1.65;
-    color: #D1D5DB;
+    color: var(--text-muted);
   }
   .large { font-size: 17px; }
   .muted { color: var(--muted); }
   .highlight { color: var(--brand-2); font-weight: 700; }
   .accent-text { color: var(--accent); font-weight: 700; }
-  .green-text  { color: var(--green); font-weight: 700; }
+  .green-text  { color: var(--green-text); font-weight: 700; }
 
   /* ── Gradient headline ── */
   .grad {
@@ -149,27 +179,26 @@
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
-    background: rgba(108,71,255,.22);
+    background: rgba(var(--brand-rgb), .18);
     color: var(--brand-2);
-    border: 1px solid rgba(108,71,255,.4);
+    border: 1px solid rgba(var(--brand-rgb), .35);
     margin-right: 8px;
     margin-bottom: 6px;
   }
-  .pill-green  { background: rgba(16,185,129,.18); color: #34D399; border-color: rgba(16,185,129,.4); }
-  .pill-amber  { background: rgba(245,158,11,.18); color: #FCD34D; border-color: rgba(245,158,11,.4); }
-  .pill-blue   { background: rgba(59,130,246,.18); color: #93C5FD; border-color: rgba(59,130,246,.4); }
+  .pill-green  { background: rgba(13,148,136,.18); color: var(--green-text); border-color: rgba(20,184,166,.35); }
+  .pill-amber  { background: rgba(var(--accent-rgb), .16); color: var(--accent-soft); border-color: rgba(var(--accent-rgb), .35); }
 
   /* ── Card ── */
   .card {
-    background: #252540;
-    border: 1px solid rgba(255,255,255,.07);
+    background: var(--dark-3);
+    border: 1px solid rgba(255,255,255,.08);
     border-radius: 14px;
     padding: 18px 20px;
   }
   .card-accent {
     border-left: 3px solid var(--brand);
   }
-  .card-green  { border-left: 3px solid var(--green); }
+  .card-green  { border-left: 3px solid var(--color-success-soft); }
   .card-amber  { border-left: 3px solid var(--accent); }
 
   /* ── Grid helpers ── */
@@ -218,18 +247,18 @@
 
   /* ── Revenue bar ── */
   .rev-bar-wrap { margin-bottom: 8px; }
-  .rev-bar-label { font-size: 12px; color: #D1D5DB; margin-bottom: 4px; display: flex; justify-content: space-between; }
-  .rev-bar-track { background: #252540; border-radius: 4px; height: 8px; overflow: hidden; }
+  .rev-bar-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .rev-bar-track { background: var(--dark-3); border-radius: 4px; height: 8px; overflow: hidden; }
   .rev-bar-fill  { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
 
   /* ── Quote block ── */
   .quote {
     border-left: 3px solid var(--brand);
     padding: 10px 16px;
-    background: rgba(108,71,255,.08);
+    background: rgba(var(--brand-rgb), .08);
     border-radius: 0 8px 8px 0;
     font-style: italic;
-    color: #E5E7EB;
+    color: var(--text);
     font-size: 14px;
     line-height: 1.6;
   }
@@ -238,22 +267,103 @@
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th {
     text-align: left; padding: 8px 12px;
-    background: rgba(108,71,255,.15);
+    background: rgba(var(--brand-rgb), .14);
     color: var(--brand-2);
     font-weight: 600;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: .06em;
   }
-  td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.06); color: #D1D5DB; }
+  td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.06); color: var(--text-muted); }
   tr:last-child td { border-bottom: none; }
 
   /* ── Slide 1: Cover ── */
-  .slide-cover { background: var(--dark); }
-  .cover-logo { font-size: 64px; font-weight: 900; letter-spacing: -3px; }
+  .slide-cover {
+    background: linear-gradient(135deg, var(--pitch-dark) 0%, #142818 45%, var(--pitch-dark-2) 100%);
+  }
+  .cover-logo { font-size: 64px; font-weight: 900; letter-spacing: -3px; color: #fff; }
   .cover-logo span { color: var(--brand-2); }
-  .tagline { font-size: 20px; color: #9CA3AF; font-weight: 400; margin-top: 10px; }
-  .cover-meta { font-size: 13px; color: var(--muted); margin-top: 28px; }
+  .tagline { font-size: 20px; color: var(--pitch-muted); font-weight: 400; margin-top: 10px; }
+  .cover-meta { font-size: 13px; color: var(--pitch-muted); margin-top: 28px; }
+
+  /* ── Product UI preview (matches Frontend light theme) ── */
+  .ui-preview {
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgb(26 29 38 / 0.35);
+  }
+  .ui-preview-bar {
+    height: 6px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-brand-muted), var(--color-success-soft));
+  }
+  .ui-preview-body { padding: 14px 16px; }
+  .ui-preview-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-hover);
+    margin-bottom: 8px;
+  }
+  .ui-preview-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-foreground);
+    margin-bottom: 4px;
+  }
+  .ui-preview-sub { font-size: 11px; color: var(--color-muted); line-height: 1.5; margin-bottom: 10px; }
+  .ui-preview-btn {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--color-primary);
+    color: #fff;
+  }
+  .ui-preview-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .ui-preview-stat {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    font-size: 10px;
+    color: var(--color-muted);
+  }
+  .ui-preview-stat strong {
+    display: block;
+    font-size: 13px;
+    color: var(--color-success);
+    margin-top: 2px;
+  }
+  .palette-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .palette-swatch {
+    text-align: center;
+    font-size: 9px;
+    color: var(--pitch-muted);
+  }
+  .palette-swatch span {
+    display: block;
+    width: 36px;
+    height: 22px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    border: 1px solid rgba(255,255,255,.12);
+  }
 
   /* ── Print helper ── */
   .print-btn {
@@ -266,10 +376,10 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 8px 32px rgba(108,71,255,.5);
+    box-shadow: 0 8px 32px rgba(var(--brand-rgb), .4);
     transition: .2s;
   }
-  .print-btn:hover { background: #5a38e8; transform: translateY(-1px); }
+  .print-btn:hover { background: var(--color-primary-hover); transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -280,14 +390,14 @@
      SLIDE 1 — COVER
 ════════════════════════════════════════════ -->
 <div class="slide slide-cover">
+  <div class="blob blob-green" style="top:-80px;right:-60px;"></div>
+  <div class="blob blob-teal" style="bottom:-40px;left:-30px;"></div>
 
-
-
-  <div style="max-width:620px;">
+  <div style="max-width:620px;position:relative;z-index:1;">
     <div class="cover-logo">Klass<span>i</span></div>
     <div class="tagline">Dạy học chuyên nghiệp hơn — Your class, elevated.</div>
     <div class="divider" style="margin-top:24px;width:64px;"></div>
-    <p class="large" style="color:#9CA3AF;max-width:500px;margin-top:8px;">
+    <p class="large" style="color:var(--muted);max-width:500px;margin-top:8px;">
       Nền tảng quản lý lớp học & kết nối gia sư đầu tiên tại Việt Nam dành riêng cho giáo viên tự do và trung tâm nhỏ.
     </p>
     <div class="cover-meta" style="margin-top:32px;">
@@ -335,7 +445,7 @@
 
     <div>
       <div class="card card-amber" style="margin-bottom:12px;">
-        <h3 style="color:#FCD34D;">👨‍👩‍👧 Phụ huynh tìm gia sư</h3>
+        <h3 style="color:var(--accent-soft);">👨‍👩‍👧 Phụ huynh tìm gia sư</h3>
         <ul style="padding-left:16px;margin-top:8px;">
           <li>Facebook group: hồ sơ giả, không ai xác minh</li>
           <li>Công ty môi giới: phí 1–2 tháng lương giáo viên</li>
@@ -362,8 +472,8 @@
   <h2 class="grad">Tool-first, Marketplace-after.<br/>Bán ClassHub trước — mở TutorMatch sau.</h2>
   <div class="divider"></div>
 
-  <div class="grid-2">
-    <div class="card" style="border-top:3px solid #6C47FF;padding:20px;">
+  <div class="grid-2" style="align-items:start;">
+    <div class="card" style="border-top:3px solid var(--brand);padding:20px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:22px;">🏫</span>
         <div>
@@ -371,9 +481,9 @@
           <div class="pill" style="margin:4px 0 0;">B2B SaaS — Build first</div>
         </div>
       </div>
-      <p style="font-size:12px;color:#9CA3AF;margin-bottom:10px;">Core promise: dạy chuyên nghiệp hơn, thu tiền gọn hơn, chốt học viên dễ hơn</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Core promise: dạy chuyên nghiệp hơn, thu tiền gọn hơn, chốt học viên dễ hơn</p>
       <ul style="padding-left:16px;font-size:13px;">
-        <li><strong style="color:#A78BFA;">Free entry:</strong> Landing page cá nhân để chốt phụ huynh</li>
+        <li><strong style="color:var(--brand-2);">Free entry:</strong> Landing page cá nhân để chốt phụ huynh</li>
         <li>Thu học phí tự động — giáo viên không cần đòi</li>
         <li>Điểm danh + báo cáo tự động cho phụ huynh</li>
         <li>Hỗ trợ offline, online và hybrid</li>
@@ -383,11 +493,11 @@
     </div>
 
     <div>
-      <div class="card" style="border-top:3px solid #F59E0B;padding:20px;margin-bottom:12px;">
+      <div class="card" style="border-top:3px solid var(--accent);padding:20px;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
           <span style="font-size:22px;">🔍</span>
           <div>
-            <div class="logo-mark" style="font-size:18px;">Klassi <span style="color:#FCD34D;">TutorMatch</span></div>
+            <div class="logo-mark" style="font-size:18px;">Klassi <span style="color:var(--accent-soft);">TutorMatch</span></div>
             <div class="pill pill-amber" style="margin:4px 0 0;">B2C Marketplace — Open after traction</div>
           </div>
         </div>
@@ -398,9 +508,22 @@
           <li>Boost ranking (Month 10+ khi có traffic thật)</li>
         </ul>
       </div>
-      <div class="card" style="padding:14px;background:#1a1a2e;">
-        <div style="font-size:12px;color:#A78BFA;font-weight:700;margin-bottom:6px;">WHY THIS ORDER?</div>
-        <p style="font-size:12px;color:#D1D5DB;line-height:1.6;">Marketplace cold-start = khó nhất. ClassHub giải pain rõ → doanh thu sớm → teacher trở thành supply tự nhiên cho TutorMatch → mở marketplace khi đã có data thật.</p>
+      <div class="card" style="padding:14px;background:var(--dark-2);">
+        <div style="font-size:12px;color:var(--brand-2);font-weight:700;margin-bottom:6px;">WHY THIS ORDER?</div>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">Marketplace cold-start = khó nhất. ClassHub giải pain rõ → doanh thu sớm → teacher trở thành supply tự nhiên cho TutorMatch → mở marketplace khi đã có data thật.</p>
+      </div>
+      <div class="ui-preview" style="margin-top:12px;">
+        <div class="ui-preview-bar"></div>
+        <div class="ui-preview-body">
+          <span class="ui-preview-chip">Klassi ClassHub · App UI</span>
+          <div class="ui-preview-title">Dạy học chuyên nghiệp hơn</div>
+          <p class="ui-preview-sub">Light-first — xanh lá tươi mát (Duolingo-style) + xanh đậm cho trạng thái học phí.</p>
+          <span class="ui-preview-btn">Bắt đầu miễn phí</span>
+          <div class="ui-preview-row">
+            <div class="ui-preview-stat">Điểm danh<strong>94%</strong></div>
+            <div class="ui-preview-stat">Học phí tháng<strong>đã thu</strong></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -430,41 +553,41 @@
       <div class="stat-label">gia đình chi tiền học thêm</div>
     </div>
     <div class="card" style="text-align:center;">
-      <div class="stat-big" style="font-size:28px;">~62,000<br/><span style="font-size:14px;font-weight:600;color:#A78BFA;">tỷ VND</span></div>
+      <div class="stat-big" style="font-size:28px;">~62,000<br/><span style="font-size:14px;font-weight:600;color:var(--brand-2);">tỷ VND</span></div>
       <div class="stat-label">TAM — tổng thị trường/năm</div>
     </div>
   </div>
 
   <div class="grid-2">
     <div>
-      <h3 style="font-size:14px;color:#A78BFA;margin-bottom:10px;">SAM — ClassHub (SaaS + Transaction fee)</h3>
+      <h3 style="font-size:14px;color:var(--brand-2);margin-bottom:10px;">SAM — ClassHub (SaaS + Transaction fee)</h3>
       <div class="rev-bar-wrap">
         <div class="rev-bar-label"><span>20K trung tâm × 300k/tháng subscription</span><span class="accent-text">72 tỷ VND/năm</span></div>
         <div class="rev-bar-track"><div class="rev-bar-fill" style="width:50%;"></div></div>
       </div>
       <div class="rev-bar-wrap">
         <div class="rev-bar-label"><span>1.5% phí trên học phí thu qua nền tảng</span><span class="green-text">~72 tỷ VND/năm</span></div>
-        <div class="rev-bar-track"><div class="rev-bar-fill" style="width:50%;background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+        <div class="rev-bar-track"><div class="rev-bar-fill" style="width:50%;background:linear-gradient(90deg,var(--color-success),var(--color-success-soft));"></div></div>
       </div>
     </div>
     <div>
-      <h3 style="font-size:14px;color:#FCD34D;margin-bottom:10px;">SAM — TutorMatch (Marketplace)</h3>
+      <h3 style="font-size:14px;color:var(--accent-soft);margin-bottom:10px;">SAM — TutorMatch (Marketplace)</h3>
       <div class="rev-bar-wrap">
         <div class="rev-bar-label"><span>Boost ranking (200k/tháng × 10K gia sư)</span><span class="accent-text">24 tỷ VND/năm</span></div>
-        <div class="rev-bar-track"><div class="rev-bar-fill" style="width:44%;background:linear-gradient(90deg,#F59E0B,#FCD34D);"></div></div>
+        <div class="rev-bar-track"><div class="rev-bar-fill" style="width:44%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));"></div></div>
       </div>
       <div class="rev-bar-wrap">
-        <div class="rev-bar-label"><span>Booking fee + hoa hồng gói học</span><span style="color:#FCD34D;font-weight:700;">~30 tỷ VND/năm</span></div>
-        <div class="rev-bar-track"><div class="rev-bar-fill" style="width:30%;background:linear-gradient(90deg,#F59E0B,#FCD34D);"></div></div>
+        <div class="rev-bar-label"><span>Booking fee + hoa hồng gói học</span><span style="color:var(--accent-soft);font-weight:700;">~30 tỷ VND/năm</span></div>
+        <div class="rev-bar-track"><div class="rev-bar-fill" style="width:30%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));"></div></div>
       </div>
     </div>
   </div>
 
   <div style="margin-top:14px;" class="quote">
-    <strong style="color:#fff;">Mục tiêu năm 3 (thực tế):</strong>
+    <strong style="color:var(--text);">Mục tiêu năm 3 (thực tế):</strong>
     5,000 giáo viên × 400k/tháng + transaction fee + marketplace
     = <span class="highlight">~30–40 tỷ VND ARR</span>
-    <span style="color:#9CA3AF;font-size:12px;"> (~$1.2–1.6M USD)</span>
+    <span style="color:var(--muted);font-size:12px;"> (~$1.2–1.6M USD)</span>
   </div>
 </div>
 
@@ -484,22 +607,22 @@
         <div style="font-size:12px;color:var(--brand-2);font-weight:700;margin-bottom:4px;">① TutorMatch → ClassHub</div>
         <p style="font-size:13px;">Gia sư tìm được học sinh qua TutorMatch → dùng ClassHub để quản lý → upgrade plan</p>
       </div>
-      <div class="card" style="padding:14px 18px;margin-bottom:10px;border-left:3px solid var(--green);">
-        <div style="font-size:12px;color:#34D399;font-weight:700;margin-bottom:4px;">② ClassHub → Uy tín</div>
+      <div class="card" style="padding:14px 18px;margin-bottom:10px;border-left:3px solid var(--color-success-soft);">
+        <div style="font-size:12px;color:var(--green-text);font-weight:700;margin-bottom:4px;">② ClassHub → Uy tín</div>
         <p style="font-size:13px;">Phụ huynh thấy giáo viên chuyên nghiệp → để lại review xác thực</p>
       </div>
       <div class="card" style="padding:14px 18px;margin-bottom:10px;border-left:3px solid var(--accent);">
-        <div style="font-size:12px;color:#FCD34D;font-weight:700;margin-bottom:4px;">③ Review → Boost TutorMatch</div>
+        <div style="font-size:12px;color:var(--accent-soft);font-weight:700;margin-bottom:4px;">③ Review → Boost TutorMatch</div>
         <p style="font-size:13px;">Review tốt → ranking cao hơn → nhiều học sinh hơn → giáo viên mua boost</p>
       </div>
-      <div class="card" style="padding:14px 18px;border-left:3px solid var(--blue);">
-        <div style="font-size:12px;color:#93C5FD;font-weight:700;margin-bottom:4px;">④ Platform earns at every step</div>
+      <div class="card" style="padding:14px 18px;border-left:3px solid var(--brand);">
+        <div style="font-size:12px;color:var(--brand-2);font-weight:700;margin-bottom:4px;">④ Platform earns at every step</div>
         <p style="font-size:13px;">Subscription + 1.5% transaction fee + boost + booking fee → all recurring</p>
       </div>
     </div>
 
     <div style="flex:0 0 200px;text-align:center;">
-      <div style="width:180px;height:180px;border-radius:50%;border:2px dashed rgba(108,71,255,.5);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative;">
+      <div style="width:180px;height:180px;border-radius:50%;border:2px dashed rgba(var(--brand-rgb),.4);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative;">
         <div style="text-align:center;">
           <div class="logo-mark" style="font-size:26px;">Klass<span>i</span></div>
           <div style="font-size:10px;color:var(--muted);margin-top:4px;">FLYWHEEL</div>
@@ -548,50 +671,50 @@
             <td class="accent-text">200k–300k/tháng</td>
           </tr>
           <tr>
-            <td><span class="pill pill-blue" style="font-size:11px;">S4</span> Booking fee</td>
+            <td><span class="pill pill-amber" style="font-size:11px;">S4</span> Booking fee</td>
             <td>Phụ huynh</td>
-            <td style="color:#93C5FD;font-weight:700;">30k/booking</td>
+            <td class="accent-text">30k/booking</td>
           </tr>
         </tbody>
       </table>
 
       <div style="margin-top:14px;" class="quote">
-        <strong style="color:#fff;">Key insight:</strong> Transaction fee là luồng chính. Giáo viên không cảm thấy "trả tiền" — tiền đến rồi mới trừ.
+        <strong style="color:var(--text);">Key insight:</strong> Transaction fee là luồng chính. Giáo viên không cảm thấy "trả tiền" — tiền đến rồi mới trừ.
       </div>
     </div>
 
     <div>
-      <h3 style="font-size:13px;color:#9CA3AF;margin-bottom:12px;font-weight:600;">PROJECTED MRR (triệu VND/tháng)</h3>
+      <h3 style="font-size:13px;color:var(--muted);margin-bottom:12px;font-weight:600;">PROJECTED MRR (triệu VND/tháng)</h3>
       <div class="rev-bar-wrap">
         <div class="rev-bar-label">
-          <span>Tháng 6 — Launch <span style="color:#6B7280;font-size:11px;">(30 GV trả tiền)</span></span>
-          <span class="green-text">~15 triệu VND <span style="color:#6B7280;font-size:11px;">($600)</span></span>
+          <span>Tháng 6 — Launch <span style="color:var(--muted);font-size:11px;">(30 GV trả tiền)</span></span>
+          <span class="green-text">~15 triệu VND <span style="color:var(--muted);font-size:11px;">($600)</span></span>
         </div>
         <div class="rev-bar-track"><div class="rev-bar-fill" style="width:15%;"></div></div>
       </div>
       <div class="rev-bar-wrap">
         <div class="rev-bar-label">
-          <span>Tháng 12 <span style="color:#6B7280;font-size:11px;">(150 GV)</span></span>
-          <span class="green-text">~88 triệu VND <span style="color:#6B7280;font-size:11px;">($3,500)</span></span>
+          <span>Tháng 12 <span style="color:var(--muted);font-size:11px;">(150 GV)</span></span>
+          <span class="green-text">~88 triệu VND <span style="color:var(--muted);font-size:11px;">($3,500)</span></span>
         </div>
         <div class="rev-bar-track"><div class="rev-bar-fill" style="width:44%;"></div></div>
       </div>
       <div class="rev-bar-wrap">
         <div class="rev-bar-label">
-          <span>Tháng 18 <span style="color:#6B7280;font-size:11px;">(400 GV)</span></span>
-          <span class="accent-text">~316 triệu VND <span style="color:#6B7280;font-size:11px;">($12,600)</span></span>
+          <span>Tháng 18 <span style="color:var(--muted);font-size:11px;">(400 GV)</span></span>
+          <span class="accent-text">~316 triệu VND <span style="color:var(--muted);font-size:11px;">($12,600)</span></span>
         </div>
         <div class="rev-bar-track"><div class="rev-bar-fill" style="width:100%;"></div></div>
       </div>
 
       <div class="grid-2" style="margin-top:14px;gap:10px;">
         <div class="card" style="text-align:center;padding:12px;">
-          <div class="stat-big" style="font-size:26px;color:#10B981;">50 GV</div>
-          <div class="stat-label">paying = breakeven<br/><span style="color:#6B7280;">chi phí ~15 triệu/tháng</span></div>
+          <div class="stat-big" style="font-size:26px;color:var(--color-success-soft);">50 GV</div>
+          <div class="stat-label">paying = breakeven<br/><span style="color:var(--muted);">chi phí ~15 triệu/tháng</span></div>
         </div>
         <div class="card" style="text-align:center;padding:12px;">
-          <div class="stat-big" style="font-size:26px;color:#F59E0B;">3.8 tỷ</div>
-          <div class="stat-label">VND ARR tháng 18<br/><span style="color:#6B7280;">(~$152K USD)</span></div>
+          <div class="stat-big" style="font-size:26px;color:var(--accent);">3.8 tỷ</div>
+          <div class="stat-label">VND ARR tháng 18<br/><span style="color:var(--muted);">(~$152K USD)</span></div>
         </div>
       </div>
     </div>
@@ -614,27 +737,27 @@
     </thead>
     <tbody>
       <tr>
-        <td><strong style="color:#fff;">Zalo + Excel</strong></td>
+        <td><strong style="color:var(--text);">Zalo + Excel</strong></td>
         <td>Default "system" hiện tại</td>
         <td><span class="green-text">✓</span> Không phải sản phẩm — thay bằng landing page + tool tốt hơn 10x</td>
       </tr>
       <tr>
-        <td><strong style="color:#fff;">TutorBird / Teachworks</strong></td>
+        <td><strong style="color:var(--text);">TutorBird / Teachworks</strong></td>
         <td>Tutoring mgmt (US/AU) — $49/mo</td>
         <td><span class="green-text">✓</span> Tiếng Anh, USD, không có VNPay/Zalo/local trust layer</td>
       </tr>
       <tr>
-        <td><strong style="color:#fff;">MISA / School ERP</strong></td>
+        <td><strong style="color:var(--text);">MISA / School ERP</strong></td>
         <td>Phần mềm trường học nặng</td>
         <td><span class="green-text">✓</span> Quá complex + đắt — bỏ qua individual tutor segment</td>
       </tr>
       <tr>
-        <td><strong style="color:#fff;">Môi giới gia sư</strong></td>
+        <td><strong style="color:var(--text);">Môi giới gia sư</strong></td>
         <td>Matching offline, phí 1–2 tháng lương</td>
         <td><span class="green-text">✓</span> Thay bằng booking fee 30k + direct connection</td>
       </tr>
       <tr>
-        <td><strong style="color:#fff;">Facebook Groups</strong></td>
+        <td><strong style="color:var(--text);">Facebook Groups</strong></td>
         <td>Tìm gia sư không chính thức</td>
         <td><span class="green-text">✓</span> Không xác minh, không review thật, không booking an toàn</td>
       </tr>
@@ -643,20 +766,20 @@
 
   <div style="margin-top:14px;display:flex;gap:12px;align-items:center;">
     <div style="flex:1;">
-      <div style="font-size:12px;color:#A78BFA;font-weight:700;margin-bottom:8px;">MOAT THEO THỜI GIAN</div>
+      <div style="font-size:12px;color:var(--brand-2);font-weight:700;margin-bottom:8px;">MOAT THEO THỜI GIAN</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
         <div class="pill pill-green">Tuition history → switching cost</div>
         <div class="pill pill-amber">Verified review corpus</div>
         <div class="pill">Zalo habit loop với phụ huynh</div>
-        <div class="pill pill-blue">Network effect cả hai phía</div>
+        <div class="pill pill-green">Network effect cả hai phía</div>
       </div>
     </div>
-    <div class="card" style="flex:0 0 190px;padding:14px;text-align:center;background:#1a1a2e;">
-      <div style="font-size:11px;color:#9CA3AF;">TutorBird (US)</div>
-      <div style="font-size:24px;font-weight:800;color:#F59E0B;">$49/mo</div>
-      <div style="font-size:11px;color:#9CA3AF;margin:4px 0;">Klassi Solo Pro</div>
-      <div style="font-size:24px;font-weight:800;color:#A78BFA;">349k/mo</div>
-      <div style="font-size:10px;color:#6B7280;">~$14 — same features + local fit</div>
+    <div class="card" style="flex:0 0 190px;padding:14px;text-align:center;background:var(--dark-2);">
+      <div style="font-size:11px;color:var(--muted);">TutorBird (US)</div>
+      <div style="font-size:24px;font-weight:800;color:var(--accent);">$49/mo</div>
+      <div style="font-size:11px;color:var(--muted);margin:4px 0;">Klassi Solo Pro</div>
+      <div style="font-size:24px;font-weight:800;color:var(--brand-2);">349k/mo</div>
+      <div style="font-size:10px;color:var(--muted);">~$14 — same features + local fit</div>
     </div>
   </div>
 </div>
@@ -672,25 +795,25 @@
   <div class="divider"></div>
 
   <div class="timeline">
-    <div class="tl-item card" style="background:rgba(108,71,255,.12);border:1px solid rgba(108,71,255,.3);">
+    <div class="tl-item card" style="background:rgba(var(--brand-rgb),.1);border:1px solid rgba(var(--brand-rgb),.28);">
       <div class="tl-phase">Phase 1</div>
       <div class="tl-time">Tháng 1–5</div>
       <div style="font-size:12px;color:#fff;font-weight:600;margin-bottom:4px;">Build MVP</div>
       <div class="tl-desc">ClassHub core + TutorMatch MVP. 50 beta users miễn phí. Talk to 3 users/week.</div>
     </div>
-    <div class="tl-item card" style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);">
+    <div class="tl-item card" style="background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.28);">
       <div class="tl-phase">Phase 2</div>
       <div class="tl-time">Tháng 6–12</div>
       <div style="font-size:12px;color:#fff;font-weight:600;margin-bottom:4px;">Launch & Traction</div>
       <div class="tl-desc">150 paying teachers. Zalo OA live. TutorMatch boost active. First revenue.</div>
     </div>
-    <div class="tl-item card" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);">
+    <div class="tl-item card" style="background:rgba(var(--accent-rgb),.1);border:1px solid rgba(var(--accent-rgb),.28);">
       <div class="tl-phase">Phase 3</div>
       <div class="tl-time">Tháng 13–18</div>
       <div style="font-size:12px;color:#fff;font-weight:600;margin-bottom:4px;">Growth</div>
       <div class="tl-desc">400 paying users. PWA launch. 5,000+ TutorMatch profiles. SEO traction.</div>
     </div>
-    <div class="tl-item card" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);">
+    <div class="tl-item card" style="background:rgba(var(--brand-rgb),.08);border:1px solid rgba(var(--brand-rgb),.22);">
       <div class="tl-phase">Phase 4</div>
       <div class="tl-time">Tháng 19–24</div>
       <div style="font-size:12px;color:#fff;font-weight:600;margin-bottom:4px;">Scale</div>
@@ -713,7 +836,7 @@
       <h3 style="font-size:13px;color:var(--accent);margin-bottom:8px;">Unit Economics (Target)</h3>
       <div class="grid-2" style="gap:8px;">
         <div class="card" style="text-align:center;padding:10px;">
-          <div style="font-size:20px;font-weight:800;color:var(--green);">&lt;200k</div>
+          <div style="font-size:20px;font-weight:800;color:var(--color-success-soft);">&lt;200k</div>
           <div style="font-size:11px;color:var(--muted);">CAC target</div>
         </div>
         <div class="card" style="text-align:center;padding:10px;">
@@ -754,7 +877,14 @@
       </div>
 
       <div class="quote">
-        Auth, billing, tenant, notifications, file upload, admin console — <strong style="color:#fff;">tất cả đã build xong.</strong> Chỉ cần build business logic phía trên.
+        Auth, billing, tenant, notifications, file upload, admin console — <strong style="color:var(--text);">tất cả đã build xong.</strong> Chỉ cần build business logic phía trên.
+      </div>
+      <div class="palette-strip">
+        <div class="palette-swatch"><span style="background:#58CC02;"></span>Primary</div>
+        <div class="palette-swatch"><span style="background:#E8F9E0;"></span>Soft</div>
+        <div class="palette-swatch"><span style="background:#16A34A;"></span>Success</div>
+        <div class="palette-swatch"><span style="background:#1CB0F6;"></span>Market</div>
+        <div class="palette-swatch"><span style="background:#F7FEF9;"></span>App BG</div>
       </div>
     </div>
 
@@ -768,7 +898,7 @@
         <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">Time split hàng tuần</div>
         <table style="font-size:12px;">
           <tr><td style="padding:3px 8px;">Mon–Wed</td><td style="padding:3px 8px;color:var(--brand-2);">Feature development</td></tr>
-          <tr><td style="padding:3px 8px;">Thu</td><td style="padding:3px 8px;color:var(--green);">User calls / feedback</td></tr>
+          <tr><td style="padding:3px 8px;">Thu</td><td style="padding:3px 8px;color:var(--color-success-soft);">User calls / feedback</td></tr>
           <tr><td style="padding:3px 8px;">Fri</td><td style="padding:3px 8px;color:var(--accent);">Content creation + planning</td></tr>
         </table>
       </div>
@@ -779,7 +909,7 @@
 <!-- ═══════════════════════════════════════════
      SLIDE 10 — THE ASK
 ════════════════════════════════════════════ -->
-<div class="slide" style="background: linear-gradient(135deg, #0F0F1A 60%, #1a0f3a);">
+<div class="slide" style="background: linear-gradient(135deg, var(--dark) 55%, #142818 100%);">
 
 
   <div class="slide-num">10 / 10</div>
@@ -794,10 +924,10 @@
 
     <div class="grid-2" style="margin-bottom:20px;">
       <div class="card card-accent" style="padding:20px;">
-        <div class="stat-big" style="color:#A78BFA;font-size:32px;">500 triệu</div>
-        <div style="font-size:13px;color:#A78BFA;font-weight:700;">VND (~$20K USD)</div>
-        <div style="font-size:12px;color:#9CA3AF;margin-top:4px;">Bootstrap seed — Friends & Family</div>
-        <div style="margin-top:12px;font-size:13px;color:#D1D5DB;">
+        <div class="stat-big" style="color:var(--brand-2);font-size:32px;">500 triệu</div>
+        <div style="font-size:13px;color:var(--brand-2);font-weight:700;">VND (~$20K USD)</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Bootstrap seed — Friends & Family</div>
+        <div style="margin-top:12px;font-size:13px;color:var(--text-muted);">
           Dùng cho:<br/>
           • 3 tháng runway cho founder<br/>
           • Server + infra production<br/>
@@ -811,7 +941,7 @@
           <p style="font-size:12px;">50 beta users, 5 paying, first tuition processed online</p>
         </div>
         <div class="card" style="padding:14px;margin-bottom:10px;">
-          <div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:4px;">Tháng 12 — Traction milestone</div>
+          <div style="font-size:12px;color:var(--color-success-soft);font-weight:700;margin-bottom:4px;">Tháng 12 — Traction milestone</div>
           <p style="font-size:12px;">150 paying ClassHub, 1,000+ TutorMatch profiles, MRR ~88M</p>
         </div>
         <div class="card" style="padding:14px;">
@@ -821,10 +951,10 @@
       </div>
     </div>
 
-    <div style="text-align:center;padding:20px;background:rgba(108,71,255,.1);border-radius:14px;border:1px solid rgba(108,71,255,.25);">
+    <div style="text-align:center;padding:20px;background:rgba(var(--brand-rgb),.1);border-radius:14px;border:1px solid rgba(var(--brand-rgb),.22);">
       <div class="cover-logo" style="font-size:36px;margin-bottom:8px;">Klass<span>i</span></div>
-      <div style="font-size:15px;color:#9CA3AF;margin-bottom:16px;"><em>"Dạy học chuyên nghiệp hơn"</em></div>
-      <div style="display:flex;justify-content:center;gap:24px;font-size:13px;color:#D1D5DB;">
+      <div style="font-size:15px;color:var(--muted);margin-bottom:16px;"><em>"Dạy học chuyên nghiệp hơn"</em></div>
+      <div style="display:flex;justify-content:center;gap:24px;font-size:13px;color:var(--text-muted);">
         <span>🌐 klassi.vn</span>
         <span>📧 hello@klassi.vn</span>
         <span>💬 Zalo: klassi.official</span>

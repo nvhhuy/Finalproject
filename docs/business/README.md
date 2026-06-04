@@ -52,6 +52,8 @@ A hybrid B2B + B2C education platform for the Vietnamese market, built for indiv
 | [`BUILD_PLAN.md`](./BUILD_PLAN.md) | 5-month MVP + Phase 1 sprint-by-sprint plan |
 | [`FEATURE_ROADMAP.md`](./FEATURE_ROADMAP.md) | Full feature list across all phases (Phase 0–4) |
 | [`TECH_MAPPING.md`](./TECH_MAPPING.md) | How existing codebase maps to new features |
+| [`DESIGN_GUIDE.md`](./DESIGN_GUIDE.md) | Brand colors, light-first UI, token map |
+| [`pitch/klassi-pitch-deck.html`](./pitch/klassi-pitch-deck.html) | Pitch deck (open in browser; palette v2 aligned with product UI) |
 
 ---
 

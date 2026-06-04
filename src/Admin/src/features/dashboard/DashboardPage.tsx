@@ -104,7 +104,7 @@ export function DashboardPage() {
       label: t('dashboard.totalTenants'),
       value: val(data?.totalTenants),
       icon: Building2,
-      iconClassName: 'bg-violet-500/20 text-violet-400',
+      iconClassName: 'bg-blue-500/20 text-blue-400',
     },
     {
       to: '/support',

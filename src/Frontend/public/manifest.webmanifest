@@ -1,22 +1,22 @@
 {
-  "name": "Base Project App",
-  "short_name": "App",
-  "description": "Install the web app for quick access and push notifications.",
+  "name": "Klassi",
+  "short_name": "Klassi",
+  "description": "Dạy học chuyên nghiệp hơn — quản lý lớp, học phí và trang giáo viên.",
   "start_url": "/app",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f3f4f6",
-  "theme_color": "#4f46e5",
+  "background_color": "#f7fef9",
+  "theme_color": "#22c55e",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/logo-mark.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/logo-mark.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

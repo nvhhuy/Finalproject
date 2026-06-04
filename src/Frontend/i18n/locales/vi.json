@@ -41,7 +41,7 @@
     "settings": "Cài đặt"
   },
   "authLayout": {
-    "tagline": "Auth, hồ sơ, 2FA và media sẵn sàng kết nối backend .NET của bạn."
+    "tagline": "Quản lý lớp, thu học phí và trang giáo viên — chuyên nghiệp hơn, gọn hơn."
   },
   "appShell": {
     "workspace": "Không gian làm việc"
@@ -57,9 +57,9 @@
     "app": "Ứng dụng"
   },
   "landing": {
-    "tag": "Frontend nền",
-    "title": "(Code base)",
-    "heroSubtitle": "Starter hiện đại cho app người dùng — JWT, đa ngôn ngữ, API typed và tích hợp backend thật.",
+    "tag": "Klassi ClassHub",
+    "title": "Dạy học chuyên nghiệp hơn",
+    "heroSubtitle": "Trang giáo viên, điểm danh, học phí và cổng phụ huynh — thay Zalo và Excel bằng một nền tảng gọn cho gia sư và trung tâm nhỏ.",
     "getStarted": "Bắt đầu miễn phí",
     "featuresTitle": "Tính năng có sẵn",
     "featureAuth": "Auth (đăng nhập/đăng ký/refresh, Google, quên/đặt lại mật khẩu, xác minh email)",

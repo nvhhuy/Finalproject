@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" fill="none" role="img" aria-label="Klassi">
+  <rect x="0" y="4" width="32" height="32" rx="8" fill="#22C55E"/>
+  <path fill="#fff" d="M10 13h3.4v5.1l4.2-5.1h4l-5.4 6.5 5.8 7h-4.1l-4.5-5.5V27H10V13z"/>
+  <text x="44" y="27" fill="#1A2E1A" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.02em">Klassi</text>
+</svg>

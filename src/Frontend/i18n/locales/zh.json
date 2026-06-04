@@ -41,7 +41,7 @@
     "settings": "设置"
   },
   "authLayout": {
-    "tagline": "面向终端用户的认证、资料、双因素与媒体流程，已对接 .NET 后端。"
+    "tagline": "班级管理、学费与教师主页 — 更专业、更省心。"
   },
   "appShell": {
     "workspace": "工作区"
@@ -57,9 +57,9 @@
     "app": "应用"
   },
   "landing": {
-    "tag": "基础前端",
-    "title": "(Code base)",
-    "heroSubtitle": "面向终端应用的现代起点 — JWT、多语言、类型化 API 与真实后端集成。",
+    "tag": "Klassi ClassHub",
+    "title": "让教学更专业",
+    "heroSubtitle": "教师主页、考勤、学费与家长端 — 为越南个人导师与小型机构打造。",
     "getStarted": "免费开始",
     "featuresTitle": "开箱即用功能",
     "featureAuth": "认证（登录/注册/刷新、Google、忘记/重置密码、邮箱验证）",

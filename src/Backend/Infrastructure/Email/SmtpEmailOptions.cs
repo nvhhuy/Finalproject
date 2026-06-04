@@ -31,5 +31,5 @@ public sealed class SmtpEmailOptions
     public string? UserName { get; set; }
     public string? Password { get; set; }
     public string FromAddress { get; set; } = "noreply@localhost";
-    public string FromDisplayName { get; set; } = "Base Project";
+    public string FromDisplayName { get; set; } = "Klassi";
 }

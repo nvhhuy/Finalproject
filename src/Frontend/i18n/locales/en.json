@@ -41,7 +41,7 @@
     "contact": "Contact"
   },
   "authLayout": {
-    "tagline": "Production-ready auth, profile, 2FA, and media flows wired to your .NET backend."
+    "tagline": "Class pages, tuition, attendance, and your teacher landing — professional and simple."
   },
   "appShell": {
     "workspace": "Your workspace"
@@ -57,9 +57,9 @@
     "app": "App"
   },
   "landing": {
-    "tag": "Base Frontend",
-    "title": "(Code base)",
-    "heroSubtitle": "A modern starter for end-user apps — JWT auth, i18n, typed APIs, and real backend integration.",
+    "tag": "Klassi ClassHub",
+    "title": "Your class, elevated",
+    "heroSubtitle": "Teacher landing pages, attendance, tuition, and parent portal — built for solo tutors and small centers in Vietnam.",
     "getStarted": "Get started free",
     "featuresTitle": "What you get out of the box",
     "featureAuth": "Auth (login/register/refresh, Google sign-in, forgot/reset password, verify email)",

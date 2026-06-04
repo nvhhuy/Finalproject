@@ -6,6 +6,8 @@ Stack: **Next.js 15 · React 19 · TypeScript · TanStack Query · react-i18next
 
 Designed as a **reusable base**: landing + auth + profile + media lab; add product-specific routes on top.
 
+**Klassi branding (v4):** Duolingo-inspired green on light mint background — see [`docs/business/DESIGN_GUIDE.md`](../business/DESIGN_GUIDE.md). Admin console uses a separate blue operator theme.
+
 ---
 
 ## Quick entry points

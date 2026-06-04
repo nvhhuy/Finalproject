@@ -4,6 +4,8 @@ Internal administrator UI for the Base Project backend. Source: [`src/Admin/`](.
 
 Stack: **Vite 8 · React 19 · TypeScript · TanStack Query · Zustand · i18next · Tailwind CSS 4**.
 
+**Visual theme:** Admin keeps the **original operator palette** (slate dark + blue `#3B82F6` accent). It does **not** follow Frontend/Klassi green branding — see [`docs/business/DESIGN_GUIDE.md`](../business/DESIGN_GUIDE.md).
+
 ---
 
 ## Quick entry points

@@ -4,5 +4,5 @@ public sealed class EmailBrandingOptions
 {
     public const string SectionName = "EmailBranding";
 
-    public string AppName { get; set; } = "Base Project";
+    public string AppName { get; set; } = "Klassi";
 }

@@ -106,7 +106,7 @@ public sealed class LoginQueryHandler : IRequestHandler<LoginQuery, Result<Authe
             await _notifications.CreateAndDispatchAsync(
                 user.Id.Value,
                 "Signed in",
-                "You have a new session on Base Project.",
+                "You have a new session on Klassi.",
                 "/app",
                 cancellationToken);
         }

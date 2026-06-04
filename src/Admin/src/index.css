@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 
+/* Admin console — operator UI (base project palette; independent from Frontend brand) */
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --color-surface: #0f1419;

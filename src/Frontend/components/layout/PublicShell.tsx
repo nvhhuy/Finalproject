@@ -48,7 +48,7 @@ export function PublicShell() {
           </div>
 
           <Card className="min-w-0 overflow-hidden shadow-[var(--shadow-elevated)]">
-            <div className="h-2 bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500" />
+            <div className="h-2 bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-primary-hover)] to-[var(--color-market)]" />
             <CardBody className="p-4 sm:p-6">
               <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("landing.featuresTitle")}</h2>
               <ul className="mt-4 grid gap-2.5 sm:gap-3">
