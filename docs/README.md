@@ -4,6 +4,8 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 
 **Start here:** [`OVERVIEW.md`](./OVERVIEW.md) — architecture, production/security posture (honest assessment), local vs deploy, and reading order.
 
+**Infrastructure (services, ports, CI/CD):** [`INFRASTRUCTURE.md`](./INFRASTRUCTURE.md)
+
 **Tiếng Việt — feature nào chạy được & cách dùng:** [`FEATURES_READY_AND_USAGE_VI.md`](./FEATURES_READY_AND_USAGE_VI.md)
 
 ---
@@ -26,6 +28,7 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 | DataProtection key ring (2FA, cookies) | [`backend/DATA_PROTECTION.md`](./backend/DATA_PROTECTION.md) |
 | Engineer debugging migrations/CI drift | [`backend/MIGRATION_WORKFLOW.md`](./backend/MIGRATION_WORKFLOW.md) |
 | Operator setting up Gitea CI runners | [`backend/CI_GITEA_SETUP.md`](./backend/CI_GITEA_SETUP.md) |
+| Operator / DevOps — infra & services map | [`INFRASTRUCTURE.md`](./INFRASTRUCTURE.md) |
 | Operator planning production deploy | [`deploy/README.md`](./deploy/README.md) → [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md) |
 | Operator scaling Api/Worker or moving to managed DB | [`deploy/SCALING.md`](./deploy/SCALING.md) |
 | Product — SaaS tenant, plans, billing roadmap | [`product/SAAS_ROADMAP.md`](./product/SAAS_ROADMAP.md) |
@@ -54,6 +57,7 @@ Application source lives under **[`src/`](../src/)** (`src/Backend`, `src/Fronte
 | Area | Location |
 |------|----------|
 | **Codebase overview (hub)** | [`OVERVIEW.md`](./OVERVIEW.md) |
+| **Infrastructure (local + prod + CI/CD)** | [`INFRASTRUCTURE.md`](./INFRASTRUCTURE.md) |
 | Backend docs hub | [`backend/README.md`](./backend/README.md) |
 | Admin Console docs | [`admin/README.md`](./admin/README.md) |
 | Frontend docs hub | [`frontend/README.md`](./frontend/README.md) |

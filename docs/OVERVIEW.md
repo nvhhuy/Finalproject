@@ -174,7 +174,7 @@ Override via `Seed:Admin` in configuration. **Change or disable before any share
 | Frontend | [`frontend/ONBOARDING.md`](./frontend/ONBOARDING.md) |
 | Admin | [`admin/ONBOARDING.md`](./admin/ONBOARDING.md) |
 | QA / test | [`test/ONBOARDING.md`](./test/ONBOARDING.md) |
-| DevOps / deploy | [`deploy/README.md`](./deploy/README.md) → [`deploy/ARCHITECTURE.md`](./deploy/ARCHITECTURE.md) → [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md) |
+| DevOps / deploy | [`INFRASTRUCTURE.md`](./INFRASTRUCTURE.md) → [`deploy/README.md`](./deploy/README.md) → [`deploy/CHECKLIST.md`](./deploy/CHECKLIST.md) |
 | Tech lead / PM | [`backend/FEATURE_CATALOG.md`](./backend/FEATURE_CATALOG.md) + [`backend/PRODUCTION_READINESS_REPORT.md`](./backend/PRODUCTION_READINESS_REPORT.md) |
 
 ---
