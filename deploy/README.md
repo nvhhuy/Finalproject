@@ -31,8 +31,11 @@ deploy/
     infra-up.sh
     infra-down.sh
     build.sh
+    deploy-app.sh
+    harbor-login.sh
     manifest.sh
     migrate.sh
+    rollback.sh
     smoke.sh
     up.sh
 ```
@@ -69,11 +72,16 @@ cp deploy/env/staging/app.env.example deploy/env/staging/app.env
 ./deploy/scripts/build.sh staging
 ```
 
-5. Migrate database, then start app:
+5. Migrate database, then start app (or one step via `deploy-app.sh`):
 
 ```bash
+# Option A — single script (migrate + pull + up)
+HARBOR_USER=... HARBOR_PASSWORD=... IMAGE_TAG=latest ./deploy/scripts/deploy-app.sh staging
+./deploy/scripts/smoke.sh staging
+
+# Option B — separate steps
 ./deploy/scripts/migrate.sh staging
-./deploy/scripts/up.sh staging
+HARBOR_USER=... HARBOR_PASSWORD=... IMAGE_TAG=latest ./deploy/scripts/up.sh staging
 ./deploy/scripts/smoke.sh staging
 ```
 
@@ -102,14 +110,24 @@ Worker has **no** public Traefik route.
 
 ## Option 1 (CI / Harbor)
 
+Jenkins pipeline: [`Jenkinsfile`](../Jenkinsfile) — setup guide [`tools/jenkins/README.md`](../tools/jenkins/README.md).
+
 Harbor is required in this option. Jenkins (or similar) should:
 
-1. `docker build` / `docker compose build` with `IMAGE_REGISTRY` + immutable `IMAGE_TAG`
-2. Push to Harbor
-3. On server: `IMAGE_TAG=v1.2.3 ./deploy/scripts/migrate.sh production`
-4. `IMAGE_TAG=v1.2.3 ./deploy/scripts/up.sh production`
-5. `IMAGE_TAG=v1.2.3 ./deploy/scripts/smoke.sh production`
-6. Infra can be long-lived (`infra-up` once), not redeployed on every release.
+1. `docker build` / push with `IMAGE_REGISTRY` + immutable `IMAGE_TAG`
+2. On server: `docker login` (Jenkins passes credentials via `deploy-remote.sh`), then:
+   - `IMAGE_TAG=<tag> ./deploy/scripts/deploy-app.sh production` (migrate + `--pull always` + up)
+   - `./deploy/scripts/smoke.sh production` (also run automatically from Jenkins `deploy-remote.sh`)
+3. Infra can be long-lived (`infra-up` once), not redeployed on every release.
+
+**Rollback (Option 1):**
+
+```bash
+SKIP_MIGRATE=1 IMAGE_TAG=<previous-build> ./deploy/scripts/deploy-app.sh production
+./deploy/scripts/smoke.sh production
+```
+
+Or Jenkins: `PIPELINE_ACTION=rollback`, `IMAGE_TAG=<previous BUILD_NUMBER>`.
 
 ## Option 2 (manual SSH)
 
@@ -119,10 +137,16 @@ No Harbor in this option. Recommended flow:
 2. Build local tags:
    - `IMAGE_REGISTRY=baseproject IMAGE_TAG=20260528-1115-<sha7> ./deploy/scripts/build.sh production`
 3. Deploy:
-   - `IMAGE_REGISTRY=baseproject IMAGE_TAG=20260528-1115-<sha7> ./deploy/scripts/migrate.sh production`
-   - `IMAGE_REGISTRY=baseproject IMAGE_TAG=20260528-1115-<sha7> ./deploy/scripts/up.sh production`
+   - `IMAGE_REGISTRY=baseproject IMAGE_TAG=20260528-1115-<sha7> ./deploy/scripts/deploy-app.sh production`
+   - Or: `migrate.sh` then `up.sh` (both support `HARBOR_USER`/`HARBOR_PASSWORD` when pulling from a private registry)
 4. Smoke gate:
-   - `./deploy/scripts/smoke.sh production`
+   - `./deploy/scripts/smoke.sh production` (skipped if `deploy-app.sh` already ran smoke via CI)
+
+**Rollback (Option 2):**
+
+```bash
+IMAGE_TAG=20260528-1115-<previous-sha7> ./deploy/scripts/rollback.sh production
+```
 5. Save manifest file (automatic after smoke passes) for rollback:
    - `deploy/releases/production/deploy.log`
 

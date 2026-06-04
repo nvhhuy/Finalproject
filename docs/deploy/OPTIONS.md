@@ -9,12 +9,9 @@ Suggested chain:
 1. CI runs tests and build checks.
 2. Build/publish images to Harbor using immutable `IMAGE_TAG` (semver or commit SHA).
 3. Ensure infra stack is healthy (`infra-up` one-time, then monitor).
-4. Run DB migration job.
-5. Deploy Api (Compose recreate/update with explicit `IMAGE_TAG`; for true rolling, use orchestrator-level rollout).
-6. Deploy Worker.
-7. Deploy Frontend/Admin containers.
-8. Keep monitoring profiles running (Prometheus/Grafana/Uptime) and alerting enabled.
-9. Run smoke gate (`deploy/scripts/smoke.sh`) and fail the release if checks fail.
+4. Run DB migration job (`deploy-app.sh` or `migrate.sh`).
+5. Deploy application stack (`deploy-app.sh` or `up.sh --pull always` — recreates Api, Worker, Frontend, Admin together via Compose).
+6. Run smoke gate (`deploy/scripts/smoke.sh`) and fail the release if checks fail.
 
 Typical tools:
 

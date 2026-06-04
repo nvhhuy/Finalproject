@@ -23,11 +23,12 @@ Use this for both Option 1 and Option 2.
 Suggested commands:
 
 ```bash
-./deploy/scripts/migrate.sh production
-IMAGE_TAG=vX.Y.Z ./deploy/scripts/up.sh production
+HARBOR_USER=... HARBOR_PASSWORD=... IMAGE_TAG=vX.Y.Z ./deploy/scripts/deploy-app.sh production
 ./deploy/scripts/smoke.sh production
 docker compose --env-file deploy/env/shared/app.common.env --env-file deploy/env/production/app.env -f deploy/compose/stack.yml exec api curl -fsS http://127.0.0.1:8080/health/ready
 ```
+
+Or separate steps: `migrate.sh` → `up.sh` (both honour `HARBOR_*` for registry login).
 
 ## Post-deploy validation
 
@@ -48,11 +49,12 @@ docker compose --env-file deploy/env/shared/app.common.env --env-file deploy/env
 - Critical auth flow regression
 - Data migration side effects require immediate revert
 
-Rollback should restore the previous image set and keep migration safety constraints in mind.
+Rollback should restore the previous image set. **Do not run DB migration on rollback** — schema stays at the latest applied migration; only containers revert.
 
 Rollback command example:
 
 ```bash
-IMAGE_TAG=<previous-tag> ./deploy/scripts/up.sh production
-./deploy/scripts/smoke.sh production
+HARBOR_USER=... HARBOR_PASSWORD=... IMAGE_TAG=<previous-tag> ./deploy/scripts/rollback.sh production
 ```
+
+Or via Jenkins: `PIPELINE_ACTION=rollback`, `IMAGE_TAG=<previous BUILD_NUMBER>`.

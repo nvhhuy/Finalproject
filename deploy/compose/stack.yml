@@ -80,6 +80,12 @@ services:
         reservations:
           cpus: '0.25'
           memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     labels:
       <<: *traefik-api-labels
       traefik.http.routers.api-app.rule: Host(`${APP_HOST}`) && PathPrefix(`/api`)
@@ -111,7 +117,7 @@ services:
       - app
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -137,7 +143,7 @@ services:
       - proxy
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
     deploy:
       resources:
         limits:
