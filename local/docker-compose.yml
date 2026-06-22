@@ -30,6 +30,39 @@ services:
       timeout: 5s
       retries: 5
 
+  # One-shot: apply pending EF Core migrations (idempotent). First run builds the SDK image (~1–2 min).
+  db-migrate:
+    image: baseproject-migrate:local
+    build:
+      context: ..
+      dockerfile: deploy/docker/migrate/Dockerfile
+    environment:
+      ConnectionStrings__DatabaseConnectionString: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-baseproject};
+        Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # One-shot: create Quartz qrtz_* tables when missing (Worker:Quartz:UsePersistentStore).
+  postgres-quartz-init:
+    image: postgres:16-alpine
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-baseproject}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - ../deploy/sql/quartz/tables_postgres.sql:/schema/tables_postgres.sql:ro
+      - ./postgres-init/quartz-schema.sh:/quartz-schema.sh:ro
+    entrypoint: ["/bin/sh", "/quartz-schema.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   redis:
     image: redis:7-alpine
     ports:

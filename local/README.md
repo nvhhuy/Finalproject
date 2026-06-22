@@ -12,6 +12,15 @@ cp .env.example .env
 docker compose up -d
 ```
 
+On each `up`, two one-shot jobs run after Postgres is healthy (same pattern as `minio-init`):
+
+| Service | What it does |
+|---------|----------------|
+| **db-migrate** | Applies pending EF Core migrations (`deploy/docker/migrate/Dockerfile`) |
+| **postgres-quartz-init** | Creates `qrtz_*` tables if missing (for Worker persistent Quartz) |
+
+First run may take 1–2 minutes while `db-migrate` builds the .NET SDK image; later runs are fast. Check logs: `docker compose logs db-migrate postgres-quartz-init`.
+
 Then point `src/Backend/Api/appsettings.Development.json` (or user-secrets) at:
 
 - Postgres **write** and **read** URLs — **the same single Postgres container is correct** for local dev. Two connection strings exist so you can later point **read** at a replica host without code changes.
