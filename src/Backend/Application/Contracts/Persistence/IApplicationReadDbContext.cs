@@ -2,6 +2,7 @@ using Domains.Administration;
 using Domains.Billing;
 using Domains.Contact;
 using Domains.MediaAggregate;
+using Domains.Modules.Books.BookAggregate;
 using Domains.Notifications;
 using Domains.Support;
 using Domains.Tenancy;
@@ -39,4 +40,5 @@ public interface IApplicationReadDbContext
     DbSet<BillingInvoice> BillingInvoices { get; }
     DbSet<PersonalWallet> PersonalWallets { get; }
     DbSet<WalletLedgerEntry> WalletLedgerEntries { get; }
+    DbSet<Book> Books { get; }
 }

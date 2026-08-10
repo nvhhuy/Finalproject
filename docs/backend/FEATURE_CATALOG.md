@@ -162,6 +162,22 @@ Peek/replay/drain are audit-logged.
 
 ---
 
+## 7a. Books (personal catalog, member-only)
+
+Private per-user CRUD catalog. Every route requires `[Authorize]`; reads/writes are scoped to the caller's `CurrentUserId` — a book that exists but belongs to someone else returns 404 (not 403), same anti-enumeration pattern as Media.
+
+| Feature | Endpoint |
+|---------|----------|
+| List (paged, search by title/author) | `GET /api/v1/books?page=&pageSize=&search=` |
+| Get one | `GET /api/v1/books/{id}` |
+| Create | `POST /api/v1/books` (`Idempotency-Key` required) |
+| Update (optimistic concurrency via `rowVersion`) | `PUT /api/v1/books/{id}` |
+| Delete (optimistic concurrency via `rowVersion` query param) | `DELETE /api/v1/books/{id}?rowVersion=` |
+
+Module layout: `Domains/Modules/Books/BookAggregate`, `Application/Modules/Books`, `Infrastructure/Modules/Books`, `Api/Controllers/Books`.
+
+---
+
 ## 8. Messaging & transactional outbox
 
 | Component | Description |

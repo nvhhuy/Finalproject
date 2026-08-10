@@ -29,6 +29,7 @@
     "dashboard": "Dashboard",
     "profile": "Profile",
     "twoFa": "2FA",
+    "books": "Books",
     "mediaLab": "Media Lab",
     "support": "Support",
     "wallet": "Wallet",
@@ -237,6 +238,31 @@
     "whereToFind": "Announcements and alerts appear here and in the bell at the bottom-right of the app.",
     "bellHint": "Tip: use the bell for quick previews; this page shows your full history.",
     "broadcastDevHint": "Admin broadcasts are delivered after the Worker processes the queue (RabbitMQ + Worker must be running locally). Refresh this page or open the bell after a few seconds."
+  },
+  "books": {
+    "title": "My books",
+    "description": "Keep a private catalog of your books — add, edit, and remove entries.",
+    "newBook": "Add a book",
+    "editBook": "Edit book",
+    "myBooks": "My books",
+    "searchPlaceholder": "Search by title or author...",
+    "empty": "No books yet. Add your first one on the left.",
+    "updatedAt": "Updated",
+    "create": "Add book",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "fields": {
+      "title": "Title",
+      "author": "Author",
+      "isbn": "ISBN (optional)",
+      "publishedYear": "Published year (optional)",
+      "description": "Description (optional)"
+    },
+    "validation": {
+      "titleAuthorRequired": "Title and author are required."
+    }
   },
   "support": {
     "title": "Support center",

@@ -12,6 +12,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const navItems = [
     { href: "/app", label: t("nav.dashboard") },
+    { href: "/app/books", label: t("nav.books") },
     { href: "/app/media", label: t("nav.mediaLab") },
     { href: "/app/wallet", label: t("nav.wallet") },
     { href: "/app/subscribe", label: t("nav.subscribe") },

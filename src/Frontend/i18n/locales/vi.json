@@ -29,6 +29,7 @@
     "dashboard": "Tổng quan",
     "profile": "Hồ sơ",
     "twoFa": "2FA",
+    "books": "Sách",
     "mediaLab": "Media Lab",
     "support": "Hỗ trợ",
     "wallet": "Ví credit",
@@ -237,6 +238,31 @@
     "whereToFind": "Thông báo chung hiện ở đây và ở chuông góc dưới-phải màn hình.",
     "bellHint": "Dùng chuông để xem nhanh; trang này là toàn bộ lịch sử.",
     "broadcastDevHint": "Broadcast từ Admin cần Worker xử lý hàng đợi (RabbitMQ + Worker phải chạy local). Tải lại trang hoặc mở chuông sau vài giây."
+  },
+  "books": {
+    "title": "Sách của tôi",
+    "description": "Lưu danh mục sách riêng tư — thêm, sửa và xóa các mục.",
+    "newBook": "Thêm sách",
+    "editBook": "Sửa sách",
+    "myBooks": "Sách của tôi",
+    "searchPlaceholder": "Tìm theo tiêu đề hoặc tác giả...",
+    "empty": "Chưa có sách nào. Thêm sách đầu tiên ở bên trái.",
+    "updatedAt": "Cập nhật",
+    "create": "Thêm sách",
+    "save": "Lưu thay đổi",
+    "cancel": "Hủy",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "fields": {
+      "title": "Tiêu đề",
+      "author": "Tác giả",
+      "isbn": "ISBN (tùy chọn)",
+      "publishedYear": "Năm xuất bản (tùy chọn)",
+      "description": "Mô tả (tùy chọn)"
+    },
+    "validation": {
+      "titleAuthorRequired": "Tiêu đề và tác giả là bắt buộc."
+    }
   },
   "support": {
     "title": "Trung tâm hỗ trợ",

@@ -3,6 +3,7 @@ using Domains.Administration;
 using Domains.Billing;
 using Domains.Contact;
 using Domains.MediaAggregate;
+using Domains.Modules.Books.BookAggregate;
 using Domains.Notifications;
 using Domains.Support;
 using Domains.SystemSettings;
@@ -59,6 +60,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<BillingInvoice> BillingInvoices => Set<BillingInvoice>();
     public DbSet<PersonalWallet> PersonalWallets => Set<PersonalWallet>();
     public DbSet<WalletLedgerEntry> WalletLedgerEntries => Set<WalletLedgerEntry>();
+    public DbSet<Book> Books => Set<Book>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

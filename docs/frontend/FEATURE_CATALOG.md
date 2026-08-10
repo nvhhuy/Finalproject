@@ -27,6 +27,7 @@ Catalog of **existing** Frontend base features — routes, behavior, and backend
 | Path | Page | Nav |
 |------|------|-----|
 | `/app` | Dashboard (wallet, org, tickets summary) | ✓ |
+| `/app/books` | Personal book catalog — create, edit, delete, search (own books only) | ✓ |
 | `/app/profile` | View/edit profile, avatar demo, resend verification | ✓ |
 | `/app/security/2fa` | Begin/confirm 2FA + QR | ✓ |
 | `/app/media` | Media lab (upload flow) | ✓ |
@@ -71,6 +72,16 @@ Guard: `RequireAuth` in `app/app/layout.tsx`.
 | Resend verification | Button on profile | `POST /auth/resend-verification` |
 | Change password | Link → forgot-password flow | `POST /auth/forgot-password` |
 | Avatar demo | Upload via Media flow | Media APIs |
+
+---
+
+## Books
+
+| Capability | API |
+|------------|-----|
+| List (search, paged) / get / create / update / delete | `GET/POST/PUT/DELETE /api/v1/books` (`lib/features/books/books-api.ts`) |
+
+Private per-user catalog; update/delete pass `rowVersion` for optimistic concurrency (mirrors the Media delete pattern).
 
 ---
 

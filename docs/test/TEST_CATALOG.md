@@ -32,6 +32,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | `PaymentWebhookIntegrationTests` | Stripe idempotent + checkout provision; VNPay/PayOS idempotent |
 | `TenantHostIntegrationTests` | Subdomain resolve-host; custom domain register |
 | `MediaIntegrationTests` | Media initiate/complete/get (**skipped** unless `INTEGRATION_MEDIA_ENABLED=true`) |
+| `BooksIntegrationTests` | Anonymous rejected; full CRUD lifecycle incl. `rowVersion` conflict on stale update; owner-only visibility (404 for other user) |
 | `SupportTicketsIntegrationTests` | User ticket create/list/detail + add message + close/reopen |
 | `NotificationsIntegrationTests` | Admin broadcast; user list + mark read; mark-read 404 |
 | `TenancySsoIntegrationTests` | Tenant owner upsert SSO + public slug metadata; non-owner forbidden |
@@ -56,6 +57,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | `saas-usage.spec.ts` | Frontend — SaaS usage | `/app/tenant` after subscribe; `/app/wallet` top-up; `/t/default` public landing |
 | `app-shell.spec.ts` | Frontend — authenticated app shell | Dashboard/profile nav; 2FA setup page; media lab page (uses `storageState`) |
 | `support.spec.ts` | Frontend — support center | Create support ticket; search by ticket number; reply flow |
+| `books.spec.ts` | Frontend — books CRUD | Create, edit, delete a book (uses `storageState`) |
 
 **Auth pattern:** tokens in **localStorage** → `storageState` works for authenticated project.
 
@@ -83,6 +85,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | Project | New / notable coverage |
 |---------|-------------------------|
 | `Application.Tests` | `MarkNotificationReadCommandHandlerTests` |
+| `Application.Tests` | `CreateBookCommandHandlerTests`, `UpdateBookCommandHandlerTests`, `DeleteBookCommandHandlerTests` (ownership + `rowVersion` concurrency) |
 | `Infrastructure.Tests` | `InMemoryObjectStorageTests`, `SystemDatabaseBackupImportTests` (invalid dump / key prefix) |
 | `Infrastructure.Tests` | `SystemSettingsBackupParseTests` (settings JSON formats) |
 | `Infrastructure.Tests` | `HmacWebhookSignatureVerifierTests` — valid sig, uppercase, whitespace tolerance, wrong secret, tampered payload, garbage sig, null/empty guard, determinism, distinct-payload isolation (14 cases) |
@@ -113,6 +116,7 @@ Inventory of automated tests as of the current baseline. Update this file when a
 | Personal wallet (Follow 2) | Yes (`WalletIntegrationTests`) | `/app/wallet` top-up + credit-package purchase smoke |
 | Tenant public `/t/[slug]` | Yes (API) | `/t/default` smoke |
 | Media pipeline | Optional (MinIO) | Media lab page smoke |
+| Books (personal catalog) | Yes (`BooksIntegrationTests`) | Yes (`books.spec.ts` create/edit/delete) |
 | Messaging / DLQ | Admin test (Rabbit off) | — |
 | Tenant SSO OIDC | Yes (`TenancySsoIntegrationTests`) | — |
 | Per-tenant rate limits | — | — |

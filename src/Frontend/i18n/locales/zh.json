@@ -29,6 +29,7 @@
     "dashboard": "概览",
     "profile": "个人资料",
     "twoFa": "双因素",
+    "books": "书籍",
     "mediaLab": "媒体实验室",
     "support": "支持",
     "wallet": "钱包",
@@ -237,6 +238,31 @@
     "whereToFind": "公告和提醒会显示在本页以及应用右下角的铃铛中。",
     "bellHint": "铃铛适合快速预览；本页可查看完整历史。",
     "broadcastDevHint": "管理端广播需 Worker 处理队列（本地需运行 RabbitMQ + Worker）。几秒后刷新本页或打开铃铛。"
+  },
+  "books": {
+    "title": "我的书籍",
+    "description": "维护你的私人书籍目录——添加、编辑和删除条目。",
+    "newBook": "添加书籍",
+    "editBook": "编辑书籍",
+    "myBooks": "我的书籍",
+    "searchPlaceholder": "按标题或作者搜索...",
+    "empty": "还没有书籍。在左侧添加第一本。",
+    "updatedAt": "更新于",
+    "create": "添加书籍",
+    "save": "保存修改",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除",
+    "fields": {
+      "title": "标题",
+      "author": "作者",
+      "isbn": "ISBN（可选）",
+      "publishedYear": "出版年份（可选）",
+      "description": "描述（可选）"
+    },
+    "validation": {
+      "titleAuthorRequired": "标题和作者为必填项。"
+    }
   },
   "support": {
     "title": "支持中心",
